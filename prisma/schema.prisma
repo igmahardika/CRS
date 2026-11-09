@@ -1,0 +1,120 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Customer {
+  id               String   @id @default(cuid())
+  customerName     String
+  customerId       String
+  serviceId        String
+  serviceName      String   @default("Prime 300 Mbps")
+  nodeCount        Int      @default(1)
+  targetSla        Float    @default(99.5)
+  graphType        String   @default("MRTG") // Preferred engine: "MRTG" or "PRTG"
+  graphId          String?  // Legacy/fallback graph ID
+  cactiGraphId     String?  // Cacti Graph ID
+  prtgSensorId     String?  // PRTG Sensor ID
+  trafficDirection String   @default("NORMAL") // "NORMAL" or "REVERSED"
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model Report {
+  id                   String   @id @default(cuid())
+  reportType           String   // "MRTG" or "SLA"
+  graphType            String   @default("MRTG") // "MRTG" or "PRTG"
+  documentNumber       String
+  customerName         String
+  customerId           String
+  serviceId            String
+  serviceName          String   @default("Prime 300 Mbps")
+  nodeCount            Int      @default(1)
+  targetSla            Float    @default(99.5)
+  reportPeriod         String   // e.g. "October 2026"
+  periodMonth          Int
+  periodYear           Int
+  graphId              String?  // Active Graph or Sensor ID used
+  cactiGraphId         String?  // Cacti Graph ID
+  prtgSensorId         String?  // PRTG Sensor ID
+  graphImage           String?  // Base64 data URL
+  dlAvg                Float?
+  dlMax                Float?
+  ulAvg                Float?
+  ulMax                Float?
+  dlUnit               String   @default("Mbps")
+  ulUnit               String   @default("Mbps")
+  trafficDirection     String   @default("NORMAL") // "NORMAL" or "REVERSED"
+  onlinePercent        Float?   @default(100.0)
+  downtimePercent      Float?   @default(0.0)
+  availabilityPercent  Float?   @default(100.0)
+  totalDowntimeMinutes Int?     @default(0)
+  downtimeDurationStr  String?  @default("-")
+  tickets              String?  // JSON string
+  cases                String?  // JSON string
+  pdfPath              String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+model DiscoveredItem {
+  id             String   @id @default(cuid())
+  engine         String   // "MRTG" atau "PRTG"
+  groupName      String?  // Probe / Group / Site / Tree
+  subGroupName   String?  // Sub-Group (PRTG nested groups)
+  deviceName     String   // Nama Switch / Router / Host
+  deviceIp       String?  // IP Address perangkat
+  interfaceName  String   // Nama Port / Sensor
+  fullTitle      String   // Judul lengkap dari monitoring
+  targetId       String   // local_graph_id (Cacti) atau objid (PRTG)
+  detectedSid    String?  // Service ID hasil ekstraksi dari judul
+  detectedCid    String?  // Customer ID hasil ekstraksi
+  status         String   @default("Up") // Up / Down / Unknown / Paused
+  lastDiscovered DateTime @default(now())
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([engine])
+  @@index([targetId])
+  @@index([detectedSid])
+  @@index([deviceName])
+}
+
+model User {
+  id           String    @id @default(cuid())
+  username     String    @unique
+  name         String
+  email        String?   @unique
+  passwordHash String
+  passwordSalt String
+  role         String    @default("OPERATOR") // "ADMIN", "OPERATOR", "VIEWER"
+  isActive     Boolean   @default(true)
+  lastLogin    DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([username])
+  @@index([role])
+}
+
+model AppConfig {
+  id                   String   @id @default("default")
+  mrtgBaseUrl          String   @default("http://cacti.internal.net")
+  mrtgUsername         String   @default("")
+  mrtgPassword         String   @default("")
+  mrtgAuthType         String   @default("BASIC") // "BASIC" or "COOKIE"
+  prtgBaseUrl          String   @default("http://prtg.internal.net")
+  prtgUsername         String   @default("")
+  prtgPassword         String   @default("")
+  prtgAuthType         String   @default("PASSWORD") // "PASSWORD" or "PASSHASH"
+  coverMrtgPath        String   @default("/assets/templates/cover_mrtg.png")
+  coverSlaPath         String   @default("/assets/templates/cover_sla.png")
+  pageBgPath           String   @default("/assets/templates/page_bg.png")
+  defaultTargetSla     Float    @default(99.5)
+  documentNumberPrefix String   @default("IMUN.01")
+  updatedAt            DateTime @updatedAt
+}
