@@ -75,6 +75,7 @@ const config: Config = {
         heading: ["var(--font-poppins)", "Poppins", "sans-serif"],
         poppins: ["var(--font-poppins)", "Poppins", "sans-serif"],
         inter: ["var(--font-inter)", "Inter", "sans-serif"],
+        mono: ["var(--font-inter)", "Inter", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "sans-serif"],
       },
     },
   },

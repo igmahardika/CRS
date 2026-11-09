@@ -611,7 +611,7 @@ export default function CustomersPage() {
                 >
                   <span>{opt.label}</span>
                   <span
-                    className={`ml-1 text-[11px] font-mono tabular-nums ${
+                    className={`ml-1 text-[11px] tabular-nums ${
                       isActive ? 'text-slate-300' : 'text-slate-400'
                     }`}
                   >
@@ -743,7 +743,7 @@ export default function CustomersPage() {
                       />
                     </div>
                   </TableHead>
-                  <TableHead className="w-12 text-center font-mono">No</TableHead>
+                  <TableHead className="w-12 text-center ">No</TableHead>
                   <TableHead
                     onClick={() => handleSort('customerName')}
                     className="cursor-pointer select-none hover:bg-slate-100/70 hover:text-slate-900 transition group"
@@ -875,12 +875,12 @@ export default function CustomersPage() {
                           />
                         </div>
                       </TableCell>
-                      <TableCell className="text-center text-slate-400 font-mono text-[11px] tabular-nums">
+                      <TableCell className="text-center text-slate-400 text-[11px] tabular-nums">
                         {startIndex + idx + 1}
                       </TableCell>
                       <TableCell className="font-semibold text-slate-900">{c.customerName}</TableCell>
-                      <TableCell className="font-mono text-slate-600 text-xs tabular-nums">{c.customerId}</TableCell>
-                      <TableCell className="font-mono text-slate-600 text-xs tabular-nums">{c.serviceId}</TableCell>
+                      <TableCell className="text-slate-600 text-xs tabular-nums">{c.customerId}</TableCell>
+                      <TableCell className="text-slate-600 text-xs tabular-nums">{c.serviceId}</TableCell>
                       <TableCell className="text-slate-700">
                         <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-medium text-[11px]">
                           {c.serviceName}
@@ -888,7 +888,7 @@ export default function CustomersPage() {
                       </TableCell>
                       <TableCell className="text-center">
                         <span
-                          className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-blue-50 text-blue-700 font-mono font-semibold text-[11px] tabular-nums"
+                          className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-blue-50 text-blue-700 font-semibold text-[11px] tabular-nums"
                           title={`Node from Service ID: ${c.nodeCount}`}
                         >
                           {c.nodeCount}
@@ -907,20 +907,20 @@ export default function CustomersPage() {
                       </TableCell>
                       <TableCell>
                         {c.cactiGraphId || (c.graphType === 'MRTG' && c.graphId) ? (
-                          <span className="px-1.5 py-0.5 rounded font-mono font-medium text-[11px] bg-orange-50 text-orange-700 border border-orange-200">
+                          <span className="px-1.5 py-0.5 rounded font-medium text-[11px] bg-orange-50 text-orange-700 border border-orange-200">
                             {c.cactiGraphId || c.graphId}
                           </span>
                         ) : (
-                          <span className="text-slate-300 font-mono">-</span>
+                          <span className="text-slate-300 ">-</span>
                         )}
                       </TableCell>
                       <TableCell>
                         {c.prtgSensorId || (c.graphType === 'PRTG' && c.graphId) ? (
-                          <span className="px-1.5 py-0.5 rounded font-mono font-medium text-[11px] bg-blue-50 text-blue-700 border border-blue-200">
+                          <span className="px-1.5 py-0.5 rounded font-medium text-[11px] bg-blue-50 text-blue-700 border border-blue-200">
                             {c.prtgSensorId || c.graphId}
                           </span>
                         ) : (
-                          <span className="text-slate-300 font-mono">-</span>
+                          <span className="text-slate-300 ">-</span>
                         )}
                       </TableCell>
                       <TableCell>

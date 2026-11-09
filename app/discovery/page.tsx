@@ -343,7 +343,7 @@ export default function DiscoveryPage() {
             <Network className="w-3.5 h-3.5" />
             <span>MRTG / Cacti</span>
             {summary.mrtgCount > 0 && (
-              <span className="bg-slate-700 text-slate-200 px-1.5 py-0.2 rounded-full text-[10px] font-mono">
+              <span className="bg-slate-700 text-slate-200 px-1.5 py-0.5 rounded-full text-[10px]">
                 {summary.mrtgCount}
               </span>
             )}
@@ -365,7 +365,7 @@ export default function DiscoveryPage() {
             <Activity className="w-3.5 h-3.5" />
             <span>PRTG Monitor</span>
             {summary.prtgCount > 0 && (
-              <span className="bg-slate-700 text-slate-200 px-1.5 py-0.2 rounded-full text-[10px] font-mono">
+              <span className="bg-slate-700 text-slate-200 px-1.5 py-0.5 rounded-full text-[10px]">
                 {summary.prtgCount}
               </span>
             )}
@@ -375,7 +375,7 @@ export default function DiscoveryPage() {
         {/* Right Info & Expand Controls */}
         <div className="flex flex-wrap items-center gap-2">
           {currentSync && (
-            <span className="text-xs text-slate-400 hidden sm:block mr-2 font-mono">
+            <span className="text-xs text-slate-400 hidden sm:block mr-2 ">
               Synced: {formatRelative(currentSync)}
             </span>
           )}
@@ -520,7 +520,7 @@ export default function DiscoveryPage() {
                       <span className="text-xs font-semibold text-slate-900">{groupKey}</span>
                     </div>
                     <div className="flex items-center gap-3 text-slate-400">
-                      <span className="text-[11px] font-mono tabular-nums">
+                      <span className="text-[11px] tabular-nums">
                         {group.devices.length} devices • {groupInterfaces} interfaces
                       </span>
                       {isGroupOpen ? (
@@ -548,13 +548,13 @@ export default function DiscoveryPage() {
                               <Server className="w-3.5 h-3.5 text-blue-500 shrink-0" />
                               <span className="text-xs font-medium text-slate-800">{device.deviceName}</span>
                               {device.deviceIp && (
-                                <span className="font-mono text-[11px] text-slate-400 hidden sm:inline tabular-nums">
+                                <span className="text-[11px] text-slate-400 hidden sm:inline tabular-nums">
                                   ({device.deviceIp})
                                 </span>
                               )}
                             </div>
                             <div className="flex items-center gap-3 text-slate-400">
-                              <span className="text-[11px] font-mono tabular-nums">
+                              <span className="text-[11px] tabular-nums">
                                 {device.interfaces.length} interfaces
                               </span>
                               {isDeviceOpen ? (
@@ -595,12 +595,12 @@ export default function DiscoveryPage() {
                                 </div>
 
                                 <div className="flex flex-wrap items-center gap-2 shrink-0">
-                                  <span className="font-mono text-[11px] font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 tabular-nums">
+                                  <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 tabular-nums">
                                     ID: {iface.targetId}
                                   </span>
 
                                   {iface.detectedSid && (
-                                    <span className="font-mono text-[11px] font-semibold px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 tabular-nums">
+                                    <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 tabular-nums">
                                       SID: {iface.detectedSid}
                                     </span>
                                   )}
@@ -658,11 +658,11 @@ export default function DiscoveryPage() {
                   <span className="font-semibold text-slate-900 truncate">{mapping.fullTitle}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Badge variant="soft" className="font-mono text-[11px]">
+                  <Badge variant="soft" className="text-[11px]">
                     {mapping.engine} ID: {mapping.targetId}
                   </Badge>
                   {mapping.detectedSid && (
-                    <Badge variant="success" className="font-mono text-[11px]">
+                    <Badge variant="success" className="text-[11px]">
                       SID: {mapping.detectedSid}
                     </Badge>
                   )}
@@ -687,7 +687,7 @@ export default function DiscoveryPage() {
                   value={mapping.customerId}
                   onChange={(e) => setMapping({ ...mapping, customerId: e.target.value, matched: null })}
                   placeholder="e.g. 01.2180.1124"
-                  className="font-mono text-xs"
+                  className="text-xs"
                 />
               </FormField>
 

@@ -373,7 +373,7 @@ export default function HistoryPage() {
                           {r.reportType}
                         </Badge>
                       </TableCell>
-                      <TableCell className="font-mono text-xs font-semibold text-slate-900">
+                      <TableCell className="text-xs font-semibold text-slate-900">
                         <div className="flex items-center gap-1.5">
                           <span>{r.documentNumber}</span>
                           <Button
@@ -393,7 +393,7 @@ export default function HistoryPage() {
                       </TableCell>
                       <TableCell className="font-semibold text-slate-900">
                         {r.customerName}
-                        <div className="text-[11px] font-mono text-slate-400 font-normal">
+                        <div className="text-[11px] text-slate-400 font-normal">
                           {r.customerId}
                         </div>
                       </TableCell>
@@ -412,7 +412,7 @@ export default function HistoryPage() {
                             {(r.onlinePercent || 100).toFixed(2)}%
                           </Badge>
                         ) : (
-                          <span className="text-slate-400 font-mono">-</span>
+                          <span className="text-slate-400 ">-</span>
                         )}
                       </TableCell>
                       <TableCell>
@@ -473,7 +473,7 @@ export default function HistoryPage() {
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Report Summary</DialogTitle>
-            <p className="text-xs font-mono text-slate-500">{selectedReport?.documentNumber}</p>
+            <p className="text-xs text-slate-500">{selectedReport?.documentNumber}</p>
           </DialogHeader>
 
           {selectedReport && (
@@ -485,7 +485,7 @@ export default function HistoryPage() {
                 </div>
                 <div>
                   <span className="text-slate-500 text-[11px] block">Customer ID / Service ID</span>
-                  <div className="font-mono text-slate-700">
+                  <div className="text-slate-700">
                     {selectedReport.customerId} / {selectedReport.serviceId}
                   </div>
                 </div>

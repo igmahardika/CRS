@@ -152,7 +152,7 @@ export default function CustomerFormModal({
                 value={formData.customerId}
                 onChange={(e) => setFormData({ ...formData, customerId: e.target.value })}
                 placeholder="e.g. 01.2180.1124"
-                className="font-mono text-[12px]"
+                className="text-[12px]"
                 required
               />
             </FormField>
@@ -168,7 +168,7 @@ export default function CustomerFormModal({
                   });
                 }}
                 placeholder="e.g. 01.2180.1"
-                className="font-mono text-[12px]"
+                className="text-[12px]"
                 required
               />
             </FormField>
@@ -231,7 +231,7 @@ export default function CustomerFormModal({
                 value={formData.cactiGraphId || ''}
                 onChange={(e) => setFormData({ ...formData, cactiGraphId: e.target.value })}
                 placeholder="e.g. 2180"
-                className="font-mono text-[12px]"
+                className="text-[12px]"
               />
             </FormField>
             <FormField label="PRTG Sensor ID">
@@ -239,7 +239,7 @@ export default function CustomerFormModal({
                 value={formData.prtgSensorId || ''}
                 onChange={(e) => setFormData({ ...formData, prtgSensorId: e.target.value })}
                 placeholder="e.g. 10542"
-                className="font-mono text-[12px]"
+                className="text-[12px]"
               />
             </FormField>
           </div>

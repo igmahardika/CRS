@@ -335,7 +335,7 @@ export default function SettingsPage() {
                       required
                       value={config.mrtgBaseUrl}
                       onChange={(e) => setConfig({ ...config, mrtgBaseUrl: e.target.value })}
-                      className="font-mono text-xs"
+                      className="text-xs"
                       placeholder="http://cacti.internal.net or http://192.168.1.10/cacti"
                     />
                     <span className="text-[11px] text-slate-500 mt-1 block">
@@ -366,7 +366,7 @@ export default function SettingsPage() {
                       <Input
                         value={config.mrtgUsername}
                         onChange={(e) => setConfig({ ...config, mrtgUsername: e.target.value })}
-                        className="font-mono text-xs"
+                        className="text-xs"
                         placeholder="cacti_user"
                       />
                     </div>
@@ -377,7 +377,7 @@ export default function SettingsPage() {
                           type={showMrtgPassword ? 'text' : 'password'}
                           value={config.mrtgPassword || ''}
                           onChange={(e) => setConfig({ ...config, mrtgPassword: e.target.value })}
-                          className="font-mono text-xs pr-8"
+                          className="text-xs pr-8"
                           placeholder="••••••••"
                         />
                         <Button
@@ -440,7 +440,7 @@ export default function SettingsPage() {
                       required
                       value={config.prtgBaseUrl}
                       onChange={(e) => setConfig({ ...config, prtgBaseUrl: e.target.value })}
-                      className="font-mono text-xs"
+                      className="text-xs"
                       placeholder="https://prtg.example.com or http://10.10.x.x:8080"
                     />
                     <span className="text-[11px] text-slate-500 mt-1 block">
@@ -470,7 +470,7 @@ export default function SettingsPage() {
                       <Input
                         value={config.prtgUsername}
                         onChange={(e) => setConfig({ ...config, prtgUsername: e.target.value })}
-                        className="font-mono text-xs"
+                        className="text-xs"
                         placeholder="prtgadmin"
                       />
                     </div>
@@ -483,7 +483,7 @@ export default function SettingsPage() {
                           type={showPrtgPassword ? 'text' : 'password'}
                           value={config.prtgPassword || ''}
                           onChange={(e) => setConfig({ ...config, prtgPassword: e.target.value })}
-                          className="font-mono text-xs pr-8"
+                          className="text-xs pr-8"
                           placeholder="••••••••"
                         />
                         <Button
@@ -711,7 +711,7 @@ export default function SettingsPage() {
                     <Input
                       value={config.documentNumberPrefix}
                       onChange={(e) => setConfig({ ...config, documentNumberPrefix: e.target.value })}
-                      className="font-mono font-medium"
+                      className="font-medium"
                       placeholder="IMUN.01"
                     />
                   </div>

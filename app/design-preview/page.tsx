@@ -132,7 +132,7 @@ export default function DesignPreviewPage() {
             <div className="h-6 w-full rounded-md bg-[#F16614]" />
             <div>
               <p className="text-[12px] font-medium text-slate-900">Brand Logo</p>
-              <p className="text-[11px] text-slate-500 font-mono">#F16614</p>
+              <p className="text-[11px] text-slate-500 ">#F16614</p>
             </div>
           </div>
 
@@ -140,7 +140,7 @@ export default function DesignPreviewPage() {
             <div className="h-6 w-full rounded-md bg-[#EA580C]" />
             <div>
               <p className="text-[12px] font-medium text-slate-900">Primary Solid</p>
-              <p className="text-[11px] text-slate-500 font-mono">#EA580C</p>
+              <p className="text-[11px] text-slate-500 ">#EA580C</p>
             </div>
           </div>
 
@@ -148,7 +148,7 @@ export default function DesignPreviewPage() {
             <div className="h-6 w-full rounded-md bg-[#C2410C]" />
             <div>
               <p className="text-[12px] font-medium text-slate-900">Strong / Hover</p>
-              <p className="text-[11px] text-slate-500 font-mono">#C2410C</p>
+              <p className="text-[11px] text-slate-500 ">#C2410C</p>
             </div>
           </div>
 
@@ -156,7 +156,7 @@ export default function DesignPreviewPage() {
             <div className="h-6 w-full rounded-md bg-[#FFF7ED] border border-orange-200" />
             <div>
               <p className="text-[12px] font-medium text-slate-900">Soft Pill Nav</p>
-              <p className="text-[11px] text-slate-500 font-mono">#FFF7ED</p>
+              <p className="text-[11px] text-slate-500 ">#FFF7ED</p>
             </div>
           </div>
 
@@ -164,7 +164,7 @@ export default function DesignPreviewPage() {
             <div className="h-6 w-full rounded-md bg-emerald-600" />
             <div>
               <p className="text-[12px] font-medium text-slate-900">Success Status</p>
-              <p className="text-[11px] text-slate-500 font-mono">#16A34A</p>
+              <p className="text-[11px] text-slate-500 ">#16A34A</p>
             </div>
           </div>
 
@@ -172,7 +172,7 @@ export default function DesignPreviewPage() {
             <div className="h-6 w-full rounded-md bg-red-600" />
             <div>
               <p className="text-[12px] font-medium text-slate-900">Destructive Status</p>
-              <p className="text-[11px] text-slate-500 font-mono">#DC2626</p>
+              <p className="text-[11px] text-slate-500 ">#DC2626</p>
             </div>
           </div>
 
@@ -180,7 +180,7 @@ export default function DesignPreviewPage() {
             <div className="h-6 w-full rounded-md bg-amber-600" />
             <div>
               <p className="text-[12px] font-medium text-slate-900">Warning Status</p>
-              <p className="text-[11px] text-slate-500 font-mono">#D97706</p>
+              <p className="text-[11px] text-slate-500 ">#D97706</p>
             </div>
           </div>
 
@@ -188,7 +188,7 @@ export default function DesignPreviewPage() {
             <div className="h-6 w-full rounded-md bg-blue-600" />
             <div>
               <p className="text-[12px] font-medium text-slate-900">Info Status</p>
-              <p className="text-[11px] text-slate-500 font-mono">#2563EB</p>
+              <p className="text-[11px] text-slate-500 ">#2563EB</p>
             </div>
           </div>
         </div>
@@ -505,13 +505,13 @@ export default function DesignPreviewPage() {
                 <TabsTrigger value="branding">Report Templates</TabsTrigger>
               </TabsList>
               <TabsContent value="cacti" className="text-[13px] text-slate-600 p-3 bg-slate-50 rounded-lg border border-slate-200">
-                Cacti base endpoint: <code className="font-mono text-slate-800">http://cacti.internal.net</code>
+                Cacti base endpoint: <code className="text-slate-800">http://cacti.internal.net</code>
               </TabsContent>
               <TabsContent value="prtg" className="text-[13px] text-slate-600 p-3 bg-slate-50 rounded-lg border border-slate-200">
-                PRTG base endpoint: <code className="font-mono text-slate-800">http://prtg.internal.net</code>
+                PRTG base endpoint: <code className="text-slate-800">http://prtg.internal.net</code>
               </TabsContent>
               <TabsContent value="branding" className="text-[13px] text-slate-600 p-3 bg-slate-50 rounded-lg border border-slate-200">
-                A4 Cover Template: <code className="font-mono text-slate-800">cover_mrtg.png</code>
+                A4 Cover Template: <code className="text-slate-800">cover_mrtg.png</code>
               </TabsContent>
             </Tabs>
           </div>
@@ -545,14 +545,14 @@ export default function DesignPreviewPage() {
                 <TableCell className="font-medium text-slate-900">
                   RSJ. Dr. Soeharto Heerdjan
                 </TableCell>
-                <TableCell className="font-mono text-slate-600 text-[12px]">
+                <TableCell className="text-slate-600 text-[12px]">
                   01.2180.1124
                 </TableCell>
                 <TableCell>Prime 300 Mbps</TableCell>
                 <TableCell>
                   <div className="flex items-center gap-1.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                    <span className="font-mono text-[12px] text-slate-700">Cacti: 2180</span>
+                    <span className="text-[12px] text-slate-700">Cacti: 2180</span>
                   </div>
                 </TableCell>
                 <TableCell className="text-right tabular-nums">99.50%</TableCell>
@@ -591,14 +591,14 @@ export default function DesignPreviewPage() {
                 <TableCell className="font-medium text-slate-900">
                   Linknet - Site BFI
                 </TableCell>
-                <TableCell className="font-mono text-slate-600 text-[12px]">
+                <TableCell className="text-slate-600 text-[12px]">
                   01.1496.0624
                 </TableCell>
                 <TableCell>Metronet 100 Mbps</TableCell>
                 <TableCell>
                   <div className="flex items-center gap-1.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                    <span className="font-mono text-[12px] text-slate-700">PRTG: 1496</span>
+                    <span className="text-[12px] text-slate-700">PRTG: 1496</span>
                   </div>
                 </TableCell>
                 <TableCell className="text-right tabular-nums">99.50%</TableCell>
@@ -637,7 +637,7 @@ export default function DesignPreviewPage() {
                 <TableCell className="font-medium text-slate-900">
                   Uniqlo Queen City Mall
                 </TableCell>
-                <TableCell className="font-mono text-slate-600 text-[12px]">
+                <TableCell className="text-slate-600 text-[12px]">
                   01.3320.0924
                 </TableCell>
                 <TableCell>Prime 200 Mbps</TableCell>

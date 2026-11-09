@@ -111,7 +111,7 @@ export default function TicketCaseManager({
           </div>
           <span
             suppressHydrationWarning
-            className="text-xs bg-slate-800 border border-slate-700 px-2.5 py-0.5 rounded text-slate-300 font-mono tabular-nums"
+            className="text-xs bg-slate-800 border border-slate-700 px-2.5 py-0.5 rounded text-slate-300 tabular-nums"
           >
             {new Intl.NumberFormat('en-US').format(slaResult.totalMinutesInMonth)} Mins/Month
           </span>
@@ -164,7 +164,7 @@ export default function TicketCaseManager({
             <h4 className="font-heading font-semibold text-slate-900 text-sm flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-blue-500"></span>
               <span>Support Tickets</span>
-              <span className="text-xs font-medium text-slate-500 font-mono">
+              <span className="text-xs font-medium text-slate-500 ">
                 ({tickets.length > 0 ? `${tickets.length} Tickets` : 'None'})
               </span>
             </h4>
@@ -213,7 +213,7 @@ export default function TicketCaseManager({
                     type="text"
                     value={t.noTicket}
                     onChange={(e) => handleUpdateTicket(idx, 'noTicket', e.target.value)}
-                    className="font-mono text-xs"
+                    className="text-xs"
                     placeholder="1024/TKT"
                   />
                 </div>
@@ -224,7 +224,7 @@ export default function TicketCaseManager({
                     type="text"
                     value={t.date}
                     onChange={(e) => handleUpdateTicket(idx, 'date', e.target.value)}
-                    className="font-mono text-xs"
+                    className="text-xs"
                     placeholder="YYYY-MM-DD"
                   />
                 </div>
@@ -290,7 +290,7 @@ export default function TicketCaseManager({
             <h4 className="font-heading font-semibold text-slate-900 text-sm flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-rose-500"></span>
               <span>Downtime Incident Cases</span>
-              <span className="text-xs font-medium text-rose-600 font-mono">
+              <span className="text-xs font-medium text-rose-600 ">
                 ({cases.length > 0 ? `${cases.length} Cases (${slaResult.totalDowntimeMinutes} Mins)` : '0 Downtime'})
               </span>
             </h4>
@@ -339,7 +339,7 @@ export default function TicketCaseManager({
                     type="text"
                     value={c.noCase}
                     onChange={(e) => handleUpdateCase(idx, 'noCase', e.target.value)}
-                    className="font-mono text-xs"
+                    className="text-xs"
                     placeholder="CASE-01"
                   />
                 </div>
@@ -350,7 +350,7 @@ export default function TicketCaseManager({
                     type="text"
                     value={c.date}
                     onChange={(e) => handleUpdateCase(idx, 'date', e.target.value)}
-                    className="font-mono text-xs"
+                    className="text-xs"
                     placeholder="YYYY-MM-DD"
                   />
                 </div>
@@ -384,7 +384,7 @@ export default function TicketCaseManager({
                     onChange={(e) =>
                       handleUpdateCase(idx, 'downtimeMinutes', parseInt(e.target.value, 10) || 0)
                     }
-                    className="font-mono text-xs text-center text-rose-600 font-semibold"
+                    className="text-xs text-center text-rose-600 font-semibold"
                     placeholder="30"
                   />
                 </div>

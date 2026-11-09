@@ -476,14 +476,14 @@ export default function UsersManagementPage() {
                           </div>
                           <div>
                             <div className="font-semibold text-slate-900">{user.name}</div>
-                            <div className="text-slate-400 font-mono text-[11px]">@{user.username}</div>
+                            <div className="text-slate-400 text-[11px]">@{user.username}</div>
                           </div>
                         </div>
                       </TableCell>
 
                       {/* Email */}
                       <TableCell className="text-slate-600 font-medium">
-                        {user.email || <span className="text-slate-300 font-mono">-</span>}
+                        {user.email || <span className="text-slate-300 ">-</span>}
                       </TableCell>
 
                       {/* Role Badge */}
@@ -578,7 +578,7 @@ export default function UsersManagementPage() {
                   value={formData.username}
                   onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                   placeholder="e.g. john.doe"
-                  className="font-mono text-xs"
+                  className="text-xs"
                   required
                 />
               </FormField>

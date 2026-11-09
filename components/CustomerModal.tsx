@@ -198,7 +198,7 @@ export default function CustomerModal({
                       <span className="text-[13px] font-semibold text-slate-900 group-hover:text-[#C2410C] transition-colors">
                         {customer.customerName}
                       </span>
-                      <Badge variant="neutral" className="font-mono text-[11px]">
+                      <Badge variant="neutral" className="text-[11px]">
                         {customer.customerId}
                       </Badge>
                       {customer.trafficDirection === 'REVERSED' && (
@@ -208,7 +208,7 @@ export default function CustomerModal({
                       )}
                     </div>
                     <div className="flex items-center gap-3 mt-1 text-[12px] text-slate-500 font-sans">
-                      <span>SID: <span className="font-mono text-slate-700">{customer.serviceId}</span></span>
+                      <span>SID: <span className="text-slate-700">{customer.serviceId}</span></span>
                       <span>Plan: <span className="text-slate-700">{customer.serviceName}</span></span>
                       <span>Nodes: <span className="tabular-nums text-slate-700">{customer.nodeCount}</span></span>
                       <span>Target SLA: <span className="tabular-nums text-slate-700">{customer.targetSla}%</span></span>

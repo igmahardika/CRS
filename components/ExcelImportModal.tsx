@@ -157,10 +157,10 @@ export default function ExcelImportModal({
 
             <div className="flex flex-wrap items-center gap-1.5 text-[12px]">
               <span className="font-medium text-slate-700">Columns:</span>
-              <Badge variant="neutral" className="font-mono text-[11px]">1. Customer Name</Badge>
-              <Badge variant="neutral" className="font-mono text-[11px]">2. Customer ID</Badge>
-              <Badge variant="neutral" className="font-mono text-[11px]">3. Service ID</Badge>
-              <Badge variant="neutral" className="font-mono text-[11px]">4. Service Name</Badge>
+              <Badge variant="neutral" className="text-[11px]">1. Customer Name</Badge>
+              <Badge variant="neutral" className="text-[11px]">2. Customer ID</Badge>
+              <Badge variant="neutral" className="text-[11px]">3. Service ID</Badge>
+              <Badge variant="neutral" className="text-[11px]">4. Service Name</Badge>
             </div>
           </div>
 

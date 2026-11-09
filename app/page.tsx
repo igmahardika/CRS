@@ -559,7 +559,7 @@ function GeneratorPageContent() {
               >
                 <Search className="w-3.5 h-3.5 mr-1 text-slate-500" />
                 <span>Select Customer</span>
-                <kbd className="hidden sm:inline-block ml-1.5 text-[10px] font-mono bg-slate-100 text-slate-600 px-1 py-0.5 rounded border border-slate-200">
+                <kbd className="hidden sm:inline-block ml-1.5 text-[10px] bg-slate-100 text-slate-600 px-1 py-0.5 rounded border border-slate-200">
                   Ctrl+Shift+K
                 </kbd>
               </Button>
@@ -579,7 +579,7 @@ function GeneratorPageContent() {
                   <Input
                     value={customerId}
                     onChange={(e) => setCustomerId(e.target.value)}
-                    className="font-mono"
+                    className=""
                     placeholder="e.g. 01.2180.1124"
                   />
                 </FormField>
@@ -591,7 +591,7 @@ function GeneratorPageContent() {
                       setServiceId(newSid);
                       setNodeCount(extractNodeFromServiceId(newSid));
                     }}
-                    className="font-mono"
+                    className=""
                     placeholder="e.g. 01.2180.1"
                   />
                 </FormField>
@@ -673,7 +673,7 @@ function GeneratorPageContent() {
                         setYear(newY);
                         fetchNextDocNumber(month, newY, reportType);
                       }}
-                      className="font-mono text-center"
+                      className="text-center"
                     />
                   </FormField>
                 </div>
@@ -698,7 +698,7 @@ function GeneratorPageContent() {
                       setDocumentNumber(e.target.value);
                       setIsManualDocNumber(true);
                     }}
-                    className="font-mono text-xs"
+                    className="text-xs"
                     placeholder="01/IMUN.01/SLA/10/2026"
                   />
                 </div>
@@ -706,7 +706,7 @@ function GeneratorPageContent() {
               <div className="text-[11px] text-slate-400 flex items-center justify-between">
                 <span>
                   Format:{' '}
-                  <code className="font-mono">{`{01}/IMUN.01/{${reportType}}/{${String(month).padStart(2, '0')}}/{${year}}`}</code>
+                  <code className="">{`{01}/IMUN.01/{${reportType}}/{${String(month).padStart(2, '0')}}/{${year}}`}</code>
                 </span>
                 {isManualDocNumber && (
                   <span className="text-amber-600 font-medium">(Manually Edited)</span>
@@ -750,7 +750,7 @@ function GeneratorPageContent() {
                   <span>MRTG (Cacti)</span>
                 </div>
                 {cactiGraphId ? (
-                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 font-medium">
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 font-medium">
                     ID: {cactiGraphId}
                   </span>
                 ) : (
@@ -773,7 +773,7 @@ function GeneratorPageContent() {
                   <span>PRTG Monitor</span>
                 </div>
                 {prtgSensorId ? (
-                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 font-medium">
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 font-medium">
                     ID: {prtgSensorId}
                   </span>
                 ) : (
@@ -800,7 +800,7 @@ function GeneratorPageContent() {
                         }
                       }}
                       placeholder={graphEngine === 'PRTG' ? 'e.g. 10542' : 'e.g. 2180'}
-                      className="flex-1 font-mono font-medium"
+                      className="flex-1 font-medium"
                     />
                     <Button
                       type="button"
@@ -930,7 +930,7 @@ function GeneratorPageContent() {
                           step="0.01"
                           value={dlAvg}
                           onChange={(e) => setDlAvg(parseFloat(e.target.value) || 0)}
-                          className="font-mono text-center text-xs"
+                          className="text-center text-xs"
                         />
                       </FormField>
                       <FormField label={`Maximum (${dlUnit})`}>
@@ -939,7 +939,7 @@ function GeneratorPageContent() {
                           step="0.01"
                           value={dlMax}
                           onChange={(e) => setDlMax(parseFloat(e.target.value) || 0)}
-                          className="font-mono text-center text-xs"
+                          className="text-center text-xs"
                         />
                       </FormField>
                     </div>
@@ -956,7 +956,7 @@ function GeneratorPageContent() {
                           step="0.01"
                           value={ulAvg}
                           onChange={(e) => setUlAvg(parseFloat(e.target.value) || 0)}
-                          className="font-mono text-center text-xs"
+                          className="text-center text-xs"
                         />
                       </FormField>
                       <FormField label={`Maximum (${ulUnit})`}>
@@ -965,7 +965,7 @@ function GeneratorPageContent() {
                           step="0.01"
                           value={ulMax}
                           onChange={(e) => setUlMax(parseFloat(e.target.value) || 0)}
-                          className="font-mono text-center text-xs"
+                          className="text-center text-xs"
                         />
                       </FormField>
                     </div>
@@ -977,16 +977,16 @@ function GeneratorPageContent() {
                   <div className="font-semibold text-slate-800">Summary Sentence Preview:</div>
                   <p className="leading-relaxed">
                     <span>{`○ Download Traffic (${dlDirectionLabel}): Average usage is `}</span>
-                    <strong className="text-slate-900 font-mono">{`${dlAvg} ${dlUnit}`}</strong>
+                    <strong className="text-slate-900 ">{`${dlAvg} ${dlUnit}`}</strong>
                     <span>{`, maximum usage reaching `}</span>
-                    <strong className="text-slate-900 font-mono">{`${dlMax} ${dlUnit}`}</strong>
+                    <strong className="text-slate-900 ">{`${dlMax} ${dlUnit}`}</strong>
                     <span>.</span>
                   </p>
                   <p className="leading-relaxed">
                     <span>{`○ Upload Traffic (${ulDirectionLabel}): Average usage is `}</span>
-                    <strong className="text-slate-900 font-mono">{`${ulAvg} ${ulUnit}`}</strong>
+                    <strong className="text-slate-900 ">{`${ulAvg} ${ulUnit}`}</strong>
                     <span>{`, maximum usage reaching `}</span>
-                    <strong className="text-slate-900 font-mono">{`${ulMax} ${ulUnit}`}</strong>
+                    <strong className="text-slate-900 ">{`${ulMax} ${ulUnit}`}</strong>
                     <span>.</span>
                   </p>
                 </div>
@@ -1046,7 +1046,7 @@ function GeneratorPageContent() {
                   <>
                     <Download className="w-3.5 h-3.5 mr-1.5" />
                     <span>Export PDF</span>
-                    <kbd className="hidden sm:inline-block ml-1.5 text-[10px] font-mono bg-white/20 text-white px-1.5 py-0.5 rounded font-medium">
+                    <kbd className="hidden sm:inline-block ml-1.5 text-[10px] bg-white/20 text-white px-1.5 py-0.5 rounded font-medium">
                       Ctrl+↵
                     </kbd>
                   </>

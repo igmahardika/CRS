@@ -134,7 +134,7 @@ export default function LivePreview({
             >
               <ZoomOut className="w-3.5 h-3.5" />
             </Button>
-            <span className="w-10 text-center font-bold font-mono text-[11px] tabular-nums text-slate-900">{`${zoom}%`}</span>
+            <span className="w-10 text-center font-bold text-[11px] tabular-nums text-slate-900">{`${zoom}%`}</span>
             <Button
               type="button"
               variant="ghost"
@@ -152,7 +152,7 @@ export default function LivePreview({
                 size="sm"
                 onClick={() => setZoom(50)}
                 className={`h-6 px-1.5 text-[10px] font-medium ${
-                  zoom === 50 ? 'bg-white text-[#C2410C] shadow-2xs font-semibold' : 'text-slate-500'
+                  zoom === 50 ? 'bg-white text-[#C2410C] shadow-xs font-semibold' : 'text-slate-500'
                 }`}
                 title="Zoom 50% (Fit)"
               >
@@ -164,7 +164,7 @@ export default function LivePreview({
                 size="sm"
                 onClick={() => setZoom(65)}
                 className={`h-6 px-1.5 text-[10px] font-medium ${
-                  zoom === 65 ? 'bg-white text-[#C2410C] shadow-2xs font-semibold' : 'text-slate-500'
+                  zoom === 65 ? 'bg-white text-[#C2410C] shadow-xs font-semibold' : 'text-slate-500'
                 }`}
                 title="Zoom 65% (Optimal)"
               >
@@ -176,7 +176,7 @@ export default function LivePreview({
                 size="sm"
                 onClick={() => setZoom(100)}
                 className={`h-6 px-1.5 text-[10px] font-medium ${
-                  zoom === 100 ? 'bg-white text-[#C2410C] shadow-2xs font-semibold' : 'text-slate-500'
+                  zoom === 100 ? 'bg-white text-[#C2410C] shadow-xs font-semibold' : 'text-slate-500'
                 }`}
                 title="Zoom 100% (Real Size)"
               >
