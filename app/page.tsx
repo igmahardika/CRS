@@ -26,7 +26,7 @@ import LivePreview from '@/components/LivePreview';
 import TicketCaseManager from '@/components/TicketCaseManager';
 import CustomerModal, { CustomerData } from '@/components/CustomerModal';
 import { ReportData } from '@/lib/pdf-template';
-import { TicketItem, CaseItem } from '@/lib/sla-calculator';
+import { TicketItem, CaseItem, calculateSla } from '@/lib/sla-calculator';
 import { generateDocumentNumber } from '@/lib/doc-number';
 import { toast } from 'sonner';
 import {
@@ -461,6 +461,8 @@ function GeneratorPageContent() {
     setIsSavingReport(true);
     setSavedDocInfo(null);
     try {
+      const slaCalc = calculateSla(cases, tickets, year, month);
+
       const res = await fetch('/api/reports', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -468,6 +470,11 @@ function GeneratorPageContent() {
           ...currentReportData,
           periodMonth: month,
           periodYear: year,
+          onlinePercent: slaCalc.onlinePercent,
+          downtimePercent: slaCalc.downtimePercent,
+          availabilityPercent: slaCalc.availabilityPercent,
+          totalDowntimeMinutes: slaCalc.totalDowntimeMinutes,
+          downtimeDurationStr: slaCalc.downtimeDurationStr,
         }),
       });
 

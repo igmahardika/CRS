@@ -247,8 +247,6 @@ export function generateReportHtml(data: ReportData): string {
       font-size: 11.5pt;
       font-weight: 700;
       color: #000000;
-      border-bottom: 2px solid #F16614;
-      padding-bottom: 2px;
       margin-top: 10px;
       margin-bottom: 4px;
       display: inline-block;

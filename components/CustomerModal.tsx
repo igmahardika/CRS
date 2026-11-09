@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Plus, Search, Building2, Check, Edit2, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -32,6 +32,7 @@ export default function CustomerModal({
   const [customers, setCustomers] = useState<CustomerData[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
+  const [displayLimit, setDisplayLimit] = useState(25);
 
   // Unified Form Modal state
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -58,8 +59,14 @@ export default function CustomerModal({
     if (isOpen) {
       fetchCustomers();
       setSearch('');
+      setDisplayLimit(25);
     }
   }, [isOpen]);
+
+  const handleSearchChange = (val: string) => {
+    setSearch(val);
+    setDisplayLimit(25);
+  };
 
   const handleFormSubmit = async (formData: CustomerData) => {
     try {
@@ -116,12 +123,20 @@ export default function CustomerModal({
     }
   };
 
-  const filtered = customers.filter(
-    (c) =>
-      c.customerName.toLowerCase().includes(search.toLowerCase()) ||
-      c.customerId.toLowerCase().includes(search.toLowerCase()) ||
-      c.serviceId.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return customers;
+    return customers.filter(
+      (c) =>
+        c.customerName.toLowerCase().includes(q) ||
+        c.customerId.toLowerCase().includes(q) ||
+        c.serviceId.toLowerCase().includes(q)
+    );
+  }, [customers, search]);
+
+  const visibleCustomers = useMemo(() => {
+    return filtered.slice(0, displayLimit);
+  }, [filtered, displayLimit]);
 
   return (
     <>
@@ -137,7 +152,7 @@ export default function CustomerModal({
               <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
               <Input
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
                 placeholder="Search by name, Customer ID, or Service ID..."
                 className="pl-9 h-9"
               />
@@ -155,8 +170,24 @@ export default function CustomerModal({
             </Button>
           </div>
 
+          {/* Status & Counter Bar */}
+          {!loading && customers.length > 0 && (
+            <div className="flex items-center justify-between text-xs text-slate-500 pt-2 px-1">
+              <span>
+                {search.trim()
+                  ? `Ditemukan ${filtered.length} pelanggan (menampilkan ${visibleCustomers.length} teratas)`
+                  : `Menampilkan ${visibleCustomers.length} dari ${customers.length} pelanggan`}
+              </span>
+              {filtered.length > displayLimit && (
+                <span className="text-[11px] text-slate-400">
+                  Ketik nama/ID untuk hasil lebih spesifik
+                </span>
+              )}
+            </div>
+          )}
+
           {/* Customer List */}
-          <div className="overflow-y-auto flex-1 mt-4 divide-y divide-slate-100 max-h-[50vh] pr-1">
+          <div className="overflow-y-auto flex-1 mt-2 divide-y divide-slate-100 max-h-[50vh] pr-1">
             {loading ? (
               <div className="space-y-3 py-4">
                 <Skeleton className="h-14 w-full" />
@@ -173,75 +204,91 @@ export default function CustomerModal({
                     variant="ghost"
                     size="sm"
                     className="mt-2"
-                    onClick={() => setSearch('')}
+                    onClick={() => handleSearchChange('')}
                   >
                     Clear search
                   </Button>
                 )}
               </div>
             ) : (
-              filtered.map((customer) => (
-                <div
-                  key={customer.id || customer.customerId}
-                  className="flex items-center justify-between p-3 rounded-lg hover:bg-slate-50 transition-colors group"
-                >
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    onClick={() => {
-                      onSelectCustomer(customer);
-                      onClose();
-                    }}
-                    className="flex-1 h-auto p-1 text-left justify-start items-start flex-col hover:bg-transparent font-normal"
+              <>
+                {visibleCustomers.map((customer) => (
+                  <div
+                    key={customer.id || customer.customerId}
+                    className="flex items-center justify-between p-3 rounded-lg hover:bg-slate-50 transition-colors group"
                   >
-                    <div className="flex items-center gap-2">
-                      <span className="text-[13px] font-semibold text-slate-900 group-hover:text-[#C2410C] transition-colors">
-                        {customer.customerName}
-                      </span>
-                      <Badge variant="neutral" className="text-[11px]">
-                        {customer.customerId}
-                      </Badge>
-                      {customer.trafficDirection === 'REVERSED' && (
-                        <Badge variant="warning" className="text-[11px]">
-                          Reversed
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={() => {
+                        onSelectCustomer(customer);
+                        onClose();
+                      }}
+                      className="flex-1 h-auto p-1 text-left justify-start items-start flex-col hover:bg-transparent font-normal"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="text-[13px] font-semibold text-slate-900 group-hover:text-[#C2410C] transition-colors">
+                          {customer.customerName}
+                        </span>
+                        <Badge variant="neutral" className="text-[11px]">
+                          {customer.customerId}
                         </Badge>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-3 mt-1 text-[12px] text-slate-500 font-sans">
-                      <span>SID: <span className="text-slate-700">{customer.serviceId}</span></span>
-                      <span>Plan: <span className="text-slate-700">{customer.serviceName}</span></span>
-                      <span>Nodes: <span className="tabular-nums text-slate-700">{customer.nodeCount}</span></span>
-                      <span>Target SLA: <span className="tabular-nums text-slate-700">{customer.targetSla}%</span></span>
-                    </div>
-                  </Button>
-
-                  <div className="flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity ml-2">
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      aria-label="Edit customer"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setEditingCustomer(customer);
-                        setIsFormOpen(true);
-                      }}
-                    >
-                      <Edit2 className="w-3.5 h-3.5 text-slate-500 hover:text-slate-900" />
+                        {customer.trafficDirection === 'REVERSED' && (
+                          <Badge variant="warning" className="text-[11px]">
+                            Reversed
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-3 mt-1 text-[12px] text-slate-500 font-sans">
+                        <span>SID: <span className="text-slate-700">{customer.serviceId}</span></span>
+                        <span>Plan: <span className="text-slate-700">{customer.serviceName}</span></span>
+                        <span>Nodes: <span className="tabular-nums text-slate-700">{customer.nodeCount}</span></span>
+                        <span>Target SLA: <span className="tabular-nums text-slate-700">{customer.targetSla}%</span></span>
+                      </div>
                     </Button>
+
+                    <div className="flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity ml-2">
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label="Edit customer"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingCustomer(customer);
+                          setIsFormOpen(true);
+                        }}
+                      >
+                        <Edit2 className="w-3.5 h-3.5 text-slate-500 hover:text-slate-900" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label="Delete customer"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeletingCustomer(customer);
+                        }}
+                      >
+                        <Trash2 className="w-3.5 h-3.5 text-red-500 hover:text-red-700" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+
+                {filtered.length > displayLimit && (
+                  <div className="py-3 text-center">
                     <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      aria-label="Delete customer"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setDeletingCustomer(customer);
-                      }}
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => setDisplayLimit((prev) => prev + 25)}
+                      className="text-xs"
                     >
-                      <Trash2 className="w-3.5 h-3.5 text-red-500 hover:text-red-700" />
+                      Muat Lebih Banyak (+25 Pelanggan)
                     </Button>
                   </div>
-                </div>
-              ))
+                )}
+              </>
             )}
           </div>
         </DialogContent>

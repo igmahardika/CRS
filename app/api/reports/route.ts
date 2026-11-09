@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { generatePdfBuffer } from '@/lib/pdf-generator';
 import { ReportData } from '@/lib/pdf-template';
 import { requireAuth, requireOperatorOrAdmin } from '@/lib/auth';
+import { calculateSla, CaseItem, TicketItem } from '@/lib/sla-calculator';
 
 export async function GET() {
   const auth = await requireAuth();
@@ -33,6 +34,43 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
+    const periodMonth = parseInt(body.periodMonth, 10) || 10;
+    const periodYear = parseInt(body.periodYear, 10) || 2026;
+
+    let rawCases: CaseItem[] = [];
+    let rawTickets: TicketItem[] = [];
+    try {
+      rawCases = Array.isArray(body.cases)
+        ? body.cases
+        : typeof body.cases === 'string'
+        ? JSON.parse(body.cases || '[]')
+        : [];
+      rawTickets = Array.isArray(body.tickets)
+        ? body.tickets
+        : typeof body.tickets === 'string'
+        ? JSON.parse(body.tickets || '[]')
+        : [];
+    } catch {
+      rawCases = [];
+      rawTickets = [];
+    }
+
+    const computedSla = calculateSla(rawCases, rawTickets, periodYear, periodMonth);
+
+    const onlinePercent = body.onlinePercent !== undefined
+      ? parseFloat(body.onlinePercent)
+      : computedSla.onlinePercent;
+    const downtimePercent = body.downtimePercent !== undefined
+      ? parseFloat(body.downtimePercent)
+      : computedSla.downtimePercent;
+    const availabilityPercent = body.availabilityPercent !== undefined
+      ? parseFloat(body.availabilityPercent)
+      : computedSla.availabilityPercent;
+    const totalDowntimeMinutes = body.totalDowntimeMinutes !== undefined
+      ? parseInt(body.totalDowntimeMinutes, 10)
+      : computedSla.totalDowntimeMinutes;
+    const downtimeDurationStr = body.downtimeDurationStr || computedSla.downtimeDurationStr;
+
     // 1. Create database record
     const created = await prisma.report.create({
       data: {
@@ -46,8 +84,8 @@ export async function POST(req: NextRequest) {
         nodeCount: parseInt(body.nodeCount, 10) || 1,
         targetSla: parseFloat(body.targetSla) || 99.5,
         reportPeriod: body.reportPeriod,
-        periodMonth: parseInt(body.periodMonth, 10) || 10,
-        periodYear: parseInt(body.periodYear, 10) || 2026,
+        periodMonth,
+        periodYear,
         graphId: body.graphId || null,
         cactiGraphId: body.cactiGraphId || null,
         prtgSensorId: body.prtgSensorId || null,
@@ -59,11 +97,11 @@ export async function POST(req: NextRequest) {
         dlUnit: body.dlUnit || 'Mbps',
         ulUnit: body.ulUnit || 'Mbps',
         trafficDirection: body.trafficDirection || 'NORMAL',
-        onlinePercent: body.onlinePercent !== undefined ? parseFloat(body.onlinePercent) : 100.0,
-        downtimePercent: body.downtimePercent !== undefined ? parseFloat(body.downtimePercent) : 0.0,
-        availabilityPercent: body.availabilityPercent !== undefined ? parseFloat(body.availabilityPercent) : 100.0,
-        totalDowntimeMinutes: body.totalDowntimeMinutes || 0,
-        downtimeDurationStr: body.downtimeDurationStr || '-',
+        onlinePercent,
+        downtimePercent,
+        availabilityPercent,
+        totalDowntimeMinutes,
+        downtimeDurationStr,
         tickets: body.tickets ? (typeof body.tickets === 'string' ? body.tickets : JSON.stringify(body.tickets)) : null,
         cases: body.cases ? (typeof body.cases === 'string' ? body.cases : JSON.stringify(body.cases)) : null,
       },
