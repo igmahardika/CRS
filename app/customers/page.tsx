@@ -27,6 +27,7 @@ import {
   SearchX,
   RotateCcw,
   Radio,
+  ChevronDown,
 } from 'lucide-react';
 import Link from 'next/link';
 import { CustomerData } from '@/components/CustomerModal';
@@ -34,7 +35,15 @@ import CustomerFormModal from '@/components/CustomerFormModal';
 import ExcelImportModal from '@/components/ExcelImportModal';
 import { extractNodeFromServiceId } from '@/lib/service-utils';
 import { toast } from 'sonner';
-import { ConfirmDialog } from '@/components/ui';
+import {
+  ConfirmDialog,
+  PageHeader,
+  Button,
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from '@/components/ui';
 import { getSlaByServiceName } from '@/lib/service-sla';
 
 export default function CustomersPage() {
@@ -409,100 +418,81 @@ export default function CustomersPage() {
 
   return (
     <div className="space-y-6">
-      {/* Top Header */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center space-x-2 text-xs text-slate-500 mb-1">
-            <Link href="/" className="hover:text-slate-800 flex items-center gap-1 font-medium">
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Back to Generator</span>
-            </Link>
-          </div>
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-            <Users className="w-6 h-6 text-orange-500" />
-            <span>Customer Directory</span>
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-            Manage customer records, service IDs, node counts, SLA targets, and telemetry mappings.
-          </p>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex flex-wrap items-center gap-2 self-start md:self-auto">
-          {/* Auto Sync Nodes Button */}
-          <button
-            type="button"
-            onClick={handleAutoSyncAllNodes}
-            disabled={isSyncingNodes || customers.length === 0}
-            className="inline-flex items-center space-x-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition shadow-xs disabled:opacity-50"
-            title="Auto-calculate and sync node count from Service ID"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 text-blue-600 ${isSyncingNodes ? 'animate-spin' : ''}`} />
-            <span>{isSyncingNodes ? 'Syncing...' : 'Sync Nodes'}</span>
-          </button>
-
-          {/* Auto Sync SLA Button */}
-          <button
-            type="button"
-            onClick={handleAutoSyncAllSla}
-            disabled={isSyncingSla || customers.length === 0}
-            className="inline-flex items-center space-x-1.5 px-3 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-semibold transition shadow-xs disabled:opacity-50"
-            title="Auto-sync target SLA for all customers based on service name"
-          >
-            <ShieldCheck className={`w-3.5 h-3.5 text-emerald-600 ${isSyncingSla ? 'animate-spin' : ''}`} />
-            <span>{isSyncingSla ? 'Syncing...' : 'Auto-Sync SLA'}</span>
-          </button>
-
-          {/* Download Template */}
-          <a
-            href="/api/customers/template"
-            className="inline-flex items-center space-x-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition shadow-xs"
-            title="Download Excel Template"
-          >
-            <Download className="w-4 h-4 text-emerald-600" />
-            <span>Template</span>
-          </a>
-
-          {/* Upload Excel */}
-          <button
-            onClick={() => setIsImportModalOpen(true)}
-            className="inline-flex items-center space-x-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold transition shadow-xs cursor-pointer"
-          >
-            <Upload className="w-4 h-4" />
-            <span>Import Excel</span>
-          </button>
-
-          {/* Export All Excel */}
-          <a
-            href="/api/customers/export"
-            download
-            className="inline-flex items-center space-x-1.5 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-semibold transition shadow-xs cursor-pointer"
-            title="Export all customer records with all database columns to Excel (.xlsx)"
-          >
-            <Download className="w-4 h-4 text-emerald-400" />
-            <span>Export All</span>
-          </a>
-
-          {/* Add Manual */}
-          <button
-            onClick={handleOpenAdd}
-            className="inline-flex items-center space-x-1.5 px-4 py-2 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white rounded-xl text-xs font-semibold transition shadow-xs"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Add Customer</span>
-          </button>
-
-          {/* Network Discovery Shortcut */}
-          <Link
-            href="/discovery"
-            className="inline-flex items-center gap-1.5 px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 rounded-xl text-xs font-semibold transition shadow-xs"
-            title="Open Network Discovery"
-          >
-            <Radio className="w-3.5 h-3.5 text-blue-600" />
-            <span>Discovery</span>
+      {/* Standard Page Header */}
+      <PageHeader
+        title="Customer Directory"
+        description="Manage customer records, telemetry configurations, and SLA targets."
+        breadcrumb={
+          <Link href="/" className="hover:text-slate-800 flex items-center gap-1 font-medium">
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Back to Generator</span>
           </Link>
-        </div>
-      </div>
+        }
+        actions={
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleAutoSyncAllNodes}
+              disabled={isSyncingNodes || customers.length === 0}
+              title="Auto-calculate and sync node count from Service ID"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${isSyncingNodes ? 'animate-spin' : ''}`} />
+              <span>{isSyncingNodes ? 'Syncing...' : 'Sync Nodes'}</span>
+            </Button>
+
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleAutoSyncAllSla}
+              disabled={isSyncingSla || customers.length === 0}
+              title="Auto-sync target SLA for all customers based on service name"
+            >
+              <ShieldCheck className={`w-3.5 h-3.5 mr-1.5 ${isSyncingSla ? 'animate-spin' : ''}`} />
+              <span>{isSyncingSla ? 'Syncing...' : 'Auto-Sync SLA'}</span>
+            </Button>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="secondary" size="sm">
+                  <span>Excel Tools</span>
+                  <ChevronDown className="w-3.5 h-3.5 ml-1" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <a href="/api/customers/template">
+                  <DropdownMenuItem className="gap-2 cursor-pointer">
+                    <Download className="w-4 h-4 text-slate-500" />
+                    <span>Download Template</span>
+                  </DropdownMenuItem>
+                </a>
+                <DropdownMenuItem
+                  onClick={() => setIsImportModalOpen(true)}
+                  className="gap-2 cursor-pointer"
+                >
+                  <Upload className="w-4 h-4 text-slate-500" />
+                  <span>Import Excel</span>
+                </DropdownMenuItem>
+                <a href="/api/customers/export" download>
+                  <DropdownMenuItem className="gap-2 cursor-pointer">
+                    <Download className="w-4 h-4 text-slate-500" />
+                    <span>Export All (.xlsx)</span>
+                  </DropdownMenuItem>
+                </a>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={handleOpenAdd}
+            >
+              <Plus className="w-3.5 h-3.5 mr-1.5" />
+              <span>Add Customer</span>
+            </Button>
+          </div>
+        }
+      />
 
       {/* Filter & Search Bar Card */}
       <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs space-y-3">

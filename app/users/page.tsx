@@ -41,6 +41,7 @@ import {
   Checkbox,
   ConfirmDialog,
   Badge,
+  PageHeader,
 } from '@/components/ui';
 
 interface UserData {
@@ -282,36 +283,28 @@ export default function UsersManagementPage() {
 
   return (
     <div className="space-y-6">
-      {/* Top Header Card */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center space-x-2 text-xs text-slate-500 mb-1">
-            <Link href="/" className="hover:text-slate-800 flex items-center gap-1 font-medium">
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Back to Generator</span>
-            </Link>
-          </div>
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-            <Users className="w-6 h-6 text-orange-500" />
-            <span>User Management</span>
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-            Configure system accounts, credentials, and role-based access permissions.
-          </p>
-        </div>
-
-        {/* Action Button & Badges */}
-        <div className="flex flex-wrap items-center gap-2.5">
-          <button
+      {/* Standard Page Header */}
+      <PageHeader
+        title="User Management"
+        description="Configure system accounts, credentials, and role-based access permissions."
+        breadcrumb={
+          <Link href="/" className="hover:text-slate-800 flex items-center gap-1 font-medium">
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Back to Generator</span>
+          </Link>
+        }
+        actions={
+          <Button
             type="button"
+            variant="primary"
+            size="sm"
             onClick={() => setIsCreateModalOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white rounded-xl text-xs font-bold shadow-md shadow-orange-500/15 transition active:scale-95 cursor-pointer"
           >
-            <UserPlus className="w-4 h-4" />
+            <UserPlus className="w-3.5 h-3.5 mr-1.5" />
             <span>Add User</span>
-          </button>
-        </div>
-      </div>
+          </Button>
+        }
+      />
 
       {/* Role Stat Badges */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

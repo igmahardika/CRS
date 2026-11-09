@@ -31,6 +31,7 @@ import {
   Button,
   Badge,
   ConfirmDialog,
+  PageHeader,
 } from '@/components/ui';
 
 interface SavedReport {
@@ -170,32 +171,25 @@ export default function HistoryPage() {
 
   return (
     <div className="space-y-6">
-      {/* Top Header */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center space-x-2 text-xs text-slate-500 mb-1">
-            <Link href="/" className="hover:text-slate-800 flex items-center gap-1 font-medium">
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Back to Generator</span>
-            </Link>
-          </div>
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-            <History className="w-6 h-6 text-orange-500" />
-            <span>Report History & Archive</span>
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-            Search, preview, and download archived MRTG and SLA compliance PDF documents.
-          </p>
-        </div>
-
-        <Link
-          href="/"
-          className="inline-flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white rounded-xl text-xs font-bold transition shadow-xs self-start md:self-auto"
-        >
-          <FileText className="w-4 h-4" />
-          <span>New Report</span>
-        </Link>
-      </div>
+      {/* Standard Page Header */}
+      <PageHeader
+        title="Report History"
+        description="Search, preview, and download archived MRTG and SLA compliance PDF documents."
+        breadcrumb={
+          <Link href="/" className="hover:text-slate-800 flex items-center gap-1 font-medium">
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Back to Generator</span>
+          </Link>
+        }
+        actions={
+          <Link href="/">
+            <Button variant="primary" size="sm">
+              <FileText className="w-3.5 h-3.5 mr-1.5" />
+              <span>New Report</span>
+            </Button>
+          </Link>
+        }
+      />
 
       {/* Summary Stat Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -273,8 +267,8 @@ export default function HistoryPage() {
             <button
               onClick={() => setTypeFilter('ALL')}
               className={`px-3 py-1.5 rounded-lg transition ${typeFilter === 'ALL'
-                  ? 'bg-white text-orange-600 shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
+                ? 'bg-white text-orange-600 shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
                 }`}
             >
               All ({reports.length})
@@ -282,8 +276,8 @@ export default function HistoryPage() {
             <button
               onClick={() => setTypeFilter('SLA')}
               className={`px-3 py-1.5 rounded-lg transition ${typeFilter === 'SLA'
-                  ? 'bg-white text-orange-600 shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
+                ? 'bg-white text-orange-600 shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
                 }`}
             >
               SLA ({slaReports})
@@ -291,8 +285,8 @@ export default function HistoryPage() {
             <button
               onClick={() => setTypeFilter('MRTG')}
               className={`px-3 py-1.5 rounded-lg transition ${typeFilter === 'MRTG'
-                  ? 'bg-white text-orange-600 shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
+                ? 'bg-white text-orange-600 shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
                 }`}
             >
               MRTG ({mrtgReports})
@@ -380,8 +374,8 @@ export default function HistoryPage() {
                       <td className="py-3 px-4">
                         <span
                           className={`px-2 py-0.5 rounded font-bold text-[10px] ${isSla
-                              ? 'bg-blue-100 text-blue-800 border border-blue-200'
-                              : 'bg-orange-100 text-orange-800 border border-orange-200'
+                            ? 'bg-blue-100 text-blue-800 border border-blue-200'
+                            : 'bg-orange-100 text-orange-800 border border-orange-200'
                             }`}
                         >
                           {r.reportType}
@@ -417,8 +411,8 @@ export default function HistoryPage() {
                         {isSla ? (
                           <span
                             className={`px-2 py-0.5 rounded-full font-bold text-[11px] ${(r.onlinePercent || 100) >= (r.targetSla || 99.5)
-                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                : 'bg-rose-50 text-rose-700 border border-rose-200'
+                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                              : 'bg-rose-50 text-rose-700 border border-rose-200'
                               }`}
                           >
                             {(r.onlinePercent || 100).toFixed(2)}%

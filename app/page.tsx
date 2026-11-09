@@ -29,7 +29,7 @@ import { ReportData } from '@/lib/pdf-template';
 import { TicketItem, CaseItem } from '@/lib/sla-calculator';
 import { generateDocumentNumber } from '@/lib/doc-number';
 import { toast } from 'sonner';
-import { ConfirmDialog } from '@/components/ui';
+import { ConfirmDialog, PageHeader, Button } from '@/components/ui';
 import { getSlaByServiceName } from '@/lib/service-sla';
 import { extractNodeFromServiceId } from '@/lib/service-utils';
 
@@ -489,49 +489,41 @@ function GeneratorPageContent() {
 
   return (
     <div className="space-y-6">
-      {/* Title & Mode Switcher Bar */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-            <span>Enterprise Report Generator</span>
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-            Generate compliance-ready A4 MRTG & SLA reports with automated telemetry analytics.
-          </p>
-        </div>
-
-        {/* Report Type Selector Buttons */}
-        <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200 self-start md:self-auto">
-          <button
-            type="button"
-            onClick={() => {
-              setReportType('MRTG');
-              fetchNextDocNumber(month, year, 'MRTG');
-            }}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all ${reportType === 'MRTG'
-                ? 'bg-white text-orange-600 shadow-xs border border-slate-200/60'
-                : 'text-slate-600 hover:text-slate-900'
-              }`}
-          >
-            <FileText className="w-4 h-4 text-orange-500" />
-            <span>MRTG Report (2 Pages)</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setReportType('SLA');
-              fetchNextDocNumber(month, year, 'SLA');
-            }}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all ${reportType === 'SLA'
-                ? 'bg-white text-orange-600 shadow-xs border border-slate-200/60'
-                : 'text-slate-600 hover:text-slate-900'
-              }`}
-          >
-            <ShieldCheck className="w-4 h-4 text-orange-500" />
-            <span>SLA Report (3 Pages)</span>
-          </button>
-        </div>
-      </div>
+      {/* Page Header with Mode Switcher */}
+      <PageHeader
+        title="Report Generator"
+        description="Generate compliance-ready A4 MRTG and SLA reports with automated telemetry."
+        actions={
+          <div className="flex bg-slate-100 p-0.5 rounded-lg border border-slate-200">
+            <Button
+              type="button"
+              variant={reportType === 'MRTG' ? 'secondary' : 'ghost'}
+              size="sm"
+              onClick={() => {
+                setReportType('MRTG');
+                fetchNextDocNumber(month, year, 'MRTG');
+              }}
+              className={reportType === 'MRTG' ? 'text-[#C2410C] font-semibold shadow-xs' : 'text-slate-600'}
+            >
+              <FileText className="w-3.5 h-3.5 mr-1 text-[#EA580C]" />
+              <span>MRTG (2 Pages)</span>
+            </Button>
+            <Button
+              type="button"
+              variant={reportType === 'SLA' ? 'secondary' : 'ghost'}
+              size="sm"
+              onClick={() => {
+                setReportType('SLA');
+                fetchNextDocNumber(month, year, 'SLA');
+              }}
+              className={reportType === 'SLA' ? 'text-[#C2410C] font-semibold shadow-xs' : 'text-slate-600'}
+            >
+              <ShieldCheck className="w-3.5 h-3.5 mr-1 text-[#EA580C]" />
+              <span>SLA (3 Pages)</span>
+            </Button>
+          </div>
+        }
+      />
 
       {/* Main 2-Column Split: Left = Input Form, Right = Live Preview */}
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">

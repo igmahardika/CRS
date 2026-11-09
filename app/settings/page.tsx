@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
+import { PageHeader } from '@/components/ui';
 
 interface AppConfigState {
   mrtgBaseUrl: string;
@@ -227,24 +228,17 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Top Header */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center space-x-2 text-xs text-slate-500 mb-1">
-            <Link href="/" className="hover:text-slate-800 flex items-center gap-1 font-medium">
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Back to Generator</span>
-            </Link>
-          </div>
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-            <Settings className="w-6 h-6 text-orange-500" />
-            <span>System Settings & Templates</span>
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-            Configure MRTG/Cacti & PRTG server credentials, default metrics, and report background assets.
-          </p>
-        </div>
-      </div>
+      {/* Standard Page Header */}
+      <PageHeader
+        title="Settings"
+        description="Configure telemetry server credentials, default metrics, and report background assets."
+        breadcrumb={
+          <Link href="/" className="hover:text-slate-800 flex items-center gap-1 font-medium">
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Back to Generator</span>
+          </Link>
+        }
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* ================= LEFT COLUMN: TEMPLATE ASSETS ================= */}

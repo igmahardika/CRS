@@ -35,6 +35,7 @@ import {
   Input,
   FormField,
   Badge,
+  PageHeader,
 } from '@/components/ui';
 
 // ----------------------------------------------------------------
@@ -307,42 +308,33 @@ export default function DiscoveryPage() {
   // ----------------------------------------------------------------
   return (
     <div className="space-y-5">
-      {/* Header */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs">
-        <div className="flex items-center space-x-2 text-xs text-slate-500 mb-2">
+      {/* Standard Page Header */}
+      <PageHeader
+        title="Network Discovery"
+        description="Discover devices, interfaces, and sensor IDs directly from MRTG (Cacti) and PRTG servers."
+        breadcrumb={
           <Link href="/" className="hover:text-slate-800 flex items-center gap-1 font-medium">
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>Back to Generator</span>
           </Link>
-        </div>
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-              <Radio className="w-6 h-6 text-orange-500" />
-              <span>Network Discovery</span>
-            </h1>
-            <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-              Discover devices, interfaces, and sensor IDs directly from MRTG (Cacti) and PRTG servers.
-            </p>
-          </div>
-
-          {/* Summary Stat Badges */}
-          <div className="flex flex-wrap items-center gap-2 text-xs">
-            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-50 border border-orange-200 rounded-xl text-orange-800 font-semibold">
-              <Network className="w-3.5 h-3.5 text-orange-500" />
+        }
+        actions={
+          <div className="flex items-center gap-2 flex-wrap">
+            <Badge variant="neutral" className="gap-1.5 py-1 px-2.5">
+              <Network className="w-3.5 h-3.5 text-slate-500" />
               <span suppressHydrationWarning>
-                MRTG: {new Intl.NumberFormat('en-US').format(summary.mrtgCount)} interfaces
+                MRTG: <strong className="text-slate-900">{new Intl.NumberFormat('en-US').format(summary.mrtgCount)}</strong>
               </span>
-            </div>
-            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-xl text-blue-800 font-semibold">
-              <Activity className="w-3.5 h-3.5 text-blue-500" />
+            </Badge>
+            <Badge variant="neutral" className="gap-1.5 py-1 px-2.5">
+              <Activity className="w-3.5 h-3.5 text-slate-500" />
               <span suppressHydrationWarning>
-                PRTG: {new Intl.NumberFormat('en-US').format(summary.prtgCount)} sensors
+                PRTG: <strong className="text-slate-900">{new Intl.NumberFormat('en-US').format(summary.prtgCount)}</strong>
               </span>
-            </div>
+            </Badge>
           </div>
-        </div>
-      </div>
+        }
+      />
 
       {/* Engine Selector & Controls */}
       <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3">
