@@ -15,12 +15,7 @@ import {
   Search,
   ArrowLeft,
   X,
-  Lock,
-  Mail,
-  UserCheck,
-  UserX,
-  RefreshCw,
-  Check,
+  RotateCcw,
 } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
@@ -42,6 +37,15 @@ import {
   ConfirmDialog,
   Badge,
   PageHeader,
+  StatCard,
+  EmptyState,
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+  Spinner,
 } from '@/components/ui';
 
 interface UserData {
@@ -257,45 +261,29 @@ export default function UsersManagementPage() {
   const getRoleBadge = (role: string) => {
     switch (role) {
       case 'ADMIN':
-        return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
-            <Shield className="w-3 h-3 text-purple-600" />
-            <span>Administrator</span>
-          </span>
-        );
+        return <Badge variant="neutral">Administrator</Badge>;
       case 'OPERATOR':
-        return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
-            <Sliders className="w-3 h-3 text-blue-600" />
-            <span>Operator</span>
-          </span>
-        );
+        return <Badge variant="neutral">Operator</Badge>;
       case 'VIEWER':
       default:
-        return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
-            <Eye className="w-3 h-3 text-slate-500" />
-            <span>Viewer</span>
-          </span>
-        );
+        return <Badge variant="neutral">Viewer</Badge>;
     }
   };
 
   return (
     <div className="space-y-6">
-      {/* Standard Page Header */}
+      {/* Standard Page Header with single primary button */}
       <PageHeader
         title="User Management"
         description="Configure system accounts, credentials, and role-based access permissions."
         breadcrumb={
-          <Link href="/" className="hover:text-slate-800 flex items-center gap-1 font-medium">
+          <Link href="/" className="hover:text-slate-800 flex items-center gap-1 font-medium text-slate-500">
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>Back to Generator</span>
           </Link>
         }
         actions={
           <Button
-            type="button"
             variant="primary"
             size="sm"
             onClick={() => setIsCreateModalOpen(true)}
@@ -306,71 +294,39 @@ export default function UsersManagementPage() {
         }
       />
 
-      {/* Role Stat Badges */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-xs flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-md bg-slate-100 text-slate-600 flex items-center justify-center font-bold">
-            <Users className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="text-[11px] font-semibold text-slate-500">Total Accounts</div>
-            <div className="text-lg font-black text-slate-900">{users.length}</div>
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-xs flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-md bg-slate-100 text-slate-600 flex items-center justify-center font-bold">
-            <Shield className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="text-[11px] font-semibold text-slate-500">Administrators</div>
-            <div className="text-lg font-black text-slate-900">{adminCount}</div>
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-xs flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-md bg-slate-100 text-slate-600 flex items-center justify-center font-bold">
-            <Sliders className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="text-[11px] font-semibold text-slate-500">Operators</div>
-            <div className="text-lg font-black text-slate-900">{operatorCount}</div>
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-xs flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-md bg-slate-100 text-slate-600 flex items-center justify-center font-bold">
-            <Eye className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="text-[11px] font-semibold text-slate-500">Viewers</div>
-            <div className="text-lg font-black text-slate-900">{viewerCount}</div>
-          </div>
-        </div>
+      {/* Role Stat Cards (Consistent single slate chip style) */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+        <StatCard label="Total Accounts" value={users.length} icon={Users} subtext="Registered users" />
+        <StatCard label="Administrators" value={adminCount} icon={Shield} subtext="Full permissions" />
+        <StatCard label="Operators" value={operatorCount} icon={Sliders} subtext="Report & master access" />
+        <StatCard label="Viewers" value={viewerCount} icon={Eye} subtext="Read-only access" />
       </div>
 
       {/* Feedback Banner */}
       {feedback && (
         <div
-          className={`p-4 rounded-lg border text-xs flex items-center justify-between shadow-xs ${feedback.type === 'success'
+          className={`p-4 rounded-lg border text-xs flex items-center justify-between shadow-xs ${
+            feedback.type === 'success'
               ? 'bg-emerald-50 border-emerald-200 text-emerald-900'
-              : 'bg-rose-50 border-rose-200 text-rose-900'
-            }`}
+              : 'bg-red-50 border-red-200 text-red-900'
+          }`}
         >
           <div className="flex items-center space-x-2">
             {feedback.type === 'success' ? (
               <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
             ) : (
-              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+              <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
             )}
             <span className="font-semibold">{feedback.message}</span>
           </div>
-          <button
+          <Button
+            variant="ghost"
+            size="icon-sm"
             onClick={() => setFeedback(null)}
-            className="text-slate-400 hover:text-slate-700 font-bold ml-2"
+            className="h-6 w-6 text-slate-400 hover:text-slate-700"
           >
-            ✕
-          </button>
+            <X className="w-3.5 h-3.5" />
+          </Button>
         </div>
       )}
 
@@ -378,78 +334,130 @@ export default function UsersManagementPage() {
       <div className="bg-white rounded-lg border border-slate-200 p-4 shadow-xs flex flex-col md:flex-row items-center justify-between gap-3">
         {/* Search */}
         <div className="relative w-full md:max-w-md">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
-          <input
-            type="text"
+          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
+          <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search name, username, or email..."
-            className="w-full pl-10 pr-4 py-2 text-xs sm:text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
+            className="pl-9 pr-9 h-9 text-[13px]"
           />
+          {search && (
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={() => setSearch('')}
+              className="absolute right-1 top-0.5 h-8 w-8 text-slate-400 hover:text-slate-600"
+              title="Clear search"
+            >
+              <X className="w-3.5 h-3.5" />
+            </Button>
+          )}
         </div>
 
         {/* Role Tabs */}
-        <div className="flex bg-slate-100 p-1 rounded-lg border border-slate-200 self-start md:self-auto text-xs font-bold">
-          <button
+        <div className="flex items-center gap-1 self-start md:self-auto">
+          {(search || roleFilter !== 'ALL') && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setSearch('');
+                setRoleFilter('ALL');
+              }}
+              className="text-xs text-[#EA580C] hover:text-[#C2410C] hover:bg-orange-50 h-8 px-2.5 font-medium mr-1"
+            >
+              <RotateCcw className="w-3.5 h-3.5 mr-1" />
+              <span>Reset</span>
+            </Button>
+          )}
+
+          <Button
+            variant={roleFilter === 'ALL' ? 'secondary' : 'ghost'}
+            size="sm"
             onClick={() => setRoleFilter('ALL')}
-            className={`px-3 py-1.5 rounded-md transition ${roleFilter === 'ALL' ? 'bg-white text-orange-600 shadow-xs' : 'text-slate-600 hover:text-slate-900'
-              }`}
+            className={
+              roleFilter === 'ALL'
+                ? 'bg-slate-900 text-white hover:bg-slate-800 hover:text-white border-slate-900 h-8 px-3 text-xs font-semibold'
+                : 'text-slate-600 hover:bg-slate-100 h-8 px-3 text-xs'
+            }
           >
-            All Roles ({users.length})
-          </button>
-          <button
+            <span>All ({users.length})</span>
+          </Button>
+          <Button
+            variant={roleFilter === 'ADMIN' ? 'secondary' : 'ghost'}
+            size="sm"
             onClick={() => setRoleFilter('ADMIN')}
-            className={`px-3 py-1.5 rounded-md transition ${roleFilter === 'ADMIN' ? 'bg-white text-orange-600 shadow-xs' : 'text-slate-600 hover:text-slate-900'
-              }`}
+            className={
+              roleFilter === 'ADMIN'
+                ? 'bg-slate-900 text-white hover:bg-slate-800 hover:text-white border-slate-900 h-8 px-3 text-xs font-semibold'
+                : 'text-slate-600 hover:bg-slate-100 h-8 px-3 text-xs'
+            }
           >
-            Admin ({adminCount})
-          </button>
-          <button
+            <span>Admin ({adminCount})</span>
+          </Button>
+          <Button
+            variant={roleFilter === 'OPERATOR' ? 'secondary' : 'ghost'}
+            size="sm"
             onClick={() => setRoleFilter('OPERATOR')}
-            className={`px-3 py-1.5 rounded-md transition ${roleFilter === 'OPERATOR' ? 'bg-white text-orange-600 shadow-xs' : 'text-slate-600 hover:text-slate-900'
-              }`}
+            className={
+              roleFilter === 'OPERATOR'
+                ? 'bg-slate-900 text-white hover:bg-slate-800 hover:text-white border-slate-900 h-8 px-3 text-xs font-semibold'
+                : 'text-slate-600 hover:bg-slate-100 h-8 px-3 text-xs'
+            }
           >
-            Operator ({operatorCount})
-          </button>
-          <button
+            <span>Operator ({operatorCount})</span>
+          </Button>
+          <Button
+            variant={roleFilter === 'VIEWER' ? 'secondary' : 'ghost'}
+            size="sm"
             onClick={() => setRoleFilter('VIEWER')}
-            className={`px-3 py-1.5 rounded-md transition ${roleFilter === 'VIEWER' ? 'bg-white text-orange-600 shadow-xs' : 'text-slate-600 hover:text-slate-900'
-              }`}
+            className={
+              roleFilter === 'VIEWER'
+                ? 'bg-slate-900 text-white hover:bg-slate-800 hover:text-white border-slate-900 h-8 px-3 text-xs font-semibold'
+                : 'text-slate-600 hover:bg-slate-100 h-8 px-3 text-xs'
+            }
           >
-            Viewer ({viewerCount})
-          </button>
+            <span>Viewer ({viewerCount})</span>
+          </Button>
         </div>
       </div>
 
       {/* Users Table */}
       <div className="bg-white rounded-lg border border-slate-200 shadow-xs overflow-hidden">
         {loading ? (
-          <div className="py-16 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
-            <RefreshCw className="w-4 h-4 animate-spin text-orange-500" />
+          <div className="py-16 text-center text-xs text-slate-500">
+            <Spinner size="md" className="mx-auto text-[#EA580C] mb-2" />
             <span>Loading user accounts...</span>
           </div>
         ) : filteredUsers.length === 0 ? (
-          <div className="py-16 text-center text-slate-500 space-y-2">
-            <Users className="w-10 h-10 text-slate-300 mx-auto" />
-            <div className="text-sm font-bold text-slate-700">No Users Found</div>
-            <p className="text-xs text-slate-400 max-w-sm mx-auto">
-              {search ? 'No accounts match the specified search query.' : 'No registered accounts available.'}
-            </p>
+          <div className="p-4">
+            <EmptyState
+              icon={Users}
+              title="No Users Found"
+              description={
+                search ? 'No accounts match the specified search query.' : 'No registered accounts available.'
+              }
+              actionLabel={search || roleFilter !== 'ALL' ? 'Reset Filters' : undefined}
+              onAction={() => {
+                setSearch('');
+                setRoleFilter('ALL');
+              }}
+            />
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
-              <thead>
-                <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-[11px]">
-                  <th className="py-3.5 px-5">User</th>
-                  <th className="py-3.5 px-4">Email</th>
-                  <th className="py-3.5 px-4">Role</th>
-                  <th className="py-3.5 px-4 text-center">Status</th>
-                  <th className="py-3.5 px-4">Last Sign In</th>
-                  <th className="py-3.5 px-5 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
+          <div className="overflow-x-auto max-h-[700px] overflow-y-auto relative scrollbar-thin">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>User</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead className="text-center">Status</TableHead>
+                  <TableHead>Last Sign In</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {filteredUsers.map((user) => {
                   const initials = user.name
                     .split(' ')
@@ -459,104 +467,98 @@ export default function UsersManagementPage() {
                     .toUpperCase();
 
                   return (
-                    <tr key={user.id} className="hover:bg-slate-50/80 transition">
+                    <TableRow key={user.id}>
                       {/* Name & Username */}
-                      <td className="py-3.5 px-5">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-9 h-9 rounded-md bg-slate-900 text-white font-bold flex items-center justify-center text-xs shrink-0 shadow-xs">
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-lg bg-slate-900 text-white font-semibold flex items-center justify-center text-xs shrink-0 select-none">
                             {initials}
                           </div>
                           <div>
-                            <div className="font-bold text-slate-900 text-sm">{user.name}</div>
+                            <div className="font-semibold text-slate-900">{user.name}</div>
                             <div className="text-slate-400 font-mono text-[11px]">@{user.username}</div>
                           </div>
                         </div>
-                      </td>
+                      </TableCell>
 
                       {/* Email */}
-                      <td className="py-3.5 px-4 text-slate-600 font-medium">
-                        {user.email || <span className="text-slate-300 italic">-</span>}
-                      </td>
+                      <TableCell className="text-slate-600 font-medium">
+                        {user.email || <span className="text-slate-300 font-mono">-</span>}
+                      </TableCell>
 
                       {/* Role Badge */}
-                      <td className="py-3.5 px-4">{getRoleBadge(user.role)}</td>
+                      <TableCell>{getRoleBadge(user.role)}</TableCell>
 
-                      {/* Status Toggle */}
-                      <td className="py-3.5 px-4 text-center">
-                        <button
-                          type="button"
+                      {/* Status Dot */}
+                      <TableCell className="text-center">
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           onClick={() => handleToggleActive(user)}
-                          className={`inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold border transition ${user.isActive
-                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
-                              : 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100'
-                            }`}
+                          className="h-7 px-2 hover:bg-slate-100"
                           title="Toggle active status"
                         >
-                          {user.isActive ? (
-                            <>
-                              <UserCheck className="w-3 h-3 text-emerald-600" />
-                              <span>Active</span>
-                            </>
-                          ) : (
-                            <>
-                              <UserX className="w-3 h-3 text-rose-600" />
-                              <span>Disabled</span>
-                            </>
-                          )}
-                        </button>
-                      </td>
+                          <Badge variant={user.isActive ? 'success' : 'neutral'} dot={true}>
+                            {user.isActive ? 'Active' : 'Disabled'}
+                          </Badge>
+                        </Button>
+                      </TableCell>
 
                       {/* Last Login */}
-                      <td suppressHydrationWarning className="py-3.5 px-4 text-slate-500 text-[11px]">
+                      <TableCell suppressHydrationWarning className="text-slate-500 text-xs">
                         {user.lastLogin ? (
                           new Date(user.lastLogin).toLocaleDateString('en-US', {
                             day: '2-digit',
                             month: 'short',
                             year: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit',
                           })
                         ) : (
-                          <span className="text-slate-300 italic">Never signed in</span>
+                          <span className="text-slate-400">Never</span>
                         )}
-                      </td>
+                      </TableCell>
 
                       {/* Actions */}
-                      <td className="py-3.5 px-5 text-right space-x-1.5 whitespace-nowrap">
-                        <button
-                          onClick={() => setPasswordModalUser(user)}
-                          className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition"
-                          title="Reset Password"
-                        >
-                          <KeyRound className="w-4 h-4 text-amber-600" />
-                        </button>
-                        <button
-                          onClick={() => setEditingUser(user)}
-                          className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition"
-                          title="Edit User"
-                        >
-                          <Edit2 className="w-4 h-4 text-blue-600" />
-                        </button>
-                        <button
-                          onClick={() => setDeletingUser(user)}
-                          className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
-                          title="Delete User"
-                        >
-                          <Trash2 className="w-4 h-4 text-rose-500" />
-                        </button>
-                      </td>
-                    </tr>
+                      <TableCell className="text-right whitespace-nowrap">
+                        <div className="flex items-center justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            onClick={() => setPasswordModalUser(user)}
+                            title="Reset Password"
+                          >
+                            <KeyRound className="w-4 h-4 text-amber-600" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            onClick={() => setEditingUser(user)}
+                            title="Edit User"
+                          >
+                            <Edit2 className="w-4 h-4 text-slate-600" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            onClick={() => setDeletingUser(user)}
+                            title="Delete User"
+                            className="hover:bg-red-50 hover:text-red-700"
+                          >
+                            <Trash2 className="w-4 h-4 text-rose-600" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
                   );
                 })}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         )}
       </div>
 
       {/* ================= MODAL: CREATE USER ================= */}
       <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Create New User</DialogTitle>
           </DialogHeader>
@@ -576,7 +578,7 @@ export default function UsersManagementPage() {
                   value={formData.username}
                   onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                   placeholder="e.g. john.doe"
-                  className="font-mono text-[12px]"
+                  className="font-mono text-xs"
                   required
                 />
               </FormField>
@@ -682,7 +684,10 @@ export default function UsersManagementPage() {
                   checked={editingUser.isActive}
                   onCheckedChange={(c) => setEditingUser({ ...editingUser, isActive: !!c })}
                 />
-                <label htmlFor="editIsActive" className="text-[13px] font-sans text-slate-800 cursor-pointer select-none">
+                <label
+                  htmlFor="editIsActive"
+                  className="text-xs font-sans text-slate-800 cursor-pointer select-none"
+                >
                   Account Active
                 </label>
               </div>
@@ -708,7 +713,7 @@ export default function UsersManagementPage() {
           </DialogHeader>
           {passwordModalUser && (
             <form onSubmit={handleResetPassword} className="space-y-4 py-2">
-              <p className="text-[13px] text-slate-600 font-sans leading-relaxed">
+              <p className="text-xs text-slate-600 font-sans leading-relaxed">
                 Reset login password for <strong className="text-slate-900">{passwordModalUser.name}</strong> (@{passwordModalUser.username}).
               </p>
 
@@ -741,19 +746,11 @@ export default function UsersManagementPage() {
         open={Boolean(deletingUser)}
         onOpenChange={(open) => !open && setDeletingUser(null)}
         title="Delete User Account"
-        description={
-          deletingUser ? (
-            <>
-              Are you sure you want to permanently delete user account <strong className="text-slate-900">{deletingUser.name}</strong> (@{deletingUser.username})? This action cannot be undone.
-            </>
-          ) : null
-        }
-        confirmText="Delete User"
+        description={`Permanently delete user account "${deletingUser?.name}" (@${deletingUser?.username})? This action cannot be undone.`}
+        confirmLabel="Delete User"
         variant="destructive"
-        loading={isDeleting}
         onConfirm={handleConfirmDeleteUser}
       />
     </div>
   );
 }
-
