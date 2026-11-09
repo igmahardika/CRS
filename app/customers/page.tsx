@@ -7,8 +7,6 @@ import {
   Search,
   Edit2,
   Trash2,
-  Building2,
-  Check,
   ArrowLeft,
   Download,
   Upload,
@@ -17,7 +15,6 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
-  Filter,
   RefreshCw,
   SlidersHorizontal,
   ShieldCheck,
@@ -26,11 +23,11 @@ import {
   ArrowDown,
   SearchX,
   RotateCcw,
-  Radio,
   ChevronDown,
+  X,
 } from 'lucide-react';
 import Link from 'next/link';
-import { CustomerData } from '@/components/CustomerModal';
+import { CustomerData } from '@/components/CustomerFormModal';
 import CustomerFormModal from '@/components/CustomerFormModal';
 import ExcelImportModal from '@/components/ExcelImportModal';
 import { extractNodeFromServiceId } from '@/lib/service-utils';
@@ -39,12 +36,27 @@ import {
   ConfirmDialog,
   PageHeader,
   Button,
+  Input,
+  Checkbox,
+  Badge,
+  EmptyState,
+  Spinner,
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
 } from '@/components/ui';
-import { getSlaByServiceName } from '@/lib/service-sla';
 
 export default function CustomersPage() {
   const [customers, setCustomers] = useState<CustomerData[]>([]);
@@ -200,7 +212,7 @@ export default function CustomersPage() {
 
   // Feature: Auto-sync all customer nodes in database based on Service ID
   const handleAutoSyncAllNodes = () => {
-    const toUpdate = customers.filter(c => {
+    const toUpdate = customers.filter((c) => {
       const expected = extractNodeFromServiceId(c.serviceId);
       return expected !== c.nodeCount;
     });
@@ -303,15 +315,23 @@ export default function CustomersPage() {
   }, [customers, search, filterTab, serviceFilter, slaFilter]);
 
   // Counters
-  const countWithCacti = customers.filter(c => Boolean(c.cactiGraphId || (c.graphType === 'MRTG' && c.graphId))).length;
-  const countWithPrtg = customers.filter(c => Boolean(c.prtgSensorId || (c.graphType === 'PRTG' && c.graphId))).length;
-  const countWithBoth = customers.filter(c => Boolean(c.cactiGraphId || (c.graphType === 'MRTG' && c.graphId)) && Boolean(c.prtgSensorId || (c.graphType === 'PRTG' && c.graphId))).length;
-  const countNoGraph = customers.filter(c => !c.cactiGraphId && !c.prtgSensorId && !c.graphId).length;
+  const countWithCacti = customers.filter(
+    (c) => Boolean(c.cactiGraphId || (c.graphType === 'MRTG' && c.graphId))
+  ).length;
+  const countWithPrtg = customers.filter(
+    (c) => Boolean(c.prtgSensorId || (c.graphType === 'PRTG' && c.graphId))
+  ).length;
+  const countWithBoth = customers.filter(
+    (c) =>
+      Boolean(c.cactiGraphId || (c.graphType === 'MRTG' && c.graphId)) &&
+      Boolean(c.prtgSensorId || (c.graphType === 'PRTG' && c.graphId))
+  ).length;
+  const countNoGraph = customers.filter((c) => !c.cactiGraphId && !c.prtgSensorId && !c.graphId).length;
 
-  const countSla995 = customers.filter(c => c.targetSla === 99.5).length;
-  const countSla98 = customers.filter(c => c.targetSla === 98.0).length;
-  const countSla95 = customers.filter(c => c.targetSla === 95.0).length;
-  const countNoSla = customers.filter(c => !c.targetSla || c.targetSla === 0).length;
+  const countSla995 = customers.filter((c) => c.targetSla === 99.5).length;
+  const countSla98 = customers.filter((c) => c.targetSla === 98.0).length;
+  const countSla95 = customers.filter((c) => c.targetSla === 95.0).length;
+  const countNoSla = customers.filter((c) => !c.targetSla || c.targetSla === 0).length;
 
   // Sorted dataset
   const sorted = useMemo(() => {
@@ -416,6 +436,14 @@ export default function CustomersPage() {
     setCurrentPage(1);
   }, [search, filterTab, serviceFilter, slaFilter, pageSize, sortColumn, sortDirection]);
 
+  const filterOptions: { id: typeof filterTab; label: string; count: number }[] = [
+    { id: 'ALL', label: 'All', count: customers.length },
+    { id: 'HAS_CACTI', label: 'Has Cacti', count: countWithCacti },
+    { id: 'HAS_PRTG', label: 'Has PRTG', count: countWithPrtg },
+    { id: 'HAS_BOTH', label: 'Dual Engine', count: countWithBoth },
+    { id: 'NO_GRAPH', label: 'Unconfigured', count: countNoGraph },
+  ];
+
   return (
     <div className="space-y-6">
       {/* Standard Page Header */}
@@ -423,7 +451,7 @@ export default function CustomersPage() {
         title="Customer Directory"
         description="Manage customer records, telemetry configurations, and SLA targets."
         breadcrumb={
-          <Link href="/" className="hover:text-slate-800 flex items-center gap-1 font-medium">
+          <Link href="/" className="hover:text-slate-800 flex items-center gap-1 font-medium text-slate-500">
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>Back to Generator</span>
           </Link>
@@ -499,174 +527,155 @@ export default function CustomersPage() {
         <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
           {/* Search Box */}
           <div className="relative flex-1">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
-            <input
-              type="text"
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
+            <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by customer name, CID, SID, or sensor ID..."
-              className="w-full pl-10 pr-4 py-2 text-xs sm:text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
+              className="pl-9 pr-9 h-9 text-[13px]"
             />
             {search && (
-              <button
-                type="button"
+              <Button
+                variant="ghost"
+                size="icon-sm"
                 onClick={() => setSearch('')}
-                className="absolute right-3 top-2.5 text-xs text-slate-400 hover:text-slate-600 font-bold"
+                className="absolute right-1 top-0.5 h-8 w-8 text-slate-400 hover:text-slate-600"
+                title="Clear search"
               >
-                ✕
-              </button>
+                <X className="w-3.5 h-3.5" />
+              </Button>
             )}
           </div>
 
-          {/* Service Plan Dropdown Filter */}
-          <div className="flex items-center space-x-2 shrink-0">
-            <div className="relative flex items-center">
-              <SlidersHorizontal className="w-3.5 h-3.5 text-slate-400 absolute left-3 pointer-events-none" />
-              <select
-                value={serviceFilter}
-                onChange={(e) => setServiceFilter(e.target.value)}
-                className="pl-8 pr-8 py-2 text-xs font-semibold bg-white border border-slate-300 rounded-lg text-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition appearance-none cursor-pointer"
-                title="Filter by service plan"
-              >
-                <option value="ALL">All Plans ({customers.length})</option>
+          {/* Dropdown Filters */}
+          <div className="flex items-center gap-2 shrink-0">
+            {/* Service Plan Filter */}
+            <Select value={serviceFilter} onValueChange={setServiceFilter}>
+              <SelectTrigger selectSize="sm" className="w-[190px] h-9">
+                <div className="flex items-center gap-1.5 truncate">
+                  <SlidersHorizontal className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  <SelectValue placeholder="All Plans" />
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">All Plans ({customers.length})</SelectItem>
                 {uniqueServices.map((serviceName) => {
-                  const count = customers.filter(c => c.serviceName === serviceName).length;
+                  const count = customers.filter((c) => c.serviceName === serviceName).length;
                   return (
-                    <option key={serviceName} value={serviceName}>
+                    <SelectItem key={serviceName} value={serviceName}>
                       {serviceName} ({count})
-                    </option>
+                    </SelectItem>
                   );
                 })}
-              </select>
-              <div className="pointer-events-none absolute right-2.5 text-[10px] text-slate-400">▼</div>
-            </div>
+              </SelectContent>
+            </Select>
 
-            {/* Target SLA Dropdown Filter */}
-            <div className="relative flex items-center">
-              <ShieldCheck className="w-3.5 h-3.5 text-slate-400 absolute left-3 pointer-events-none" />
-              <select
-                value={slaFilter}
-                onChange={(e) => setSlaFilter(e.target.value as 'ALL' | '99.5' | '98' | '95' | 'NO_SLA')}
-                className="pl-8 pr-8 py-2 text-xs font-semibold bg-white border border-slate-300 rounded-lg text-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition appearance-none cursor-pointer"
-                title="Filter by SLA target"
-              >
-                <option value="ALL">All SLAs ({customers.length})</option>
-                <option value="99.5">SLA 99.5% ({countSla995})</option>
-                <option value="98">SLA 98.0% ({countSla98})</option>
-                <option value="95">SLA 95.0% ({countSla95})</option>
-                <option value="NO_SLA">No SLA ({countNoSla})</option>
-              </select>
-              <div className="pointer-events-none absolute right-2.5 text-[10px] text-slate-400">▼</div>
-            </div>
+            {/* Target SLA Filter */}
+            <Select
+              value={slaFilter}
+              onValueChange={(val) => setSlaFilter(val as 'ALL' | '99.5' | '98' | '95' | 'NO_SLA')}
+            >
+              <SelectTrigger selectSize="sm" className="w-[160px] h-9">
+                <div className="flex items-center gap-1.5 truncate">
+                  <ShieldCheck className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  <SelectValue placeholder="All SLAs" />
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">All SLAs ({customers.length})</SelectItem>
+                <SelectItem value="99.5">SLA 99.5% ({countSla995})</SelectItem>
+                <SelectItem value="98">SLA 98.0% ({countSla98})</SelectItem>
+                <SelectItem value="95">SLA 95.0% ({countSla95})</SelectItem>
+                <SelectItem value="NO_SLA">No SLA ({countNoSla})</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
-        {/* Quick Filter Tabs & Active Filter Badges */}
+        {/* Quick Filter Tabs & Active Filter Actions */}
         <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100">
-          <div className="flex flex-wrap items-center gap-1.5 text-xs font-semibold">
-            <button
-              type="button"
-              onClick={() => setFilterTab('ALL')}
-              className={`px-3 py-1.5 rounded-lg transition ${filterTab === 'ALL'
-                ? 'bg-slate-900 text-white shadow-2xs'
-                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                }`}
-            >
-              All ({customers.length})
-            </button>
-            <button
-              type="button"
-              onClick={() => setFilterTab('HAS_CACTI')}
-              className={`px-3 py-1.5 rounded-lg transition ${filterTab === 'HAS_CACTI'
-                ? 'bg-orange-600 text-white shadow-2xs'
-                : 'bg-orange-50 text-orange-700 hover:bg-orange-100'
-                }`}
-            >
-              Has Cacti ({countWithCacti})
-            </button>
-            <button
-              type="button"
-              onClick={() => setFilterTab('HAS_PRTG')}
-              className={`px-3 py-1.5 rounded-lg transition ${filterTab === 'HAS_PRTG'
-                ? 'bg-blue-600 text-white shadow-2xs'
-                : 'bg-blue-50 text-blue-700 hover:bg-blue-100'
-                }`}
-            >
-              Has PRTG ({countWithPrtg})
-            </button>
-            <button
-              type="button"
-              onClick={() => setFilterTab('HAS_BOTH')}
-              className={`px-3 py-1.5 rounded-lg transition ${filterTab === 'HAS_BOTH'
-                ? 'bg-emerald-600 text-white shadow-2xs'
-                : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
-                }`}
-            >
-              Dual Engine ({countWithBoth})
-            </button>
-            <button
-              type="button"
-              onClick={() => setFilterTab('NO_GRAPH')}
-              className={`px-3 py-1.5 rounded-lg transition ${filterTab === 'NO_GRAPH'
-                ? 'bg-slate-700 text-white shadow-2xs'
-                : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-                }`}
-            >
-              Unconfigured ({countNoGraph})
-            </button>
+          <div className="flex flex-wrap items-center gap-1.5">
+            {filterOptions.map((opt) => {
+              const isActive = filterTab === opt.id;
+              return (
+                <Button
+                  key={opt.id}
+                  variant={isActive ? 'secondary' : 'ghost'}
+                  size="sm"
+                  onClick={() => setFilterTab(opt.id)}
+                  className={
+                    isActive
+                      ? 'bg-slate-900 text-white hover:bg-slate-800 hover:text-white border-slate-900 h-7 px-2.5 text-xs font-semibold'
+                      : 'text-slate-600 hover:bg-slate-100 h-7 px-2.5 text-xs'
+                  }
+                >
+                  <span>{opt.label}</span>
+                  <span
+                    className={`ml-1 text-[11px] font-mono tabular-nums ${
+                      isActive ? 'text-slate-300' : 'text-slate-400'
+                    }`}
+                  >
+                    ({opt.count})
+                  </span>
+                </Button>
+              );
+            })}
           </div>
 
-          {/* Reset Filters button if active */}
+          {/* Reset Filters button */}
           {hasActiveFilters && (
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={handleResetAllFilters}
-              className="inline-flex items-center gap-1.5 text-xs text-orange-600 hover:text-orange-700 font-semibold hover:underline"
+              className="text-xs text-[#EA580C] hover:text-[#C2410C] hover:bg-orange-50 h-7 px-2 font-medium"
             >
-              <RotateCcw className="w-3 h-3" />
+              <RotateCcw className="w-3 h-3 mr-1" />
               <span>Reset Filters</span>
-            </button>
+            </Button>
           )}
         </div>
       </div>
 
       {/* Batch Selection Action Bar */}
       {selectedIds.size > 0 && (
-        <div className="bg-orange-50 border border-orange-200 rounded-lg p-3.5 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3 animate-in fade-in slide-in-from-top-2">
+        <div className="bg-[#FFF7ED] border border-orange-200 rounded-lg p-3 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3 animate-in fade-in slide-in-from-top-1">
           <div className="flex flex-wrap items-center gap-2 text-xs text-orange-950">
-            <span className="font-bold flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-orange-500 animate-pulse" />
+            <span className="font-semibold flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-[#EA580C] animate-pulse" />
               {selectedIds.size.toLocaleString()} customer(s) selected
             </span>
             {selectedIds.size < filtered.length && (
-              <button
-                type="button"
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={handleSelectAllFiltered}
-                className="font-bold text-orange-700 underline hover:text-orange-900 cursor-pointer ml-1"
+                className="text-xs h-6 px-1.5 text-[#C2410C] hover:text-[#EA580C] hover:bg-orange-100 font-semibold underline"
               >
                 Select all {filtered.length.toLocaleString()} customers in view
-              </button>
+              </Button>
             )}
             <span className="text-orange-300 hidden sm:inline">•</span>
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={handleClearSelection}
-              className="text-slate-600 hover:text-slate-900 font-semibold cursor-pointer underline"
+              className="text-xs h-6 px-1.5 text-slate-600 hover:text-slate-900 hover:bg-orange-100 font-medium underline"
             >
               Clear selection
-            </button>
+            </Button>
           </div>
 
           <div className="flex items-center gap-2 self-end sm:self-auto">
-            <button
-              type="button"
+            <Button
+              variant="destructive"
+              size="sm"
               onClick={handleBulkDelete}
-              disabled={isBulkDeleting}
-              className="inline-flex items-center gap-1.5 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold shadow-xs transition active:scale-95 disabled:opacity-50 cursor-pointer"
+              loading={isBulkDeleting}
             >
-              <Trash2 className="w-3.5 h-3.5" />
-              <span>{isBulkDeleting ? 'Deleting...' : `Delete Selected (${selectedIds.size})`}</span>
-            </button>
+              <Trash2 className="w-3.5 h-3.5 mr-1.5" />
+              <span>Delete Selected ({selectedIds.size})</span>
+            </Button>
           </div>
         </div>
       )}
@@ -674,284 +683,289 @@ export default function CustomersPage() {
       {/* Customer Table Container */}
       <div className="bg-white rounded-lg border border-slate-200 shadow-xs overflow-hidden">
         {loading ? (
-          <div className="py-16 text-center text-xs text-slate-400">
-            <RefreshCw className="w-5 h-5 animate-spin mx-auto text-orange-500 mb-2" />
+          <div className="py-16 text-center text-xs text-slate-500">
+            <Spinner size="md" className="mx-auto text-[#EA580C] mb-2" />
             <span>Loading customers...</span>
           </div>
         ) : customers.length === 0 ? (
-          <div className="py-16 px-4 text-center flex flex-col items-center justify-center">
-            <div className="w-12 h-12 rounded-lg bg-orange-50 border border-orange-100 flex items-center justify-center text-orange-500 mb-3 shadow-xs">
-              <Users className="w-6 h-6" />
-            </div>
-            <h3 className="text-sm font-bold text-slate-800 mb-1">
-              Customer Directory is Empty
-            </h3>
-            <p className="text-xs text-slate-500 max-w-sm mb-4 leading-relaxed">
-              No customer records available. Import your 4-column Excel file or add a customer record manually.
-            </p>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setIsImportModalOpen(true)}
-                className="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow-xs transition cursor-pointer"
-              >
-                <Upload className="w-3.5 h-3.5" />
-                <span>Import Excel</span>
-              </button>
-              <button
-                type="button"
-                onClick={handleOpenAdd}
-                className="inline-flex items-center gap-1.5 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-xs font-semibold shadow-xs transition cursor-pointer"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Add Customer</span>
-              </button>
-            </div>
+          <div className="p-4">
+            <EmptyState
+              icon={Users}
+              title="Customer Directory is Empty"
+              description="No customer records available. Import your 4-column Excel file or add a customer record manually."
+              action={
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => setIsImportModalOpen(true)}
+                  >
+                    <Upload className="w-3.5 h-3.5 mr-1.5" />
+                    <span>Import Excel</span>
+                  </Button>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={handleOpenAdd}
+                  >
+                    <Plus className="w-3.5 h-3.5 mr-1.5" />
+                    <span>Add Customer</span>
+                  </Button>
+                </div>
+              }
+            />
           </div>
         ) : filtered.length === 0 ? (
-          <div className="py-16 px-4 text-center flex flex-col items-center justify-center">
-            <div className="w-12 h-12 rounded-lg bg-orange-50 border border-orange-100 flex items-center justify-center text-orange-500 mb-3 shadow-xs">
-              <SearchX className="w-6 h-6" />
-            </div>
-            <h3 className="text-sm font-bold text-slate-800 mb-1">
-              No Customers Found
-            </h3>
-            <p className="text-xs text-slate-500 max-w-sm mb-4 leading-relaxed">
-              {search ? (
-                <>No records matching keyword &quot;<span className="font-semibold text-slate-700">{search}</span>&quot;.</>
-              ) : (
-                'Current filter combination returned zero records.'
-              )}
-            </p>
-            {hasActiveFilters && (
-              <button
-                type="button"
-                onClick={handleResetAllFilters}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-orange-500 hover:bg-orange-600 active:scale-95 text-white rounded-lg text-xs font-semibold shadow-xs transition"
-              >
-                <RotateCcw className="w-3.5 h-3.5" />
-                <span>Reset Filters</span>
-              </button>
-            )}
+          <div className="p-4">
+            <EmptyState
+              icon={SearchX}
+              title="No Customers Found"
+              description={
+                search
+                  ? `No records matching keyword "${search}".`
+                  : 'Current filter combination returned zero records.'
+              }
+              actionLabel={hasActiveFilters ? 'Reset Filters' : undefined}
+              onAction={hasActiveFilters ? handleResetAllFilters : undefined}
+            />
           </div>
         ) : (
           <div className="overflow-x-auto max-h-[700px] overflow-y-auto relative scrollbar-thin">
-            <table className="w-full text-left text-xs border-collapse">
-              <thead className="sticky top-0 bg-slate-50/95 backdrop-blur-xs z-10 border-b border-slate-200 shadow-xs">
-                <tr className="text-slate-600 font-semibold uppercase tracking-wider text-[11px]">
-                  <th className="py-3.5 px-3 w-10 text-center">
-                    <input
-                      type="checkbox"
-                      checked={isAllPageSelected}
-                      ref={(el) => {
-                        if (el) el.indeterminate = isSomePageSelected && !isAllPageSelected;
-                      }}
-                      onChange={handleToggleSelectPage}
-                      className="w-4 h-4 rounded border-slate-300 text-orange-600 focus:ring-orange-500 cursor-pointer"
-                      title={isAllPageSelected ? 'Deselect this page' : 'Select all on this page'}
-                    />
-                  </th>
-                  <th className="py-3.5 px-4 w-12 text-center">No</th>
-                  <th
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-10 text-center">
+                    <div className="flex items-center justify-center">
+                      <Checkbox
+                        checked={isAllPageSelected ? true : isSomePageSelected ? 'indeterminate' : false}
+                        onCheckedChange={handleToggleSelectPage}
+                        aria-label="Select all customers on this page"
+                      />
+                    </div>
+                  </TableHead>
+                  <TableHead className="w-12 text-center font-mono">No</TableHead>
+                  <TableHead
                     onClick={() => handleSort('customerName')}
-                    className="py-3.5 px-4 cursor-pointer select-none hover:bg-slate-100/70 hover:text-slate-900 transition group"
+                    className="cursor-pointer select-none hover:bg-slate-100/70 hover:text-slate-900 transition group"
                     title="Sort by Customer Name"
                   >
                     <div className="flex items-center gap-1.5">
                       <span>Customer Name</span>
                       {sortColumn === 'customerName' ? (
-                        sortDirection === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-orange-600 shrink-0" /> : <ArrowDown className="w-3.5 h-3.5 text-orange-600 shrink-0" />
+                        sortDirection === 'asc' ? (
+                          <ArrowUp className="w-3.5 h-3.5 text-[#EA580C] shrink-0" />
+                        ) : (
+                          <ArrowDown className="w-3.5 h-3.5 text-[#EA580C] shrink-0" />
+                        )
                       ) : (
                         <ArrowUpDown className="w-3 h-3 text-slate-300 opacity-0 group-hover:opacity-100 transition shrink-0" />
                       )}
                     </div>
-                  </th>
-                  <th
+                  </TableHead>
+                  <TableHead
                     onClick={() => handleSort('customerId')}
-                    className="py-3.5 px-4 cursor-pointer select-none hover:bg-slate-100/70 hover:text-slate-900 transition group"
+                    className="cursor-pointer select-none hover:bg-slate-100/70 hover:text-slate-900 transition group"
                     title="Sort by Customer ID"
                   >
                     <div className="flex items-center gap-1.5">
                       <span>Customer ID</span>
                       {sortColumn === 'customerId' ? (
-                        sortDirection === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-orange-600 shrink-0" /> : <ArrowDown className="w-3.5 h-3.5 text-orange-600 shrink-0" />
+                        sortDirection === 'asc' ? (
+                          <ArrowUp className="w-3.5 h-3.5 text-[#EA580C] shrink-0" />
+                        ) : (
+                          <ArrowDown className="w-3.5 h-3.5 text-[#EA580C] shrink-0" />
+                        )
                       ) : (
                         <ArrowUpDown className="w-3 h-3 text-slate-300 opacity-0 group-hover:opacity-100 transition shrink-0" />
                       )}
                     </div>
-                  </th>
-                  <th
+                  </TableHead>
+                  <TableHead
                     onClick={() => handleSort('serviceId')}
-                    className="py-3.5 px-4 cursor-pointer select-none hover:bg-slate-100/70 hover:text-slate-900 transition group"
+                    className="cursor-pointer select-none hover:bg-slate-100/70 hover:text-slate-900 transition group"
                     title="Sort by Service ID"
                   >
                     <div className="flex items-center gap-1.5">
                       <span>Service ID</span>
                       {sortColumn === 'serviceId' ? (
-                        sortDirection === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-orange-600 shrink-0" /> : <ArrowDown className="w-3.5 h-3.5 text-orange-600 shrink-0" />
+                        sortDirection === 'asc' ? (
+                          <ArrowUp className="w-3.5 h-3.5 text-[#EA580C] shrink-0" />
+                        ) : (
+                          <ArrowDown className="w-3.5 h-3.5 text-[#EA580C] shrink-0" />
+                        )
                       ) : (
                         <ArrowUpDown className="w-3 h-3 text-slate-300 opacity-0 group-hover:opacity-100 transition shrink-0" />
                       )}
                     </div>
-                  </th>
-                  <th
+                  </TableHead>
+                  <TableHead
                     onClick={() => handleSort('serviceName')}
-                    className="py-3.5 px-4 cursor-pointer select-none hover:bg-slate-100/70 hover:text-slate-900 transition group"
+                    className="cursor-pointer select-none hover:bg-slate-100/70 hover:text-slate-900 transition group"
                     title="Sort by Service Plan"
                   >
                     <div className="flex items-center gap-1.5">
                       <span>Service Plan</span>
                       {sortColumn === 'serviceName' ? (
-                        sortDirection === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-orange-600 shrink-0" /> : <ArrowDown className="w-3.5 h-3.5 text-orange-600 shrink-0" />
+                        sortDirection === 'asc' ? (
+                          <ArrowUp className="w-3.5 h-3.5 text-[#EA580C] shrink-0" />
+                        ) : (
+                          <ArrowDown className="w-3.5 h-3.5 text-[#EA580C] shrink-0" />
+                        )
                       ) : (
                         <ArrowUpDown className="w-3 h-3 text-slate-300 opacity-0 group-hover:opacity-100 transition shrink-0" />
                       )}
                     </div>
-                  </th>
-                  <th
+                  </TableHead>
+                  <TableHead
                     onClick={() => handleSort('nodeCount')}
-                    className="py-3.5 px-4 text-center cursor-pointer select-none hover:bg-slate-100/70 hover:text-slate-900 transition group"
+                    className="text-center cursor-pointer select-none hover:bg-slate-100/70 hover:text-slate-900 transition group"
                     title="Sort by Nodes"
                   >
                     <div className="flex items-center justify-center gap-1">
                       <span>Nodes</span>
                       {sortColumn === 'nodeCount' ? (
-                        sortDirection === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-orange-600 shrink-0" /> : <ArrowDown className="w-3.5 h-3.5 text-orange-600 shrink-0" />
+                        sortDirection === 'asc' ? (
+                          <ArrowUp className="w-3.5 h-3.5 text-[#EA580C] shrink-0" />
+                        ) : (
+                          <ArrowDown className="w-3.5 h-3.5 text-[#EA580C] shrink-0" />
+                        )
                       ) : (
                         <ArrowUpDown className="w-3 h-3 text-slate-300 opacity-0 group-hover:opacity-100 transition shrink-0" />
                       )}
                     </div>
-                  </th>
-                  <th
+                  </TableHead>
+                  <TableHead
                     onClick={() => handleSort('targetSla')}
-                    className="py-3.5 px-4 text-center cursor-pointer select-none hover:bg-slate-100/70 hover:text-slate-900 transition group"
+                    className="text-center cursor-pointer select-none hover:bg-slate-100/70 hover:text-slate-900 transition group"
                     title="Sort by Target SLA"
                   >
                     <div className="flex items-center justify-center gap-1">
                       <span>Target SLA</span>
                       {sortColumn === 'targetSla' ? (
-                        sortDirection === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-orange-600 shrink-0" /> : <ArrowDown className="w-3.5 h-3.5 text-orange-600 shrink-0" />
+                        sortDirection === 'asc' ? (
+                          <ArrowUp className="w-3.5 h-3.5 text-[#EA580C] shrink-0" />
+                        ) : (
+                          <ArrowDown className="w-3.5 h-3.5 text-[#EA580C] shrink-0" />
+                        )
                       ) : (
                         <ArrowUpDown className="w-3 h-3 text-slate-300 opacity-0 group-hover:opacity-100 transition shrink-0" />
                       )}
                     </div>
-                  </th>
-                  <th className="py-3.5 px-4">Cacti Graph ID</th>
-                  <th className="py-3.5 px-4">PRTG Sensor ID</th>
-                  <th className="py-3.5 px-4">Direction</th>
-                  <th className="py-3.5 px-4 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
+                  </TableHead>
+                  <TableHead>Cacti Graph ID</TableHead>
+                  <TableHead>PRTG Sensor ID</TableHead>
+                  <TableHead>Direction</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {paginatedCustomers.map((c, idx) => {
                   const isSelected = Boolean(c.id && selectedIds.has(c.id));
                   return (
-                    <tr
+                    <TableRow
                       key={c.id || idx}
-                      className={`transition ${isSelected ? 'bg-orange-50/70 hover:bg-orange-100/60' : 'hover:bg-slate-50/80'
-                        }`}
+                      className={isSelected ? 'bg-orange-50/60 hover:bg-orange-100/50' : undefined}
                     >
-                      <td className="py-3 px-3 text-center" onClick={(e) => e.stopPropagation()}>
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          onChange={() => c.id && handleToggleSelectOne(c.id)}
-                          className="w-4 h-4 rounded border-slate-300 text-orange-600 focus:ring-orange-500 cursor-pointer"
-                          aria-label={`Select ${c.customerName}`}
-                        />
-                      </td>
-                      <td className="py-3 px-4 text-center text-slate-400 font-mono text-[11px]">
+                      <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-center">
+                          <Checkbox
+                            checked={isSelected}
+                            onCheckedChange={() => c.id && handleToggleSelectOne(c.id)}
+                            aria-label={`Select ${c.customerName}`}
+                          />
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center text-slate-400 font-mono text-[11px] tabular-nums">
                         {startIndex + idx + 1}
-                      </td>
-                      <td className="py-3 px-4 font-bold text-slate-900">{c.customerName}</td>
-                      <td className="py-3 px-4 font-mono text-slate-600">{c.customerId}</td>
-                      <td className="py-3 px-4 font-mono text-slate-600">{c.serviceId}</td>
-                      <td className="py-3 px-4 text-slate-700">
+                      </TableCell>
+                      <TableCell className="font-semibold text-slate-900">{c.customerName}</TableCell>
+                      <TableCell className="font-mono text-slate-600 text-xs tabular-nums">{c.customerId}</TableCell>
+                      <TableCell className="font-mono text-slate-600 text-xs tabular-nums">{c.serviceId}</TableCell>
+                      <TableCell className="text-slate-700">
                         <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-medium text-[11px]">
                           {c.serviceName}
                         </span>
-                      </td>
-                      <td className="py-3 px-4 text-center">
-                        <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-50 text-blue-700 font-bold text-xs" title={`Node otomatis dari Service ID: ${c.nodeCount}`}>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <span
+                          className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-blue-50 text-blue-700 font-mono font-semibold text-[11px] tabular-nums"
+                          title={`Node from Service ID: ${c.nodeCount}`}
+                        >
                           {c.nodeCount}
                         </span>
-                      </td>
-                      <td className="py-3 px-4 text-center">
+                      </TableCell>
+                      <TableCell className="text-center">
                         {c.targetSla === 99.5 ? (
-                          <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold text-[11px]" title="SLA 99.5%">
-                            99.5%
-                          </span>
+                          <Badge variant="success">99.5%</Badge>
                         ) : c.targetSla === 98.0 ? (
-                          <span className="px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 font-bold text-[11px]" title="SLA 98.0%">
-                            98%
-                          </span>
+                          <Badge variant="info">98%</Badge>
                         ) : c.targetSla === 95.0 ? (
-                          <span className="px-2.5 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200 font-bold text-[11px]" title="SLA 95.0%">
-                            95%
-                          </span>
+                          <Badge variant="warning">95%</Badge>
                         ) : (
-                          <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200 font-medium text-[11px]" title="No SLA">
-                            No SLA
-                          </span>
+                          <Badge variant="neutral">No SLA</Badge>
                         )}
-                      </td>
-                      <td className="py-3 px-4">
-                        {(c.cactiGraphId || (c.graphType === 'MRTG' && c.graphId)) ? (
-                          <span className="px-2 py-0.5 rounded font-mono font-bold text-[11px] bg-orange-100 text-orange-700 border border-orange-200">
+                      </TableCell>
+                      <TableCell>
+                        {c.cactiGraphId || (c.graphType === 'MRTG' && c.graphId) ? (
+                          <span className="px-1.5 py-0.5 rounded font-mono font-medium text-[11px] bg-orange-50 text-orange-700 border border-orange-200">
                             {c.cactiGraphId || c.graphId}
                           </span>
                         ) : (
-                          <span className="text-slate-300 italic font-mono">-</span>
+                          <span className="text-slate-300 font-mono">-</span>
                         )}
-                      </td>
-                      <td className="py-3 px-4">
-                        {(c.prtgSensorId || (c.graphType === 'PRTG' && c.graphId)) ? (
-                          <span className="px-2 py-0.5 rounded font-mono font-bold text-[11px] bg-blue-100 text-blue-700 border border-blue-200">
+                      </TableCell>
+                      <TableCell>
+                        {c.prtgSensorId || (c.graphType === 'PRTG' && c.graphId) ? (
+                          <span className="px-1.5 py-0.5 rounded font-mono font-medium text-[11px] bg-blue-50 text-blue-700 border border-blue-200">
                             {c.prtgSensorId || c.graphId}
                           </span>
                         ) : (
-                          <span className="text-slate-300 italic font-mono">-</span>
+                          <span className="text-slate-300 font-mono">-</span>
                         )}
-                      </td>
-                      <td className="py-3 px-4">
-                        <span
-                          className={`px-2 py-0.5 rounded text-[10px] font-semibold ${c.trafficDirection === 'REVERSED'
-                            ? 'bg-amber-100 text-amber-800 border border-amber-200'
-                            : 'bg-blue-50 text-blue-700 border border-blue-200'
-                            }`}
-                        >
-                          {c.trafficDirection || 'NORMAL'}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-right space-x-1.5 whitespace-nowrap">
-                        <Link
-                          href={`/?serviceId=${encodeURIComponent(c.serviceId)}&customerId=${encodeURIComponent(c.customerId)}`}
-                          className="inline-flex items-center space-x-1 px-2.5 py-1 bg-orange-50 hover:bg-orange-100 text-orange-700 border border-orange-200 rounded-lg text-[11px] font-semibold transition"
-                          title="Use customer service in Report Generator"
-                        >
-                          <span>Select</span>
-                          <ExternalLink className="w-3 h-3" />
-                        </Link>
-                        <button
-                          onClick={() => handleOpenEdit(c)}
-                          className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition"
-                          title="Edit Customer"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => setCustomerToDelete({ id: c.id!, name: c.customerName })}
-                          className="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition"
-                          title="Delete Customer"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </td>
-                    </tr>
+                      </TableCell>
+                      <TableCell>
+                        {c.trafficDirection === 'REVERSED' ? (
+                          <Badge variant="warning">REVERSED</Badge>
+                        ) : (
+                          <Badge variant="neutral">NORMAL</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right whitespace-nowrap">
+                        <div className="flex items-center justify-end gap-1">
+                          <Link
+                            href={`/?serviceId=${encodeURIComponent(c.serviceId)}&customerId=${encodeURIComponent(
+                              c.customerId
+                            )}`}
+                            className="inline-flex items-center gap-1 px-2 py-1 bg-white hover:bg-orange-50 text-slate-700 hover:text-orange-700 border border-slate-200 hover:border-orange-200 rounded-md text-[11px] font-medium transition-colors"
+                            title="Use customer service in Report Generator"
+                          >
+                            <span>Select</span>
+                            <ExternalLink className="w-3 h-3" />
+                          </Link>
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            onClick={() => handleOpenEdit(c)}
+                            title="Edit Customer"
+                          >
+                            <Edit2 className="w-3.5 h-3.5 text-slate-600" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            onClick={() => setCustomerToDelete({ id: c.id!, name: c.customerName })}
+                            title="Delete Customer"
+                            className="hover:bg-red-50 hover:text-red-700"
+                          >
+                            <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
                   );
                 })}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         )}
 
@@ -960,68 +974,78 @@ export default function CustomersPage() {
           <div className="px-5 py-3.5 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-600">
             {/* Range info */}
             <div className="font-medium">
-              Showing <span className="font-bold text-slate-800">{startIndex + 1}</span> - <span className="font-bold text-slate-800">{endIndex}</span> of <span className="font-bold text-slate-800">{totalItems}</span> customers
+              Showing <span className="font-semibold text-slate-900 tabular-nums">{startIndex + 1}</span> -{' '}
+              <span className="font-semibold text-slate-900 tabular-nums">{endIndex}</span> of{' '}
+              <span className="font-semibold text-slate-900 tabular-nums">{totalItems}</span> customers
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
               {/* Rows per page selector */}
               <div className="flex items-center space-x-1.5">
                 <span className="text-slate-500 font-medium">Rows:</span>
-                <select
-                  value={pageSize}
-                  onChange={(e) => setPageSize(Number(e.target.value))}
-                  className="px-2.5 py-1 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-orange-500"
+                <Select
+                  value={String(pageSize)}
+                  onValueChange={(val) => setPageSize(Number(val))}
                 >
-                  <option value={10}>10</option>
-                  <option value={25}>25</option>
-                  <option value={50}>50</option>
-                  <option value={100}>100</option>
-                </select>
+                  <SelectTrigger selectSize="sm" className="w-[72px] h-8 text-xs font-semibold">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="10">10</SelectItem>
+                    <SelectItem value="25">25</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                    <SelectItem value="100">100</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* Navigation buttons */}
               <div className="flex items-center space-x-1">
-                <button
-                  type="button"
+                <Button
+                  variant="secondary"
+                  size="icon-sm"
                   onClick={() => setCurrentPage(1)}
                   disabled={safeCurrentPage === 1}
-                  className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition"
                   title="First Page"
                 >
                   <ChevronsLeft className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
                   disabled={safeCurrentPage === 1}
-                  className="px-2.5 py-1 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition flex items-center gap-1 font-semibold"
+                  title="Previous Page"
+                  className="gap-1 font-semibold"
                 >
                   <ChevronLeft className="w-3.5 h-3.5" />
                   <span>Prev</span>
-                </button>
+                </Button>
 
-                <span className="px-3 py-1 font-semibold text-slate-700 bg-white border border-slate-200 rounded-lg">
+                <span className="px-3 py-1 font-semibold text-slate-700 bg-white border border-slate-200 rounded-lg text-xs tabular-nums">
                   {safeCurrentPage} / {totalPages}
                 </span>
 
-                <button
-                  type="button"
-                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
                   disabled={safeCurrentPage === totalPages}
-                  className="px-2.5 py-1 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition flex items-center gap-1 font-semibold"
+                  title="Next Page"
+                  className="gap-1 font-semibold"
                 >
                   <span>Next</span>
                   <ChevronRight className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  type="button"
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="icon-sm"
                   onClick={() => setCurrentPage(totalPages)}
                   disabled={safeCurrentPage === totalPages}
-                  className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition"
                   title="Last Page"
                 >
                   <ChevronsRight className="w-3.5 h-3.5" />
-                </button>
+                </Button>
               </div>
             </div>
           </div>
