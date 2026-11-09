@@ -295,7 +295,7 @@ export default function LivePreview({
 
               {/* Section Header */}
               <div>
-                <div className="font-heading text-[11.5pt] font-bold text-black border-b-2 border-[#F16614] pb-0.5 inline-block">
+                <div className="font-heading text-[11.5pt] font-bold text-black inline-block">
                   {engineTitle}
                 </div>
               </div>
@@ -368,7 +368,7 @@ export default function LivePreview({
 
                   {/* Section 1 */}
                   <div>
-                    <div className="font-heading text-[11.5pt] font-bold text-black border-b-2 border-[#F16614] pb-0.5 inline-block">
+                    <div className="font-heading text-[11.5pt] font-bold text-black inline-block">
                       Summary Report
                     </div>
                   </div>
@@ -400,7 +400,7 @@ export default function LivePreview({
 
                   {/* Section 2 */}
                   <div className="mt-2">
-                    <div className="font-heading text-[11.5pt] font-bold text-black border-b-2 border-[#F16614] pb-0.5 inline-block">
+                    <div className="font-heading text-[11.5pt] font-bold text-black inline-block">
                       Service Availability
                     </div>
                   </div>
@@ -432,7 +432,7 @@ export default function LivePreview({
 
                   {/* Section 3 */}
                   <div className="mt-2">
-                    <div className="font-heading text-[11.5pt] font-bold text-black border-b-2 border-[#F16614] pb-0.5 inline-block">
+                    <div className="font-heading text-[11.5pt] font-bold text-black inline-block">
                       Ticket & Case Report
                     </div>
                   </div>
@@ -444,8 +444,8 @@ export default function LivePreview({
                   <table className="w-full border-collapse border border-black text-[8.5pt] mb-1 text-center">
                     <thead>
                       <tr className="bg-white text-black font-bold">
-                        <th className="border border-black py-1 px-1 w-[100px]">No. Ticket</th>
-                        <th className="border border-black py-1 px-1 w-[75px]">Date</th>
+                        <th className="border border-black py-1 px-1 w-[90px]">No. Ticket</th>
+                        <th className="border border-black py-1 px-1 w-[85px]">Date</th>
                         <th className="border border-black py-1 px-1 text-left pl-2">Description</th>
                         <th className="border border-black py-1 px-1 text-left pl-2 w-[140px]">Action</th>
                         <th className="border border-black py-1 px-1 w-[70px]">Status</th>
@@ -464,7 +464,7 @@ export default function LivePreview({
                         tickets.map((t, idx) => (
                           <tr key={idx}>
                             <td className="border border-black py-1">{t.noTicket}</td>
-                            <td className="border border-black py-1">{t.date}</td>
+                            <td className="border border-black py-1 whitespace-nowrap">{t.date}</td>
                             <td className="border border-black py-1 text-left px-2">{t.description}</td>
                             <td className="border border-black py-1 text-left px-2">{t.action}</td>
                             <td className="border border-black py-1">{t.status}</td>
@@ -482,8 +482,8 @@ export default function LivePreview({
                   <table className="w-full border-collapse border border-black text-[8.5pt] mb-1 text-center">
                     <thead>
                       <tr className="bg-white text-black font-bold">
-                        <th className="border border-black py-1 px-1 w-[100px]">No. Case</th>
-                        <th className="border border-black py-1 px-1 w-[75px]">Date</th>
+                        <th className="border border-black py-1 px-1 w-[90px]">No. Case</th>
+                        <th className="border border-black py-1 px-1 w-[85px]">Date</th>
                         <th className="border border-black py-1 px-1 text-left pl-2">Description</th>
                         <th className="border border-black py-1 px-1 text-left pl-2 w-[140px]">Action</th>
                         <th className="border border-black py-1 px-1 w-[75px]">Downtime</th>
@@ -502,7 +502,7 @@ export default function LivePreview({
                         cases.map((c, idx) => (
                           <tr key={idx}>
                             <td className="border border-black py-1">{c.noCase}</td>
-                            <td className="border border-black py-1">{c.date}</td>
+                            <td className="border border-black py-1 whitespace-nowrap">{c.date}</td>
                             <td className="border border-black py-1 text-left px-2">{c.description}</td>
                             <td className="border border-black py-1 text-left px-2">{c.action}</td>
                             <td className="border border-black py-1">{`${c.downtimeMinutes} Mins`}</td>
@@ -519,7 +519,7 @@ export default function LivePreview({
 
                   {/* Section 4: SLA Service */}
                   <div className="mt-2">
-                    <div className="font-heading text-[11.5pt] font-bold text-black border-b-2 border-[#F16614] pb-0.5 inline-block">
+                    <div className="font-heading text-[11.5pt] font-bold text-black inline-block">
                       SLA Service
                     </div>
                   </div>
@@ -550,7 +550,7 @@ export default function LivePreview({
                   style={{ backgroundImage: `url(${pageBgUrl})` }}
                 >
                   <div>
-                    <div className="font-heading text-[11.5pt] font-bold text-black border-b-2 border-[#F16614] pb-0.5 inline-block">
+                    <div className="font-heading text-[11.5pt] font-bold text-black inline-block">
                       {engineTitle}
                     </div>
                   </div>
@@ -625,7 +625,7 @@ export default function LivePreview({
 
                   {/* Section 1 */}
                   <div>
-                    <div className="font-heading text-[11.5pt] font-bold text-black border-b-2 border-[#F16614] pb-0.5 inline-block">
+                    <div className="font-heading text-[11.5pt] font-bold text-black inline-block">
                       Summary Report
                     </div>
                   </div>
@@ -657,7 +657,7 @@ export default function LivePreview({
 
                   {/* Section 2 */}
                   <div className="mt-2">
-                    <div className="font-heading text-[11.5pt] font-bold text-black border-b-2 border-[#F16614] pb-0.5 inline-block">
+                    <div className="font-heading text-[11.5pt] font-bold text-black inline-block">
                       Service Availability
                     </div>
                   </div>
@@ -689,7 +689,7 @@ export default function LivePreview({
 
                   {/* Section 3: Ticket Report */}
                   <div className="mt-2">
-                    <div className="font-heading text-[11.5pt] font-bold text-black border-b-2 border-[#F16614] pb-0.5 inline-block">
+                    <div className="font-heading text-[11.5pt] font-bold text-black inline-block">
                       Ticket Report
                     </div>
                   </div>
@@ -701,8 +701,8 @@ export default function LivePreview({
                   <table className="w-full border-collapse border border-black text-[8.5pt] mb-1 text-center">
                     <thead>
                       <tr className="bg-white text-black font-bold">
-                        <th className="border border-black py-1 px-1 w-[100px]">No. Ticket</th>
-                        <th className="border border-black py-1 px-1 w-[75px]">Date</th>
+                        <th className="border border-black py-1 px-1 w-[90px]">No. Ticket</th>
+                        <th className="border border-black py-1 px-1 w-[85px]">Date</th>
                         <th className="border border-black py-1 px-1 text-left pl-2">Description</th>
                         <th className="border border-black py-1 px-1 text-left pl-2 w-[140px]">Action</th>
                         <th className="border border-black py-1 px-1 w-[70px]">Status</th>
@@ -721,7 +721,7 @@ export default function LivePreview({
                         tickets.map((t, idx) => (
                           <tr key={idx}>
                             <td className="border border-black py-1">{t.noTicket}</td>
-                            <td className="border border-black py-1">{t.date}</td>
+                            <td className="border border-black py-1 whitespace-nowrap">{t.date}</td>
                             <td className="border border-black py-1 text-left px-2">{t.description}</td>
                             <td className="border border-black py-1 text-left px-2">{t.action}</td>
                             <td className="border border-black py-1">{t.status}</td>
@@ -749,7 +749,7 @@ export default function LivePreview({
 
                   {/* Section: Case Report */}
                   <div>
-                    <div className="font-heading text-[11.5pt] font-bold text-black border-b-2 border-[#F16614] pb-0.5 inline-block">
+                    <div className="font-heading text-[11.5pt] font-bold text-black inline-block">
                       Case Report
                     </div>
                   </div>
@@ -761,8 +761,8 @@ export default function LivePreview({
                   <table className="w-full border-collapse border border-black text-[8.5pt] mb-1 text-center">
                     <thead>
                       <tr className="bg-white text-black font-bold">
-                        <th className="border border-black py-1 px-1 w-[100px]">No. Case</th>
-                        <th className="border border-black py-1 px-1 w-[75px]">Date</th>
+                        <th className="border border-black py-1 px-1 w-[90px]">No. Case</th>
+                        <th className="border border-black py-1 px-1 w-[85px]">Date</th>
                         <th className="border border-black py-1 px-1 text-left pl-2">Description</th>
                         <th className="border border-black py-1 px-1 text-left pl-2 w-[140px]">Action</th>
                         <th className="border border-black py-1 px-1 w-[75px]">Downtime</th>
@@ -781,7 +781,7 @@ export default function LivePreview({
                         cases.map((c, idx) => (
                           <tr key={idx}>
                             <td className="border border-black py-1">{c.noCase}</td>
-                            <td className="border border-black py-1">{c.date}</td>
+                            <td className="border border-black py-1 whitespace-nowrap">{c.date}</td>
                             <td className="border border-black py-1 text-left px-2">{c.description}</td>
                             <td className="border border-black py-1 text-left px-2">{c.action}</td>
                             <td className="border border-black py-1">{`${c.downtimeMinutes} Mins`}</td>
@@ -798,7 +798,7 @@ export default function LivePreview({
 
                   {/* Section: SLA Service */}
                   <div className="mt-3.5">
-                    <div className="font-heading text-[11.5pt] font-bold text-black border-b-2 border-[#F16614] pb-0.5 inline-block">
+                    <div className="font-heading text-[11.5pt] font-bold text-black inline-block">
                       SLA Service
                     </div>
                   </div>
@@ -829,7 +829,7 @@ export default function LivePreview({
                   style={{ backgroundImage: `url(${pageBgUrl})` }}
                 >
                   <div>
-                    <div className="font-heading text-[11.5pt] font-bold text-black border-b-2 border-[#F16614] pb-0.5 inline-block">
+                    <div className="font-heading text-[11.5pt] font-bold text-black inline-block">
                       {engineTitle}
                     </div>
                   </div>

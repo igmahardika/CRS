@@ -276,7 +276,7 @@ export function generateReportHtml(data: ReportData): string {
     }
     .data-table td {
       border: 1px solid #000000;
-      padding: 3.5px 6px;
+      padding: 4px 6px;
       color: #000000;
       text-align: center;
     }
@@ -523,8 +523,8 @@ export function generateReportHtml(data: ReportData): string {
       <table class="data-table">
         <thead>
           <tr>
-            <th style="width: 100px;">No. Ticket</th>
-            <th style="width: 75px;">Date</th>
+            <th style="width: 90px;">No. Ticket</th>
+            <th style="width: 85px;">Date</th>
             <th>Description</th>
             <th style="width: 140px;">Action</th>
             <th style="width: 70px;">Status</th>
@@ -542,7 +542,7 @@ export function generateReportHtml(data: ReportData): string {
           ` : tickets.map(t => `
             <tr>
               <td>${t.noTicket}</td>
-              <td>${t.date}</td>
+              <td style="white-space: nowrap;">${t.date}</td>
               <td style="text-align: left; padding-left: 8px;">${t.description}</td>
               <td style="text-align: left; padding-left: 8px;">${t.action}</td>
               <td>${t.status}</td>
@@ -560,8 +560,8 @@ export function generateReportHtml(data: ReportData): string {
       <table class="data-table">
         <thead>
           <tr>
-            <th style="width: 100px;">No. Case</th>
-            <th style="width: 75px;">Date</th>
+            <th style="width: 90px;">No. Case</th>
+            <th style="width: 85px;">Date</th>
             <th>Description</th>
             <th style="width: 140px;">Action</th>
             <th style="width: 75px;">Downtime</th>
@@ -579,7 +579,7 @@ export function generateReportHtml(data: ReportData): string {
           ` : cases.map(c => `
             <tr>
               <td>${c.noCase}</td>
-              <td>${c.date}</td>
+              <td style="white-space: nowrap;">${c.date}</td>
               <td style="text-align: left; padding-left: 8px;">${c.description}</td>
               <td style="text-align: left; padding-left: 8px;">${c.action}</td>
               <td>${c.downtimeMinutes} Mins</td>
@@ -720,8 +720,8 @@ export function generateReportHtml(data: ReportData): string {
       <table class="data-table">
         <thead>
           <tr>
-            <th style="width: 100px;">No. Ticket</th>
-            <th style="width: 75px;">Date</th>
+            <th style="width: 90px;">No. Ticket</th>
+            <th style="width: 85px;">Date</th>
             <th>Description</th>
             <th style="width: 140px;">Action</th>
             <th style="width: 70px;">Status</th>
@@ -739,7 +739,7 @@ export function generateReportHtml(data: ReportData): string {
           ` : tickets.map(t => `
             <tr>
               <td>${t.noTicket}</td>
-              <td>${t.date}</td>
+              <td style="white-space: nowrap;">${t.date}</td>
               <td style="text-align: left; padding-left: 8px;">${t.description}</td>
               <td style="text-align: left; padding-left: 8px;">${t.action}</td>
               <td>${t.status}</td>
@@ -770,8 +770,8 @@ export function generateReportHtml(data: ReportData): string {
       <table class="data-table">
         <thead>
           <tr>
-            <th style="width: 100px;">No. Case</th>
-            <th style="width: 75px;">Date</th>
+            <th style="width: 90px;">No. Case</th>
+            <th style="width: 85px;">Date</th>
             <th>Description</th>
             <th style="width: 140px;">Action</th>
             <th style="width: 75px;">Downtime</th>
@@ -789,7 +789,7 @@ export function generateReportHtml(data: ReportData): string {
           ` : cases.map(c => `
             <tr>
               <td>${c.noCase}</td>
-              <td>${c.date}</td>
+              <td style="white-space: nowrap;">${c.date}</td>
               <td style="text-align: left; padding-left: 8px;">${c.description}</td>
               <td style="text-align: left; padding-left: 8px;">${c.action}</td>
               <td>${c.downtimeMinutes} Mins</td>
