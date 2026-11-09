@@ -19,6 +19,7 @@ import { TicketItem, CaseItem, calculateSla } from '@/lib/sla-calculator';
 import {
   Button,
   Input,
+  Badge,
   Select,
   SelectTrigger,
   SelectValue,
@@ -378,26 +379,31 @@ export default function TicketCaseManager({
       </div>
 
       {/* ---------------------------------------------------- */}
-      {/* 1. Support Tickets Management Card */}
+      {/* 1. Support Tickets Management Card                   */}
       {/* ---------------------------------------------------- */}
-      <div className="bg-white rounded-lg border border-slate-200 p-4 sm:p-5 shadow-xs space-y-4">
-        {/* Header with Title and Action Controls */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
-          <div>
-            <h4 className="font-heading font-semibold text-slate-900 text-sm flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
-              <span>Support Tickets</span>
-              <span className="text-xs font-medium text-slate-500 tabular-nums">
-                ({tickets.length > 0 ? `${tickets.length} Tiket` : '0 Tiket'})
-              </span>
-            </h4>
-            <p className="text-[11px] text-slate-500 font-sans mt-0.5">
+      <div className="bg-white rounded-lg border border-slate-200 p-4 sm:p-5 shadow-xs space-y-3.5">
+        {/* Header: Title and Always-Aligned Action Toolbar (Never Stacks) */}
+        <div className="flex items-center justify-between gap-3 border-b border-slate-100 pb-3">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-blue-500 shrink-0"></span>
+              <h4 className="font-heading font-semibold text-slate-900 text-sm truncate">
+                Support Tickets
+              </h4>
+              <Badge
+                variant="outline"
+                className="text-[11px] font-medium py-0 px-2 text-slate-600 bg-slate-50 tabular-nums shrink-0"
+              >
+                {tickets.length} Tiket
+              </Badge>
+            </div>
+            <p className="text-[11px] text-slate-500 font-sans mt-0.5 truncate">
               Customer service requests recorded during billing cycle
             </p>
           </div>
 
-          {/* Action buttons */}
-          <div className="flex items-center flex-wrap gap-2">
+          {/* Action buttons: shrink-0 so they never break onto a second line */}
+          <div className="flex items-center gap-1.5 shrink-0">
             {/* Batch Paste from Excel */}
             <Button
               type="button"
@@ -409,23 +415,23 @@ export default function TicketCaseManager({
                 setImportActionType('append');
               }}
               title="Salin dan tempel baris data dari Excel / Spreadsheet sekaligus"
-              className="text-xs"
+              className="h-8 px-2.5 text-xs font-medium text-slate-700 hover:text-slate-900"
             >
-              <FileSpreadsheet className="w-3.5 h-3.5 mr-1.5 text-emerald-600" />
-              <span>Paste dari Excel</span>
+              <FileSpreadsheet className="w-3.5 h-3.5 mr-1.5 text-emerald-600 shrink-0" />
+              <span>Paste Excel</span>
             </Button>
 
-            {/* Split Button: Add Single or Multiple */}
-            <div className="flex items-center">
+            {/* Split Button: Add Ticket with Multi-Add Dropdown */}
+            <div className="inline-flex rounded-lg shadow-2xs">
               <Button
                 type="button"
                 variant="secondary"
                 size="sm"
                 onClick={() => handleAddTicket(1)}
-                className="rounded-r-none border-r-0 text-xs"
+                className="h-8 px-2.5 text-xs font-medium rounded-r-none border-r-0"
               >
-                <Plus className="w-3.5 h-3.5 mr-1" />
-                <span>Add Ticket</span>
+                <Plus className="w-3.5 h-3.5 mr-1 text-[#EA580C] shrink-0" />
+                <span>Tiket</span>
               </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -433,10 +439,10 @@ export default function TicketCaseManager({
                     type="button"
                     variant="secondary"
                     size="sm"
-                    className="rounded-l-none px-1.5"
+                    className="h-8 px-1.5 rounded-l-none text-slate-500 hover:text-slate-700"
                     title="Tambah banyak tiket sekaligus"
                   >
-                    <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
+                    <ChevronDown className="w-3.5 h-3.5" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-44">
@@ -463,7 +469,7 @@ export default function TicketCaseManager({
                 variant="ghost"
                 size="sm"
                 onClick={() => setConfirmClear('tickets')}
-                className="text-xs text-slate-400 hover:text-rose-600 px-2"
+                className="h-8 px-2 text-xs text-slate-400 hover:text-rose-600 hover:bg-rose-50"
                 title="Kosongkan seluruh daftar tiket"
               >
                 Kosongkan
@@ -472,18 +478,23 @@ export default function TicketCaseManager({
           </div>
         </div>
 
-        {/* List of Tickets */}
+        {/* List of Tickets / Empty State */}
         {tickets.length === 0 ? (
-          <div className="p-6 bg-slate-50 border border-dashed border-slate-200 rounded-lg text-center text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-center gap-2">
-            <AlertCircle className="w-4 h-4 text-slate-400 shrink-0" />
-            <span>Tidak ada tiket customer service pada periode ini. Klik <strong>Add Ticket</strong> atau <strong>Paste dari Excel</strong> untuk menambahkan.</span>
+          <div className="flex items-center justify-between p-3.5 bg-slate-50/80 border border-dashed border-slate-200 rounded-lg text-xs text-slate-500">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-slate-400 shrink-0" />
+              <span>Tidak ada tiket customer service pada periode ini.</span>
+            </div>
+            <span className="text-[11px] text-slate-400 hidden sm:inline">
+              Klik <strong>+ Tiket</strong> atau <strong>Paste Excel</strong> untuk mengisi data
+            </span>
           </div>
         ) : (
           <div className="space-y-3">
             {tickets.map((t, idx) => (
               <div
                 key={idx}
-                className="bg-slate-50/70 hover:bg-slate-50 border border-slate-200 rounded-lg p-3 sm:p-3.5 space-y-2.5 transition shadow-2xs"
+                className="bg-slate-50/70 hover:bg-slate-50 border border-slate-200 rounded-lg p-3 sm:p-3.5 space-y-2.5 transition"
               >
                 {/* Baris 1: Nomor, Tanggal, Status, & Tombol Hapus */}
                 <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5">
@@ -496,11 +507,9 @@ export default function TicketCaseManager({
 
                   {/* No Ticket */}
                   <div className="flex-1 min-w-[150px] max-w-xs">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider">
-                        No. Tiket
-                      </span>
-                    </div>
+                    <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider block mb-1">
+                      No. Tiket
+                    </span>
                     <Input
                       inputSize="sm"
                       type="text"
@@ -513,11 +522,9 @@ export default function TicketCaseManager({
 
                   {/* Date */}
                   <div className="w-36 shrink-0">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider">
-                        Tanggal
-                      </span>
-                    </div>
+                    <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider block mb-1">
+                      Tanggal
+                    </span>
                     <Input
                       inputSize="sm"
                       type="text"
@@ -530,11 +537,9 @@ export default function TicketCaseManager({
 
                   {/* Status Dropdown */}
                   <div className="w-36 shrink-0">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider">
-                        Status
-                      </span>
-                    </div>
+                    <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider block mb-1">
+                      Status
+                    </span>
                     <Select
                       value={t.status}
                       onValueChange={(val) => handleUpdateTicket(idx, 'status', val)}
@@ -635,26 +640,31 @@ export default function TicketCaseManager({
       </div>
 
       {/* ---------------------------------------------------- */}
-      {/* 2. Downtime Incident Cases Management Card */}
+      {/* 2. Downtime Incident Cases Management Card           */}
       {/* ---------------------------------------------------- */}
-      <div className="bg-white rounded-lg border border-slate-200 p-4 sm:p-5 shadow-xs space-y-4">
-        {/* Header with Title and Action Controls */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
-          <div>
-            <h4 className="font-heading font-semibold text-slate-900 text-sm flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
-              <span>Downtime Incident Cases</span>
-              <span className="text-xs font-medium text-rose-600 tabular-nums">
-                ({cases.length > 0 ? `${cases.length} Kasus (${slaResult.totalDowntimeMinutes} Menit)` : '0 Gangguan'})
-              </span>
-            </h4>
-            <p className="text-[11px] text-slate-500 font-sans mt-0.5">
-              Service interruptions affecting monthly availability and SLA percentage
+      <div className="bg-white rounded-lg border border-slate-200 p-4 sm:p-5 shadow-xs space-y-3.5">
+        {/* Header: Title and Always-Aligned Action Toolbar (Never Stacks) */}
+        <div className="flex items-center justify-between gap-3 border-b border-slate-100 pb-3">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shrink-0"></span>
+              <h4 className="font-heading font-semibold text-slate-900 text-sm truncate">
+                Downtime Incident Cases
+              </h4>
+              <Badge
+                variant="outline"
+                className="text-[11px] font-medium py-0 px-2 text-rose-600 bg-rose-50 border-rose-200 tabular-nums shrink-0"
+              >
+                {cases.length > 0 ? `${cases.length} Kasus (${slaResult.totalDowntimeMinutes} Mnt)` : '0 Kasus'}
+              </Badge>
+            </div>
+            <p className="text-[11px] text-slate-500 font-sans mt-0.5 truncate">
+              Service interruptions affecting monthly availability and SLA
             </p>
           </div>
 
-          {/* Action buttons */}
-          <div className="flex items-center flex-wrap gap-2">
+          {/* Action buttons: shrink-0 so they never break onto a second line */}
+          <div className="flex items-center gap-1.5 shrink-0">
             {/* Batch Paste from Excel */}
             <Button
               type="button"
@@ -666,23 +676,23 @@ export default function TicketCaseManager({
                 setImportActionType('append');
               }}
               title="Salin dan tempel baris data gangguan dari Excel / Spreadsheet sekaligus"
-              className="text-xs"
+              className="h-8 px-2.5 text-xs font-medium text-slate-700 hover:text-slate-900"
             >
-              <FileSpreadsheet className="w-3.5 h-3.5 mr-1.5 text-emerald-600" />
-              <span>Paste dari Excel</span>
+              <FileSpreadsheet className="w-3.5 h-3.5 mr-1.5 text-emerald-600 shrink-0" />
+              <span>Paste Excel</span>
             </Button>
 
-            {/* Split Button: Add Single or Multiple */}
-            <div className="flex items-center">
+            {/* Split Button: Add Case with Multi-Add Dropdown */}
+            <div className="inline-flex rounded-lg shadow-2xs">
               <Button
                 type="button"
                 variant="secondary"
                 size="sm"
                 onClick={() => handleAddCase(1)}
-                className="rounded-r-none border-r-0 text-xs"
+                className="h-8 px-2.5 text-xs font-medium rounded-r-none border-r-0"
               >
-                <Plus className="w-3.5 h-3.5 mr-1" />
-                <span>Add Case</span>
+                <Plus className="w-3.5 h-3.5 mr-1 text-[#EA580C] shrink-0" />
+                <span>Kasus</span>
               </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -690,10 +700,10 @@ export default function TicketCaseManager({
                     type="button"
                     variant="secondary"
                     size="sm"
-                    className="rounded-l-none px-1.5"
+                    className="h-8 px-1.5 rounded-l-none text-slate-500 hover:text-slate-700"
                     title="Tambah banyak kasus gangguan sekaligus"
                   >
-                    <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
+                    <ChevronDown className="w-3.5 h-3.5" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-44">
@@ -720,7 +730,7 @@ export default function TicketCaseManager({
                 variant="ghost"
                 size="sm"
                 onClick={() => setConfirmClear('cases')}
-                className="text-xs text-slate-400 hover:text-rose-600 px-2"
+                className="h-8 px-2 text-xs text-slate-400 hover:text-rose-600 hover:bg-rose-50"
                 title="Kosongkan seluruh daftar kasus downtime"
               >
                 Kosongkan
@@ -729,18 +739,26 @@ export default function TicketCaseManager({
           </div>
         </div>
 
-        {/* List of Cases */}
+        {/* List of Cases / Empty State */}
         {cases.length === 0 ? (
-          <div className="p-6 bg-emerald-50 border border-dashed border-emerald-200 rounded-lg text-center text-xs text-emerald-800 flex flex-col sm:flex-row items-center justify-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-            <span>Nol gangguan tercatat pada periode ini. Pencapaian <strong>100.00% uptime</strong>.</span>
+          <div className="flex items-center justify-between p-3.5 bg-emerald-50/70 border border-dashed border-emerald-200 rounded-lg text-xs text-emerald-800">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span>Nol gangguan tercatat pada periode ini. Pencapaian <strong>100.00% uptime</strong>.</span>
+            </div>
+            <Badge
+              variant="outline"
+              className="text-[11px] font-semibold bg-emerald-100/70 text-emerald-700 border-emerald-300 shrink-0 hidden sm:inline-flex"
+            >
+              Uptime 100%
+            </Badge>
           </div>
         ) : (
           <div className="space-y-3">
             {cases.map((c, idx) => (
               <div
                 key={idx}
-                className="bg-slate-50/70 hover:bg-slate-50 border border-slate-200 rounded-lg p-3 sm:p-3.5 space-y-2.5 transition shadow-2xs"
+                className="bg-slate-50/70 hover:bg-slate-50 border border-slate-200 rounded-lg p-3 sm:p-3.5 space-y-2.5 transition"
               >
                 {/* Baris 1: Nomor Kasus, Tanggal, Durasi Downtime, & Tombol Hapus */}
                 <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5">
@@ -753,11 +771,9 @@ export default function TicketCaseManager({
 
                   {/* No Case */}
                   <div className="flex-1 min-w-[150px] max-w-xs">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider">
-                        No. Kasus
-                      </span>
-                    </div>
+                    <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider block mb-1">
+                      No. Kasus
+                    </span>
                     <Input
                       inputSize="sm"
                       type="text"
@@ -770,11 +786,9 @@ export default function TicketCaseManager({
 
                   {/* Date */}
                   <div className="w-36 shrink-0">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider">
-                        Tanggal
-                      </span>
-                    </div>
+                    <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider block mb-1">
+                      Tanggal
+                    </span>
                     <Input
                       inputSize="sm"
                       type="text"
@@ -787,11 +801,9 @@ export default function TicketCaseManager({
 
                   {/* Downtime Minutes (Spacious with Unit Label - NEVER Cut Off) */}
                   <div className="w-32 shrink-0">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider">
-                        Downtime
-                      </span>
-                    </div>
+                    <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider block mb-1">
+                      Downtime
+                    </span>
                     <div className="relative">
                       <Input
                         inputSize="sm"
@@ -878,7 +890,7 @@ export default function TicketCaseManager({
               </span>
             </DialogTitle>
             <DialogDescription className="text-xs text-slate-500">
-              Salin beberapa baris langsung dari Microsoft Excel atau Google Sheets, lalu tempelkan (Ctrl+V) di area bawah ini.
+              Salin baris langsung dari Microsoft Excel atau Google Sheets, lalu tempelkan (Ctrl+V) pada area di bawah ini.
             </DialogDescription>
           </DialogHeader>
 
@@ -917,7 +929,7 @@ export default function TicketCaseManager({
                 )}
               </div>
               <p className="text-[10px] text-slate-400">
-                Pemisah kolom otomatis terdeteksi (Tab Excel, Koma CSV, atau Titik Koma). Baris judul/header akan otomatis dilewati.
+                Pemisah kolom otomatis terdeteksi (Tab Excel, Koma CSV, atau Titik Koma). Baris header dilewati otomatis.
               </p>
             </div>
 
@@ -965,7 +977,7 @@ export default function TicketCaseManager({
                   />
                 </div>
 
-                {/* Table Preview of first 3 rows */}
+                {/* Table Preview of first 4 rows */}
                 <div className="max-h-36 overflow-auto border border-slate-200 rounded-md text-[11px]">
                   <table className="w-full text-left border-collapse">
                     <thead className="bg-slate-100 text-slate-600 font-semibold sticky top-0">
