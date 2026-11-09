@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   ShieldCheck,
   Plus,
@@ -13,6 +13,8 @@ import {
   Sparkles,
   Check,
   ClipboardPaste,
+  Info,
+  ArrowRightLeft,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { TicketItem, CaseItem, calculateSla } from '@/lib/sla-calculator';
@@ -38,6 +40,7 @@ import {
   DropdownMenuItem,
   Textarea,
   SegmentedControl,
+  Checkbox,
 } from '@/components/ui';
 
 interface TicketCaseManagerProps {
@@ -48,6 +51,127 @@ interface TicketCaseManagerProps {
   year: number;
   month: number;
   targetSla?: number;
+}
+
+// ----------------------------------------------------
+// Helper: Robust Date Parser
+// Supports: "19 October 2026 14:45 WIB", "19 Oktober 2026", "YYYY-MM-DD", "DD/MM/YYYY"
+// ----------------------------------------------------
+function parseDateString(str: string, defaultYear: number, defaultMonth: number): string {
+  if (!str) return `${defaultYear}-${String(defaultMonth).padStart(2, '0')}-01`;
+
+  // Format YYYY-MM-DD
+  const isoMatch = str.match(/(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+  if (isoMatch) {
+    return `${isoMatch[1]}-${String(isoMatch[2]).padStart(2, '0')}-${String(isoMatch[3]).padStart(2, '0')}`;
+  }
+
+  // Format DD/MM/YYYY or DD-MM-YYYY
+  const ddmmyyyy = str.match(/(\d{1,2})[-/](\d{1,2})[-/](\d{4})/);
+  if (ddmmyyyy) {
+    return `${ddmmyyyy[3]}-${String(ddmmyyyy[2]).padStart(2, '0')}-${String(ddmmyyyy[1]).padStart(2, '0')}`;
+  }
+
+  // Format: 19 October 2026 or 19 Oktober 2026
+  const monthNames: Record<string, number> = {
+    january: 1, januari: 1, jan: 1,
+    february: 2, februari: 2, feb: 2,
+    march: 3, maret: 3, mar: 3,
+    april: 4, apr: 4,
+    may: 5, mei: 5,
+    june: 6, juni: 6, jun: 6,
+    july: 7, juli: 7, jul: 7,
+    august: 8, agustus: 8, aug: 8, ags: 8,
+    september: 9, sep: 9,
+    october: 10, oktober: 10, oct: 10, okt: 10,
+    november: 11, nov: 11,
+    december: 12, desember: 12, dec: 12, des: 12,
+  };
+
+  const textDateMatch = str.match(/(\d{1,2})\s+([a-zA-Z]+)\s+(\d{4})/);
+  if (textDateMatch) {
+    const day = String(textDateMatch[1]).padStart(2, '0');
+    const mStr = textDateMatch[2].toLowerCase();
+    const monthNum = monthNames[mStr];
+    const yr = textDateMatch[3];
+    if (monthNum) {
+      return `${yr}-${String(monthNum).padStart(2, '0')}-${day}`;
+    }
+  }
+
+  return `${defaultYear}-${String(defaultMonth).padStart(2, '0')}-01`;
+}
+
+// ----------------------------------------------------
+// Helper: Robust Downtime Duration Parser
+// Supports: "07:02:00" -> 422 min, "7 jam 27 menit" -> 447 min, "45" -> 45 min, "-" -> 0
+// ----------------------------------------------------
+function parseDurationToMinutes(str: string): number {
+  if (!str || str.trim() === '-' || str.trim() === '') return 0;
+
+  // Format hh:mm:ss or hh:mm (e.g. 07:02:00)
+  const timeMatch = str.match(/(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+  if (timeMatch) {
+    const hours = parseInt(timeMatch[1], 10) || 0;
+    const mins = parseInt(timeMatch[2], 10) || 0;
+    return hours * 60 + mins;
+  }
+
+  // Format: 7 jam 27 menit or 7 hrs 27 mins
+  let total = 0;
+  const hoursMatch = str.match(/(\d+)\s*(?:jam|hr|hrs|hours?)/i);
+  if (hoursMatch) {
+    total += parseInt(hoursMatch[1], 10) * 60;
+  }
+  const minsMatch = str.match(/(\d+)\s*(?:menit|mins?|minutes?)/i);
+  if (minsMatch) {
+    total += parseInt(minsMatch[1], 10);
+  }
+  if (total > 0) return total;
+
+  const numOnly = parseInt(str.replace(/[^0-9]/g, ''), 10);
+  return isNaN(numOnly) ? 0 : numOnly;
+}
+
+// ----------------------------------------------------
+// Helper: Smart Multi-line Row Splitter for Excel/Sheets
+// ----------------------------------------------------
+function splitHelpdeskRows(text: string): string[] {
+  const lines = text.split(/\r?\n/);
+  const rows: string[] = [];
+  let currentRow = '';
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    // A row in Helpdesk tables begins with: `#\t`, `Datetime\t`, or a numeric sequence `\d+\t`
+    const isNewRow = /^#\t/.test(line) || /^Datetime\t/i.test(line) || /^\d+\t/.test(line);
+
+    if (isNewRow) {
+      if (currentRow) rows.push(currentRow);
+      currentRow = line;
+    } else {
+      if (currentRow) {
+        currentRow += ' ' + line.trim();
+      } else {
+        currentRow = line;
+      }
+    }
+  }
+  if (currentRow) rows.push(currentRow);
+  return rows;
+}
+
+function isHelpdeskTableFormat(text: string): boolean {
+  const lower = text.toLowerCase();
+  return (
+    (lower.includes('no tiket') || lower.includes('kategori')) &&
+    (lower.includes('durasi downtime') ||
+      lower.includes('durasi penanganan') ||
+      lower.includes('close ticket') ||
+      lower.includes('close case') ||
+      lower.includes('penanganan') ||
+      lower.includes('penyebab'))
+  );
 }
 
 export default function TicketCaseManager({
@@ -66,6 +190,7 @@ export default function TicketCaseManager({
   const [importMode, setImportMode] = useState<'tickets' | 'cases' | null>(null);
   const [rawPastedText, setRawPastedText] = useState('');
   const [importActionType, setImportActionType] = useState<'append' | 'replace'>('append');
+  const [alsoSyncCrossData, setAlsoSyncCrossData] = useState(true);
 
   // Clear Confirmation State
   const [confirmClear, setConfirmClear] = useState<'tickets' | 'cases' | null>(null);
@@ -147,169 +272,272 @@ export default function TicketCaseManager({
   };
 
   // ----------------------------------------------------
-  // Intelligent Spreadsheet / CSV Parsers
+  // Universal Smart Parser (Supports Helpdesk System & Simple TSV)
   // ----------------------------------------------------
-  const parseTickets = (text: string): TicketItem[] => {
-    const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
-    const parsed: TicketItem[] = [];
+  const parsedData = useMemo(() => {
+    const text = rawPastedText.trim();
+    if (!text) {
+      return {
+        tickets: [] as TicketItem[],
+        cases: [] as CaseItem[],
+        isHelpdesk: false,
+        totalRowsDetected: 0,
+      };
+    }
 
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      const lower = line.toLowerCase();
-      // Skip header row if user copied headers from Excel
+    const isHelpdesk = isHelpdeskTableFormat(text);
+    const rows = isHelpdesk ? splitHelpdeskRows(text) : text.split(/\r?\n/).filter(Boolean);
+
+    const detectedTickets: TicketItem[] = [];
+    const detectedCases: CaseItem[] = [];
+
+    for (let i = 0; i < rows.length; i++) {
+      const r = rows[i].trim();
+      if (!r) continue;
+      const lower = r.toLowerCase();
+
+      // Skip header rows
       if (
-        i === 0 &&
-        (lower.includes('ticket') ||
-          lower.includes('tiket') ||
-          lower.includes('date') ||
-          lower.includes('tanggal') ||
-          lower.includes('desc') ||
-          lower.includes('action'))
+        lower.startsWith('#\t') ||
+        lower.startsWith('datetime\t') ||
+        lower.startsWith('no tiket\t') ||
+        (i === 0 &&
+          (lower.includes('no tiket') ||
+            lower.includes('no case') ||
+            lower.includes('kategori') ||
+            lower.includes('tanggal')))
       ) {
         continue;
       }
 
+      // Split columns
       let cols: string[];
-      if (line.includes('\t')) {
-        cols = line.split('\t');
-      } else if (line.includes(';') && (line.match(/;/g) || []).length >= 2) {
-        cols = line.split(';');
-      } else if (line.includes(',') && (line.match(/,/g) || []).length >= 2) {
-        cols = line.split(',');
+      if (r.includes('\t')) {
+        cols = r.split('\t');
+      } else if (r.includes(';') && (r.match(/;/g) || []).length >= 2) {
+        cols = r.split(';');
+      } else if (r.includes(',') && (r.match(/,/g) || []).length >= 2) {
+        cols = r.split(',');
       } else {
-        cols = [line];
+        cols = [r];
       }
 
       cols = cols.map((c) => c.trim().replace(/^["']|["']$/g, ''));
       if (cols.length === 0 || !cols[0]) continue;
 
-      const noTicket =
-        cols[0] || `TKT-${year}${padMonth}-${String(tickets.length + parsed.length + 1).padStart(2, '0')}`;
-      const date = cols[1] || `${year}-${padMonth}-01`;
-      const description = cols[2] || '';
-      const action = cols[3] || '';
+      if (isHelpdesk && cols.length >= 7) {
+        // Helpdesk table format:
+        // Col 1: No Tiket (e.g. "case", "N268608", "N268803")
+        // Col 2: Kategori (e.g. "Problem", "Komplain")
+        // Find Date column (contains day, month text, or YYYY-MM-DD)
+        let dateColIdx = -1;
+        let dateStr = '';
+        for (let c = 3; c < cols.length; c++) {
+          const val = cols[c];
+          if (
+            /\d{1,2}\s+[a-zA-Z]+\s+\d{4}/.test(val) ||
+            /\d{4}[-/]\d{1,2}[-/]\d{1,2}/.test(val)
+          ) {
+            dateColIdx = c;
+            dateStr = val;
+            break;
+          }
+        }
 
-      const rawStatus = (cols[4] || 'Closed').toLowerCase();
-      let status = 'Closed';
-      if (rawStatus.includes('open')) status = 'Open';
-      else if (rawStatus.includes('pend')) status = 'Pending';
-      else if (rawStatus.includes('resolv')) status = 'Resolved';
+        const date = parseDateString(dateStr, year, month);
 
-      parsed.push({
-        noTicket,
-        date,
-        description,
-        action,
-        status,
-      });
-    }
+        // Action taken is the column immediately before dateColIdx (Penanganan)
+        const action = dateColIdx > 3 ? cols[dateColIdx - 1] : '';
 
-    return parsed;
-  };
+        // Columns between Kategori and Penanganan are Deskripsi & Penyebab
+        const descParts: string[] = [];
+        for (let c = 3; c < (dateColIdx > 3 ? dateColIdx - 1 : 4); c++) {
+          if (cols[c] && cols[c].trim()) {
+            descParts.push(cols[c].trim());
+          }
+        }
+        const fullDesc = descParts.join(' — ') || 'Kendala Layanan Pelanggan';
 
-  const parseCases = (text: string): CaseItem[] => {
-    const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
-    const parsed: CaseItem[] = [];
+        // Find status column from the tail (e.g. "CLOSE CASE", "CLOSE TICKET", "Open", "Pending")
+        let statusColIdx = -1;
+        let status = 'Closed';
+        for (let c = cols.length - 1; c >= 5; c--) {
+          const val = cols[c].toUpperCase();
+          if (
+            val.includes('CLOSE') ||
+            val.includes('OPEN') ||
+            val.includes('PEND') ||
+            val.includes('RESOLV')
+          ) {
+            statusColIdx = c;
+            if (val.includes('OPEN')) status = 'Open';
+            else if (val.includes('PEND')) status = 'Pending';
+            else if (val.includes('RESOLV')) status = 'Resolved';
+            break;
+          }
+        }
 
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      const lower = line.toLowerCase();
-      // Skip header row
-      if (
-        i === 0 &&
-        (lower.includes('case') ||
-          lower.includes('kasus') ||
-          lower.includes('date') ||
-          lower.includes('tanggal') ||
-          lower.includes('downtime') ||
-          lower.includes('penyebab'))
-      ) {
-        continue;
-      }
+        // Downtime is the column immediately before status column
+        let downtimeMinutes = 0;
+        if (statusColIdx > 0 && statusColIdx - 1 < cols.length) {
+          const dtCandidate = cols[statusColIdx - 1];
+          downtimeMinutes = parseDurationToMinutes(dtCandidate);
+        }
 
-      let cols: string[];
-      if (line.includes('\t')) {
-        cols = line.split('\t');
-      } else if (line.includes(';') && (line.match(/;/g) || []).length >= 2) {
-        cols = line.split(';');
-      } else if (line.includes(',') && (line.match(/,/g) || []).length >= 2) {
-        cols = line.split(',');
+        const rawNo = cols[1] || '';
+        const kategori = cols[2] || '';
+
+        // Identify if row is a downtime case or support ticket
+        const isCaseRow =
+          kategori.toLowerCase().includes('problem') ||
+          rawNo.toLowerCase() === 'case' ||
+          (statusColIdx > 0 && cols[statusColIdx].toUpperCase().includes('CASE')) ||
+          downtimeMinutes > 0;
+
+        if (isCaseRow) {
+          const noCase =
+            rawNo && rawNo.toLowerCase() !== 'case'
+              ? rawNo
+              : `CASE-${year}${padMonth}-${String(cases.length + detectedCases.length + 1).padStart(2, '0')}`;
+
+          detectedCases.push({
+            noCase,
+            date,
+            description: fullDesc,
+            action: action || 'Perbaikan dan normalisasi link',
+            downtimeMinutes: downtimeMinutes || 30,
+          });
+        } else {
+          const noTicket =
+            rawNo ||
+            `TKT-${year}${padMonth}-${String(tickets.length + detectedTickets.length + 1).padStart(2, '0')}`;
+
+          detectedTickets.push({
+            noTicket,
+            date,
+            description: fullDesc,
+            action: action || 'Penanganan oleh tim teknis',
+            status,
+          });
+        }
       } else {
-        cols = [line];
+        // Standard Simple 5-column format: [No, Date, Desc, Action, StatusOrDowntime]
+        const col0 = cols[0] || '';
+        const date = parseDateString(cols[1], year, month);
+        const desc = cols[2] || '';
+        const action = cols[3] || '';
+        const col4 = cols[4] || '';
+
+        const isDowntimeVal = /^\d+$/.test(col4.replace(/[^0-9]/g, '')) && !/[a-zA-Z]/.test(col4);
+        if (col0.toLowerCase().includes('case') || isDowntimeVal) {
+          detectedCases.push({
+            noCase:
+              col0 ||
+              `CASE-${year}${padMonth}-${String(cases.length + detectedCases.length + 1).padStart(2, '0')}`,
+            date,
+            description: desc,
+            action,
+            downtimeMinutes: parseDurationToMinutes(col4) || 30,
+          });
+        } else {
+          let status = 'Closed';
+          if (col4.toLowerCase().includes('open')) status = 'Open';
+          else if (col4.toLowerCase().includes('pend')) status = 'Pending';
+          else if (col4.toLowerCase().includes('resolv')) status = 'Resolved';
+
+          detectedTickets.push({
+            noTicket:
+              col0 ||
+              `TKT-${year}${padMonth}-${String(tickets.length + detectedTickets.length + 1).padStart(2, '0')}`,
+            date,
+            description: desc,
+            action,
+            status,
+          });
+        }
       }
-
-      cols = cols.map((c) => c.trim().replace(/^["']|["']$/g, ''));
-      if (cols.length === 0 || !cols[0]) continue;
-
-      const noCase =
-        cols[0] || `CASE-${year}${padMonth}-${String(cases.length + parsed.length + 1).padStart(2, '0')}`;
-      const date = cols[1] || `${year}-${padMonth}-01`;
-      const description = cols[2] || '';
-      const action = cols[3] || '';
-
-      const rawMins = cols[4] ? cols[4].replace(/[^0-9]/g, '') : '30';
-      const downtimeMinutes = parseInt(rawMins, 10) || 0;
-
-      parsed.push({
-        noCase,
-        date,
-        description,
-        action,
-        downtimeMinutes,
-      });
     }
 
-    return parsed;
-  };
+    return {
+      tickets: detectedTickets,
+      cases: detectedCases,
+      isHelpdesk,
+      totalRowsDetected: detectedTickets.length + detectedCases.length,
+    };
+  }, [rawPastedText, year, month, padMonth, tickets.length, cases.length]);
 
-  // Preview data for current pasted content
-  const parsedTicketsPreview = importMode === 'tickets' ? parseTickets(rawPastedText) : [];
-  const parsedCasesPreview = importMode === 'cases' ? parseCases(rawPastedText) : [];
+  // Target items to be imported based on modal mode
+  const activeImportItems = importMode === 'tickets' ? parsedData.tickets : parsedData.cases;
+  const crossImportItems = importMode === 'tickets' ? parsedData.cases : parsedData.tickets;
 
   const handleApplyImport = () => {
+    if (activeImportItems.length === 0 && crossImportItems.length === 0) {
+      toast.error('Tidak ada baris data valid yang terdeteksi.');
+      return;
+    }
+
     if (importMode === 'tickets') {
-      const parsed = parseTickets(rawPastedText);
-      if (parsed.length === 0) {
-        toast.error('Tidak ada baris data tiket valid yang dapat diimpor.');
-        return;
+      // 1. Update Tickets
+      if (parsedData.tickets.length > 0) {
+        if (importActionType === 'replace') {
+          setTickets(parsedData.tickets);
+        } else {
+          setTickets([...tickets, ...parsedData.tickets]);
+        }
       }
-      if (importActionType === 'replace') {
-        setTickets(parsed);
+
+      // 2. Cross-sync Cases if detected and checked
+      if (alsoSyncCrossData && parsedData.cases.length > 0) {
+        if (importActionType === 'replace') {
+          setCases(parsedData.cases);
+        } else {
+          setCases([...cases, ...parsedData.cases]);
+        }
+        toast.success(
+          `Berhasil mengimpor ${parsedData.tickets.length} tiket & ${parsedData.cases.length} kasus downtime!`
+        );
       } else {
-        setTickets([...tickets, ...parsed]);
+        toast.success(`Berhasil mengimpor ${parsedData.tickets.length} tiket support!`);
       }
-      toast.success(`Berhasil mengimpor ${parsed.length} tiket!`);
     } else if (importMode === 'cases') {
-      const parsed = parseCases(rawPastedText);
-      if (parsed.length === 0) {
-        toast.error('Tidak ada baris data kasus downtime valid yang dapat diimpor.');
-        return;
+      // 1. Update Cases
+      if (parsedData.cases.length > 0) {
+        if (importActionType === 'replace') {
+          setCases(parsedData.cases);
+        } else {
+          setCases([...cases, ...parsedData.cases]);
+        }
       }
-      if (importActionType === 'replace') {
-        setCases(parsed);
+
+      // 2. Cross-sync Tickets if detected and checked
+      if (alsoSyncCrossData && parsedData.tickets.length > 0) {
+        if (importActionType === 'replace') {
+          setTickets(parsedData.tickets);
+        } else {
+          setTickets([...tickets, ...parsedData.tickets]);
+        }
+        toast.success(
+          `Berhasil mengimpor ${parsedData.cases.length} kasus downtime & ${parsedData.tickets.length} tiket!`
+        );
       } else {
-        setCases([...cases, ...parsed]);
+        toast.success(`Berhasil mengimpor ${parsedData.cases.length} kasus downtime!`);
       }
-      toast.success(`Berhasil mengimpor ${parsed.length} kasus downtime!`);
     }
 
     setImportMode(null);
     setRawPastedText('');
   };
 
+  // Sample data: Exact Helpdesk table format provided by user
   const handleFillSample = () => {
-    if (importMode === 'tickets') {
-      setRawPastedText(
-        `TKT-${year}${padMonth}-01\t${year}-${padMonth}-02\tFiber optic link flapping pada POP\tPembersihan patchcord dan SFP\tClosed\n` +
-          `TKT-${year}${padMonth}-02\t${year}-${padMonth}-08\tHigh packet loss peering IXP\tPenyesuaian routing BGP\tResolved\n` +
-          `TKT-${year}${padMonth}-03\t${year}-${padMonth}-15\tPermintaan pengecekan bandwidth grafik\tVerifikasi utilisasi normal\tClosed`
-      );
-    } else if (importMode === 'cases') {
-      setRawPastedText(
-        `CASE-${year}${padMonth}-01\t${year}-${padMonth}-04\tKabel FO putus KM 14 akibat galian\tSplicing core 1-4 dan proteksi tray\t45\n` +
-          `CASE-${year}${padMonth}-02\t${year}-${padMonth}-18\tGangguan catuan daya PLN di BTS\tGenset otomatis aktif normal\t20`
-      );
-    }
+    setRawPastedText(
+      `#\tNo Tiket\tKategori\tDeskripsi\tPenyebab\tPenanganan\tOpen\tClose\tDurasi Penanganan\tDurasi Downtime\tStatus\t###\n` +
+        `Datetime\tUser\tDatetime\tUser\n` +
+        `1\tcase\tProblem\tLink FO LOS - Binus University\tKabel FO putus imbas penggalian iforte.\tDilakukan join ulang dan pindah sambungan dari roset ke closure oleh tim terkait.\t19 October 2026 14:45 WIB\tPriyo Ardi Nugroho\t19 October 2026 22:12 WIB\tImanuel Dimas Cahyo Kumoro\t7 jam 27 menit\t07:02:00\tCLOSE CASE\t\n` +
+        `2\tN268608\tKomplain\tKoneksi internet tidak dapat digunakan\tKendala kabel FO putus imbas penggalian iforte.\tDilakukan join ulang dan pindah sambungan dari roset ke closure oleh tim terkait.\t19 October 2026 15:04 WIB\tFajar Juliantono\t19 October 2026 23:59 WIB\tImanuel Dimas Cahyo Kumoro\t8 jam 54 menit\t-\tCLOSE TICKET\t\n` +
+        `3\tN268803\tKomplain\tKendala akses ke arah website binus (binusmaya, lms, dan lain-lain)\tKendala link FO unstable\tDilakukan reroute main link FO menggunakan link FO Nexa\t26 October 2026 08:21 WIB\tLouis Bayu Krisna Redionando\t27 October 2026 16:55 WIB\tFajar Juliantono\t32 jam 33 menit\t-\tCLOSE TICKET\t\n` +
+        `4\tN268862\tKomplain\tKoneksi terpantau sempat down dari arah Jakarta\tBelum ditemukan issue kendala\tDIlakukan pengecekan sisi link, trafik pemakaian dan routing terpantau normal\t27 October 2026 11:44 WIB\tFajar Juliantono\t27 October 2026 14:52 WIB\tFajar Juliantono\t3 jam 7 menit\t-\tCLOSE TICKET\t`
+    );
   };
 
   return (
@@ -413,8 +641,9 @@ export default function TicketCaseManager({
                 setImportMode('tickets');
                 setRawPastedText('');
                 setImportActionType('append');
+                setAlsoSyncCrossData(true);
               }}
-              title="Salin dan tempel baris data dari Excel / Spreadsheet sekaligus"
+              title="Salin dan tempel baris data dari Excel / Sistem Helpdesk"
               className="h-8 px-2.5 text-xs font-medium text-slate-700 hover:text-slate-900"
             >
               <FileSpreadsheet className="w-3.5 h-3.5 mr-1.5 text-emerald-600 shrink-0" />
@@ -498,14 +727,12 @@ export default function TicketCaseManager({
               >
                 {/* Baris 1: Nomor, Tanggal, Status, & Tombol Hapus */}
                 <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5">
-                  {/* Sequence Badge */}
                   <div className="flex items-center gap-1 shrink-0">
                     <span className="w-6 h-6 rounded-md bg-blue-100 text-blue-700 text-xs font-semibold flex items-center justify-center tabular-nums">
                       {idx + 1}
                     </span>
                   </div>
 
-                  {/* No Ticket */}
                   <div className="flex-1 min-w-[150px] max-w-xs">
                     <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider block mb-1">
                       No. Tiket
@@ -520,7 +747,6 @@ export default function TicketCaseManager({
                     />
                   </div>
 
-                  {/* Date */}
                   <div className="w-36 shrink-0">
                     <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider block mb-1">
                       Tanggal
@@ -535,7 +761,6 @@ export default function TicketCaseManager({
                     />
                   </div>
 
-                  {/* Status Dropdown */}
                   <div className="w-36 shrink-0">
                     <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider block mb-1">
                       Status
@@ -589,7 +814,6 @@ export default function TicketCaseManager({
                     </Select>
                   </div>
 
-                  {/* Delete Action */}
                   <div className="ml-auto pt-4 sm:pt-4">
                     <Button
                       type="button"
@@ -604,7 +828,7 @@ export default function TicketCaseManager({
                   </div>
                 </div>
 
-                {/* Baris 2: Deskripsi Masalah & Solusi (Luas, Lapang, Tidak Terpotong) */}
+                {/* Baris 2: Deskripsi & Tindakan */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2 border-t border-slate-200/60">
                   <div>
                     <span className="text-[10px] font-medium text-slate-500 block mb-1">
@@ -674,8 +898,9 @@ export default function TicketCaseManager({
                 setImportMode('cases');
                 setRawPastedText('');
                 setImportActionType('append');
+                setAlsoSyncCrossData(true);
               }}
-              title="Salin dan tempel baris data gangguan dari Excel / Spreadsheet sekaligus"
+              title="Salin dan tempel baris data gangguan dari Excel / Sistem Helpdesk"
               className="h-8 px-2.5 text-xs font-medium text-slate-700 hover:text-slate-900"
             >
               <FileSpreadsheet className="w-3.5 h-3.5 mr-1.5 text-emerald-600 shrink-0" />
@@ -762,14 +987,12 @@ export default function TicketCaseManager({
               >
                 {/* Baris 1: Nomor Kasus, Tanggal, Durasi Downtime, & Tombol Hapus */}
                 <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5">
-                  {/* Sequence Badge */}
                   <div className="flex items-center gap-1 shrink-0">
                     <span className="w-6 h-6 rounded-md bg-rose-100 text-rose-700 text-xs font-semibold flex items-center justify-center tabular-nums">
                       {idx + 1}
                     </span>
                   </div>
 
-                  {/* No Case */}
                   <div className="flex-1 min-w-[150px] max-w-xs">
                     <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider block mb-1">
                       No. Kasus
@@ -784,7 +1007,6 @@ export default function TicketCaseManager({
                     />
                   </div>
 
-                  {/* Date */}
                   <div className="w-36 shrink-0">
                     <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider block mb-1">
                       Tanggal
@@ -799,7 +1021,6 @@ export default function TicketCaseManager({
                     />
                   </div>
 
-                  {/* Downtime Minutes (Spacious with Unit Label - NEVER Cut Off) */}
                   <div className="w-32 shrink-0">
                     <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider block mb-1">
                       Downtime
@@ -826,7 +1047,6 @@ export default function TicketCaseManager({
                     </div>
                   </div>
 
-                  {/* Delete Action */}
                   <div className="ml-auto pt-4 sm:pt-4">
                     <Button
                       type="button"
@@ -841,7 +1061,7 @@ export default function TicketCaseManager({
                   </div>
                 </div>
 
-                {/* Baris 2: Deskripsi Masalah & Solusi (Luas, Lapang, Tidak Terpotong) */}
+                {/* Baris 2: Deskripsi Masalah & Solusi */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2 border-t border-slate-200/60">
                   <div>
                     <span className="text-[10px] font-medium text-slate-500 block mb-1">
@@ -877,7 +1097,7 @@ export default function TicketCaseManager({
       </div>
 
       {/* ---------------------------------------------------- */}
-      {/* Dialog: Batch Paste dari Excel / Spreadsheet         */}
+      {/* Dialog: Universal Smart Paste dari Excel / Helpdesk  */}
       {/* ---------------------------------------------------- */}
       <Dialog open={importMode !== null} onOpenChange={(open) => !open && setImportMode(null)}>
         <DialogContent className="max-w-2xl">
@@ -890,47 +1110,57 @@ export default function TicketCaseManager({
               </span>
             </DialogTitle>
             <DialogDescription className="text-xs text-slate-500">
-              Salin baris langsung dari Microsoft Excel atau Google Sheets, lalu tempelkan (Ctrl+V) pada area di bawah ini.
+              Mendukung salinan langsung dari <strong>Sistem Aplikasi Tiket/Helpdesk</strong> maupun spreadsheet Excel standar.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-3.5 py-1">
-            {/* Format Instructions Banner */}
-            <div className="bg-slate-50 rounded-lg p-3 border border-slate-200 text-xs space-y-1.5">
+            {/* Intelligent Format Banner */}
+            <div className="bg-slate-50 rounded-lg p-3 border border-slate-200 text-xs space-y-2">
               <div className="flex items-center justify-between">
-                <span className="font-semibold text-slate-700 flex items-center gap-1.5">
+                <span className="font-semibold text-slate-800 flex items-center gap-1.5">
                   <ClipboardPaste className="w-3.5 h-3.5 text-[#EA580C]" />
-                  Urutan Kolom yang Diharapkan:
+                  Auto-Detect Format Helpdesk & Spreadsheet
                 </span>
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
                   onClick={handleFillSample}
-                  className="h-6 text-[11px] text-[#EA580C] hover:text-[#C2410C] px-2"
+                  className="h-6 text-[11px] text-[#EA580C] hover:text-[#C2410C] px-2 font-medium"
                 >
                   <Sparkles className="w-3 h-3 mr-1" />
-                  Gunakan Contoh Data
+                  Gunakan Contoh Tabel Helpdesk
                 </Button>
               </div>
-              <div className="text-[11px] text-slate-600 bg-white p-2 rounded border border-slate-200/80 leading-relaxed font-sans">
-                {importMode === 'tickets' ? (
-                  <span>
-                    <strong>[No Tiket]</strong> &bull; <strong>[Tanggal]</strong> &bull;{' '}
-                    <strong>[Deskripsi Kendala]</strong> &bull; <strong>[Tindakan]</strong> &bull;{' '}
-                    <strong>[Status (Closed/Resolved/Pending/Open)]</strong>
-                  </span>
-                ) : (
-                  <span>
-                    <strong>[No Kasus]</strong> &bull; <strong>[Tanggal]</strong> &bull;{' '}
-                    <strong>[Penyebab Gangguan]</strong> &bull; <strong>[Tindakan]</strong> &bull;{' '}
-                    <strong>[Durasi Downtime (Menit)]</strong>
-                  </span>
-                )}
-              </div>
-              <p className="text-[10px] text-slate-400">
-                Pemisah kolom otomatis terdeteksi (Tab Excel, Koma CSV, atau Titik Koma). Baris header dilewati otomatis.
-              </p>
+
+              {parsedData.isHelpdesk ? (
+                <div className="bg-blue-50/80 border border-blue-200 rounded p-2 text-[11px] text-blue-900 space-y-1">
+                  <div className="font-semibold flex items-center gap-1 text-blue-800">
+                    <Info className="w-3.5 h-3.5" />
+                    <span>Format Tabel Aplikasi Tiket/Helpdesk Dikenali Otomatis!</span>
+                  </div>
+                  <p className="text-blue-700 leading-relaxed font-sans">
+                    Kolom otomatis dipetakan: <strong>No Tiket</strong> &bull; <strong>Open Datetime</strong> &rarr; Tanggal &bull; <strong>Deskripsi/Penyebab</strong> &bull; <strong>Penanganan</strong> &rarr; Solusi &bull; <strong>Durasi Downtime</strong> ({`"07:02:00"`} &rarr; 422 menit).
+                  </p>
+                </div>
+              ) : (
+                <div className="text-[11px] text-slate-600 bg-white p-2 rounded border border-slate-200/80 leading-relaxed font-sans">
+                  {importMode === 'tickets' ? (
+                    <span>
+                      Urutan standar: <strong>[No Tiket]</strong> &bull; <strong>[Tanggal]</strong> &bull;{' '}
+                      <strong>[Deskripsi]</strong> &bull; <strong>[Penanganan]</strong> &bull;{' '}
+                      <strong>[Status]</strong> (Atau paste langsung seluruh tabel helpdesk).
+                    </span>
+                  ) : (
+                    <span>
+                      Urutan standar: <strong>[No Kasus]</strong> &bull; <strong>[Tanggal]</strong> &bull;{' '}
+                      <strong>[Penyebab]</strong> &bull; <strong>[Penanganan]</strong> &bull;{' '}
+                      <strong>[Downtime Menit/hh:mm:ss]</strong>.
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Textarea for pasting */}
@@ -941,29 +1171,35 @@ export default function TicketCaseManager({
                 onChange={(e) => setRawPastedText(e.target.value)}
                 placeholder={
                   importMode === 'tickets'
-                    ? `Tempel baris data tiket dari Excel di sini...\nContoh:\nTKT-${year}${padMonth}-01\t${year}-${padMonth}-02\tFiber flapping\tGanti patchcord\tClosed`
-                    : `Tempel baris data gangguan dari Excel di sini...\nContoh:\nCASE-${year}${padMonth}-01\t${year}-${padMonth}-04\tFO Cut KM 14\tSplicing core\t45`
+                    ? `Tempel tabel helpdesk atau baris Excel di sini (Ctrl+V)...\nSistem akan otomatis membaca kolom No Tiket, Tanggal Open, Deskripsi, Penanganan, dan Status.`
+                    : `Tempel tabel helpdesk atau baris Excel di sini (Ctrl+V)...\nSistem akan otomatis membaca No Kasus, Tanggal, Penyebab, Penanganan, dan Durasi Downtime (format 07:02:00 otomatis dikonversi ke menit).`
                 }
-                className="text-xs font-sans"
+                className="text-xs font-sans leading-relaxed"
               />
             </div>
 
-            {/* Live Preview Summary */}
+            {/* Live Preview Summary & Auto-Classification */}
             {rawPastedText.trim() && (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 flex items-center gap-1">
-                    <Check className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>
-                      Terdeteksi{' '}
-                      <strong>
-                        {importMode === 'tickets'
-                          ? parsedTicketsPreview.length
-                          : parsedCasesPreview.length}
-                      </strong>{' '}
-                      baris data valid
+              <div className="space-y-2.5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 flex items-center gap-1 shrink-0">
+                      <Check className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>
+                        Terbaca{' '}
+                        <strong>{activeImportItems.length}</strong>{' '}
+                        {importMode === 'tickets' ? 'Tiket Support' : 'Kasus Gangguan'}
+                      </span>
                     </span>
-                  </span>
+
+                    {/* Notification about cross-detected items */}
+                    {parsedData.isHelpdesk && crossImportItems.length > 0 && (
+                      <span className="text-[11px] text-slate-500 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                        ({crossImportItems.length}{' '}
+                        {importMode === 'tickets' ? 'Kasus Problem disaring' : 'Tiket Komplain disaring'})
+                      </span>
+                    )}
+                  </div>
 
                   {/* Mode: Append or Replace */}
                   <SegmentedControl<'append' | 'replace'>
@@ -971,21 +1207,55 @@ export default function TicketCaseManager({
                     value={importActionType}
                     onChange={(val) => setImportActionType(val)}
                     options={[
-                      { value: 'append', label: 'Tambahkan (Append)' },
-                      { value: 'replace', label: 'Ganti Semua (Replace)' },
+                      { value: 'append', label: 'Tambahkan' },
+                      { value: 'replace', label: 'Ganti Semua' },
                     ]}
                   />
                 </div>
 
-                {/* Table Preview of first 4 rows */}
-                <div className="max-h-36 overflow-auto border border-slate-200 rounded-md text-[11px]">
+                {/* Cross-sync Option Checkbox if both tickets & cases exist in the pasted table */}
+                {parsedData.isHelpdesk && crossImportItems.length > 0 && (
+                  <div className="flex items-center gap-2 p-2 bg-orange-50/70 border border-orange-200/80 rounded-md text-xs text-orange-900">
+                    <Checkbox
+                      id="syncCrossData"
+                      checked={alsoSyncCrossData}
+                      onCheckedChange={(checked) => setAlsoSyncCrossData(Boolean(checked))}
+                    />
+                    <label
+                      htmlFor="syncCrossData"
+                      className="cursor-pointer text-[11px] font-medium select-none flex items-center gap-1"
+                    >
+                      <ArrowRightLeft className="w-3.5 h-3.5 text-[#EA580C]" />
+                      <span>
+                        Sekaligus simpan juga{' '}
+                        <strong>
+                          {crossImportItems.length}{' '}
+                          {importMode === 'tickets' ? 'Kasus Gangguan' : 'Tiket Support'}
+                        </strong>{' '}
+                        ke tabel{' '}
+                        <strong>
+                          {importMode === 'tickets'
+                            ? 'Downtime Incident Cases'
+                            : 'Support Tickets'}
+                        </strong>
+                      </span>
+                    </label>
+                  </div>
+                )}
+
+                {/* Table Preview of parsed rows */}
+                <div className="max-h-40 overflow-auto border border-slate-200 rounded-md text-[11px]">
                   <table className="w-full text-left border-collapse">
                     <thead className="bg-slate-100 text-slate-600 font-semibold sticky top-0">
                       <tr>
-                        <th className="p-1.5 border-b border-slate-200">No</th>
+                        <th className="p-1.5 border-b border-slate-200">
+                          {importMode === 'tickets' ? 'No. Tiket' : 'No. Kasus'}
+                        </th>
                         <th className="p-1.5 border-b border-slate-200">Tanggal</th>
-                        <th className="p-1.5 border-b border-slate-200">Deskripsi</th>
-                        <th className="p-1.5 border-b border-slate-200">Tindakan</th>
+                        <th className="p-1.5 border-b border-slate-200">
+                          {importMode === 'tickets' ? 'Deskripsi Kendala' : 'Penyebab Gangguan'}
+                        </th>
+                        <th className="p-1.5 border-b border-slate-200">Penanganan / Solusi</th>
                         <th className="p-1.5 border-b border-slate-200">
                           {importMode === 'tickets' ? 'Status' : 'Downtime'}
                         </th>
@@ -993,30 +1263,40 @@ export default function TicketCaseManager({
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {importMode === 'tickets'
-                        ? parsedTicketsPreview.slice(0, 4).map((item, i) => (
+                        ? parsedData.tickets.slice(0, 5).map((item, i) => (
                             <tr key={i} className="hover:bg-slate-50">
-                              <td className="p-1.5 font-medium text-slate-900">{item.noTicket}</td>
-                              <td className="p-1.5 text-slate-600">{item.date}</td>
-                              <td className="p-1.5 text-slate-600 truncate max-w-[120px]">
+                              <td className="p-1.5 font-semibold text-slate-900 whitespace-nowrap">
+                                {item.noTicket}
+                              </td>
+                              <td className="p-1.5 text-slate-600 whitespace-nowrap tabular-nums">
+                                {item.date}
+                              </td>
+                              <td className="p-1.5 text-slate-600 truncate max-w-[140px]" title={item.description}>
                                 {item.description || '-'}
                               </td>
-                              <td className="p-1.5 text-slate-600 truncate max-w-[120px]">
+                              <td className="p-1.5 text-slate-600 truncate max-w-[140px]" title={item.action}>
                                 {item.action || '-'}
                               </td>
-                              <td className="p-1.5 text-slate-700">{item.status}</td>
+                              <td className="p-1.5 font-medium text-emerald-700 whitespace-nowrap">
+                                {item.status}
+                              </td>
                             </tr>
                           ))
-                        : parsedCasesPreview.slice(0, 4).map((item, i) => (
+                        : parsedData.cases.slice(0, 5).map((item, i) => (
                             <tr key={i} className="hover:bg-slate-50">
-                              <td className="p-1.5 font-medium text-slate-900">{item.noCase}</td>
-                              <td className="p-1.5 text-slate-600">{item.date}</td>
-                              <td className="p-1.5 text-slate-600 truncate max-w-[120px]">
+                              <td className="p-1.5 font-semibold text-slate-900 whitespace-nowrap">
+                                {item.noCase}
+                              </td>
+                              <td className="p-1.5 text-slate-600 whitespace-nowrap tabular-nums">
+                                {item.date}
+                              </td>
+                              <td className="p-1.5 text-slate-600 truncate max-w-[140px]" title={item.description}>
                                 {item.description || '-'}
                               </td>
-                              <td className="p-1.5 text-slate-600 truncate max-w-[120px]">
+                              <td className="p-1.5 text-slate-600 truncate max-w-[140px]" title={item.action}>
                                 {item.action || '-'}
                               </td>
-                              <td className="p-1.5 font-semibold text-rose-600">
+                              <td className="p-1.5 font-semibold text-rose-600 whitespace-nowrap tabular-nums">
                                 {item.downtimeMinutes} Mnt
                               </td>
                             </tr>
@@ -1041,21 +1321,18 @@ export default function TicketCaseManager({
               type="button"
               variant="primary"
               onClick={handleApplyImport}
-              disabled={
-                !rawPastedText.trim() ||
-                (importMode === 'tickets'
-                  ? parsedTicketsPreview.length === 0
-                  : parsedCasesPreview.length === 0)
-              }
+              disabled={activeImportItems.length === 0 && crossImportItems.length === 0}
               className="text-xs"
             >
               <Check className="w-3.5 h-3.5 mr-1.5" />
               <span>
                 Terapkan Data (
-                {importMode === 'tickets'
-                  ? parsedTicketsPreview.length
-                  : parsedCasesPreview.length}{' '}
-                Item)
+                {activeImportItems.length}{' '}
+                {importMode === 'tickets' ? 'Tiket' : 'Kasus'}
+                {parsedData.isHelpdesk && alsoSyncCrossData && crossImportItems.length > 0
+                  ? ` + ${crossImportItems.length} ${importMode === 'tickets' ? 'Kasus' : 'Tiket'}`
+                  : ''}
+                )
               </span>
             </Button>
           </DialogFooter>
