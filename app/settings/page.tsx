@@ -18,6 +18,7 @@ import {
   Activity,
 } from 'lucide-react';
 import Link from 'next/link';
+import { toast } from 'sonner';
 
 interface AppConfigState {
   mrtgBaseUrl: string;
@@ -103,11 +104,14 @@ export default function SettingsPage() {
       });
       if (res.ok) {
         setSaveSuccess(true);
+        toast.success('Configuration saved successfully');
         setTimeout(() => setSaveSuccess(false), 3000);
+      } else {
+        toast.error('Failed to save settings');
       }
     } catch (err) {
       console.error(err);
-      alert('Failed to save settings.');
+      toast.error('An unexpected error occurred while saving settings');
     } finally {
       setSaving(false);
     }

@@ -18,6 +18,7 @@ import {
   Eye,
   UserCheck,
 } from 'lucide-react';
+import { ConfirmDialog } from '@/components/ui';
 
 interface CurrentUser {
   id: string;
@@ -52,8 +53,11 @@ export default function Navbar() {
     fetchMe();
   }, [isLoginPage, pathname]);
 
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
   const handleLogout = async () => {
-    if (!confirm('Are you sure you want to sign out?')) return;
+    setIsLoggingOut(true);
     try {
       await fetch('/api/auth/logout', { method: 'POST' });
       router.push('/login');
@@ -61,6 +65,9 @@ export default function Navbar() {
     } catch (err) {
       console.error(err);
       window.location.href = '/login';
+    } finally {
+      setIsLoggingOut(false);
+      setShowLogoutConfirm(false);
     }
   };
 
@@ -159,7 +166,7 @@ export default function Navbar() {
 
                 <button
                   type="button"
-                  onClick={handleLogout}
+                  onClick={() => setShowLogoutConfirm(true)}
                   className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition cursor-pointer"
                   title="Sign out"
                   aria-label="Logout"
@@ -226,7 +233,7 @@ export default function Navbar() {
               </div>
               <button
                 type="button"
-                onClick={handleLogout}
+                onClick={() => setShowLogoutConfirm(true)}
                 className="flex items-center space-x-1 text-xs text-rose-600 font-semibold hover:underline"
               >
                 <LogOut className="w-3.5 h-3.5" />
@@ -236,6 +243,17 @@ export default function Navbar() {
           )}
         </div>
       )}
+
+      <ConfirmDialog
+        open={showLogoutConfirm}
+        onOpenChange={setShowLogoutConfirm}
+        title="Sign Out"
+        description="Are you sure you want to sign out of your session?"
+        confirmText="Sign Out"
+        variant="primary"
+        loading={isLoggingOut}
+        onConfirm={handleLogout}
+      />
     </header>
   );
 }

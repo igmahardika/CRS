@@ -15,7 +15,9 @@ export interface ConfirmDialogProps {
   title: string;
   description: React.ReactNode;
   confirmText?: string;
+  confirmLabel?: string;
   cancelText?: string;
+  cancelLabel?: string;
   variant?: 'destructive' | 'primary';
   loading?: boolean;
   onConfirm: () => void | Promise<void>;
@@ -26,12 +28,17 @@ export function ConfirmDialog({
   onOpenChange,
   title,
   description,
-  confirmText = 'Confirm',
-  cancelText = 'Cancel',
+  confirmText,
+  confirmLabel,
+  cancelText,
+  cancelLabel,
   variant = 'destructive',
   loading = false,
   onConfirm,
 }: ConfirmDialogProps) {
+  const resolvedConfirmText = confirmLabel || confirmText || 'Confirm';
+  const resolvedCancelText = cancelLabel || cancelText || 'Cancel';
+
   const handleConfirm = async () => {
     await onConfirm();
   };
@@ -52,7 +59,7 @@ export function ConfirmDialog({
             onClick={() => onOpenChange(false)}
             disabled={loading}
           >
-            {cancelText}
+            {resolvedCancelText}
           </Button>
           <Button
             type="button"
@@ -60,7 +67,7 @@ export function ConfirmDialog({
             onClick={handleConfirm}
             loading={loading}
           >
-            {confirmText}
+            {resolvedConfirmText}
           </Button>
         </DialogFooter>
       </DialogContent>

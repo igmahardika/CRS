@@ -28,6 +28,8 @@ import CustomerModal, { CustomerData } from '@/components/CustomerModal';
 import { ReportData } from '@/lib/pdf-template';
 import { TicketItem, CaseItem } from '@/lib/sla-calculator';
 import { generateDocumentNumber } from '@/lib/doc-number';
+import { toast } from 'sonner';
+import { ConfirmDialog } from '@/components/ui';
 import { getSlaByServiceName } from '@/lib/service-sla';
 import { extractNodeFromServiceId } from '@/lib/service-utils';
 
@@ -85,6 +87,7 @@ function GeneratorPageContent() {
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [isSavingReport, setIsSavingReport] = useState(false);
   const [savedDocInfo, setSavedDocInfo] = useState<{ docNum: string; id: string } | null>(null);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   const monthNames = [
     'January', 'February', 'March', 'April', 'May', 'June',
@@ -213,7 +216,7 @@ function GeneratorPageContent() {
   // 4. Fetch from MRTG / Cacti API
   const handleFetchCacti = async () => {
     if (!graphId) {
-      alert('Silakan masukkan Cacti Graph ID terlebih dahulu.');
+      toast.error('Please enter a Cacti Graph ID first.');
       return;
     }
 
@@ -275,7 +278,7 @@ function GeneratorPageContent() {
   // 4b. Fetch from PRTG Network Monitor API
   const handleFetchPrtg = async () => {
     if (!graphId) {
-      alert('Silakan masukkan PRTG Sensor ID terlebih dahulu.');
+      toast.error('Please enter a PRTG Sensor ID first.');
       return;
     }
 
@@ -412,7 +415,7 @@ function GeneratorPageContent() {
       autoSaveGraphIdToMaster(customerId, graphId, trafficDirection, graphEngine);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      alert(`Terjadi kesalahan saat mengekspor PDF: ${msg}`);
+      toast.error(`Failed to export PDF: ${msg}`);
     } finally {
       setIsGeneratingPdf(false);
     }
@@ -472,9 +475,10 @@ function GeneratorPageContent() {
 
       // Auto update next doc number after save
       fetchNextDocNumber(month, year, reportType);
+      toast.success('Report saved and archived successfully');
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      alert(`Failed to save report: ${msg}`);
+      toast.error(`Failed to save report: ${msg}`);
     } finally {
       setIsSavingReport(false);
     }
@@ -1004,11 +1008,7 @@ function GeneratorPageContent() {
           <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs flex flex-wrap gap-2.5 items-center justify-between">
             <button
               type="button"
-              onClick={() => {
-                if (confirm('Reset form to default values?')) {
-                  window.location.reload();
-                }
-              }}
+              onClick={() => setShowResetConfirm(true)}
               className="px-3.5 py-2 text-slate-600 hover:text-slate-900 border border-slate-300 rounded-xl text-xs font-semibold hover:bg-slate-50 transition flex items-center gap-1.5"
             >
               <RotateCcw className="w-3.5 h-3.5" />
@@ -1104,6 +1104,19 @@ function GeneratorPageContent() {
         isOpen={isCustomerModalOpen}
         onClose={() => setIsCustomerModalOpen(false)}
         onSelectCustomer={handleSelectCustomer}
+      />
+
+      {/* Reset Confirmation Dialog */}
+      <ConfirmDialog
+        open={showResetConfirm}
+        onOpenChange={setShowResetConfirm}
+        title="Reset Form"
+        description="Are you sure you want to reset all form fields and data back to defaults? Any unsaved changes will be lost."
+        confirmText="Reset Form"
+        variant="destructive"
+        onConfirm={() => {
+          window.location.reload();
+        }}
       />
     </div>
   );

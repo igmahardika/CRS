@@ -23,6 +23,25 @@ import {
   Check,
 } from 'lucide-react';
 import Link from 'next/link';
+import { toast } from 'sonner';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  Button,
+  Input,
+  FormField,
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+  Checkbox,
+  ConfirmDialog,
+  Badge,
+} from '@/components/ui';
 
 interface UserData {
   id: string;
@@ -45,6 +64,10 @@ export default function UsersManagementPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserData | null>(null);
   const [passwordModalUser, setPasswordModalUser] = useState<UserData | null>(null);
+
+  // Delete user state
+  const [deletingUser, setDeletingUser] = useState<UserData | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Form states
   const [formData, setFormData] = useState({
@@ -115,7 +138,7 @@ export default function UsersManagementPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to create user.');
 
-      setFeedback({ type: 'success', message: data.message || 'User created successfully.' });
+      toast.success(data.message || 'User created successfully.');
       setIsCreateModalOpen(false);
       setFormData({
         username: '',
@@ -128,7 +151,7 @@ export default function UsersManagementPage() {
       fetchUsers();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      setFeedback({ type: 'error', message: msg });
+      toast.error(msg);
     } finally {
       setActionLoading(false);
     }
@@ -138,7 +161,6 @@ export default function UsersManagementPage() {
     e.preventDefault();
     if (!editingUser) return;
     setActionLoading(true);
-    setFeedback(null);
     try {
       const res = await fetch('/api/users', {
         method: 'PUT',
@@ -154,12 +176,12 @@ export default function UsersManagementPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to update user.');
 
-      setFeedback({ type: 'success', message: data.message || 'User updated successfully.' });
+      toast.success(data.message || 'User updated successfully.');
       setEditingUser(null);
       fetchUsers();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      setFeedback({ type: 'error', message: msg });
+      toast.error(msg);
     } finally {
       setActionLoading(false);
     }
@@ -169,7 +191,6 @@ export default function UsersManagementPage() {
     e.preventDefault();
     if (!passwordModalUser || !newPassword) return;
     setActionLoading(true);
-    setFeedback(null);
     try {
       const res = await fetch('/api/users', {
         method: 'PUT',
@@ -182,12 +203,12 @@ export default function UsersManagementPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to update password.');
 
-      setFeedback({ type: 'success', message: `Password for "${passwordModalUser.name}" updated successfully.` });
+      toast.success(`Password for "${passwordModalUser.name}" updated successfully.`);
       setPasswordModalUser(null);
       setNewPassword('');
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      setFeedback({ type: 'error', message: msg });
+      toast.error(msg);
     } finally {
       setActionLoading(false);
     }
@@ -202,34 +223,33 @@ export default function UsersManagementPage() {
       });
       const data = await res.json();
       if (res.ok) {
-        setFeedback({
-          type: 'success',
-          message: `Account "${user.name}" is now ${!user.isActive ? 'Active' : 'Disabled'}.`,
-        });
+        toast.success(`Account "${user.name}" is now ${!user.isActive ? 'Active' : 'Disabled'}.`);
         fetchUsers();
       } else {
-        setFeedback({ type: 'error', message: data.error });
+        toast.error(data.error || 'Failed to update user status.');
       }
     } catch (err) {
-      setFeedback({ type: 'error', message: String(err) });
+      toast.error(String(err));
     }
   };
 
-  const handleDeleteUser = async (user: UserData) => {
-    if (!confirm(`Permanently delete user "${user.name}" (@${user.username})?`)) {
-      return;
-    }
+  const handleConfirmDeleteUser = async () => {
+    if (!deletingUser) return;
+    setIsDeleting(true);
     try {
-      const res = await fetch(`/api/users?id=${user.id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/users?id=${deletingUser.id}`, { method: 'DELETE' });
       const data = await res.json();
       if (res.ok) {
-        setFeedback({ type: 'success', message: data.message || 'User deleted successfully.' });
+        toast.success(data.message || `User "${deletingUser.name}" deleted successfully.`);
+        setDeletingUser(null);
         fetchUsers();
       } else {
-        setFeedback({ type: 'error', message: data.error });
+        toast.error(data.error || 'Failed to delete user.');
       }
     } catch (err) {
-      setFeedback({ type: 'error', message: String(err) });
+      toast.error(String(err));
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -525,7 +545,7 @@ export default function UsersManagementPage() {
                           <Edit2 className="w-4 h-4 text-blue-600" />
                         </button>
                         <button
-                          onClick={() => handleDeleteUser(user)}
+                          onClick={() => setDeletingUser(user)}
                           className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
                           title="Delete User"
                         >
@@ -542,297 +562,204 @@ export default function UsersManagementPage() {
       </div>
 
       {/* ================= MODAL: CREATE USER ================= */}
-      {isCreateModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4">
-          <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-lg w-full overflow-hidden p-6 space-y-5 animate-in fade-in zoom-in-95">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div className="flex items-center space-x-2">
-                <div className="w-9 h-9 rounded-xl bg-orange-100 text-orange-600 flex items-center justify-center">
-                  <UserPlus className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-slate-900 text-base">Create New User</h3>
-                  <p className="text-xs text-slate-500">Add an administrator, operator, or viewer account</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setIsCreateModalOpen(false)}
-                className="p-1.5 text-slate-400 hover:text-slate-600 rounded-xl"
-              >
-                <X className="w-5 h-5" />
-              </button>
+      <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Create New User</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleCreateUser} className="space-y-4 py-2">
+            <FormField label="Full Name" required>
+              <Input
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="e.g. John Doe"
+                required
+              />
+            </FormField>
+
+            <div className="grid grid-cols-2 gap-3">
+              <FormField label="Username" required>
+                <Input
+                  value={formData.username}
+                  onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                  placeholder="e.g. john.doe"
+                  className="font-mono text-[12px]"
+                  required
+                />
+              </FormField>
+              <FormField label="Email (Optional)">
+                <Input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  placeholder="john@example.com"
+                />
+              </FormField>
             </div>
 
-            <form onSubmit={handleCreateUser} className="space-y-4 text-xs">
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">
-                  Full Name <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="e.g. John Doe"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-xl font-medium focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
-                />
-              </div>
+            <FormField label="Password" required hint="Minimum 6 characters">
+              <Input
+                type="password"
+                required
+                minLength={6}
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                placeholder="Password"
+              />
+            </FormField>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="font-bold text-slate-700 block mb-1">
-                    Username <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.username}
-                    onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                    placeholder="e.g. john.doe"
-                    className="w-full px-3 py-2 border border-slate-300 rounded-xl font-mono focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
-                  />
-                </div>
-                <div>
-                  <label className="font-bold text-slate-700 block mb-1">Email (Optional)</label>
-                  <input
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    placeholder="john@example.com"
-                    className="w-full px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
-                  />
-                </div>
-              </div>
+            <FormField label="Role Permission">
+              <Select
+                value={formData.role}
+                onValueChange={(val) =>
+                  setFormData({ ...formData, role: val as 'ADMIN' | 'OPERATOR' | 'VIEWER' })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="OPERATOR">Operator (Report Generator & Master)</SelectItem>
+                  <SelectItem value="ADMIN">Administrator (Full Access)</SelectItem>
+                  <SelectItem value="VIEWER">Viewer (Read-Only)</SelectItem>
+                </SelectContent>
+              </Select>
+            </FormField>
 
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">
-                  Password <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="password"
-                  required
-                  minLength={6}
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  placeholder="Minimum 6 characters"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-xl font-mono focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
-                />
-              </div>
-
-              {/* Role Selection */}
-              <div>
-                <label className="font-bold text-slate-700 block mb-1.5">Role Permission</label>
-                <div className="grid grid-cols-3 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setFormData({ ...formData, role: 'OPERATOR' })}
-                    className={`p-2.5 rounded-xl border text-left transition ${formData.role === 'OPERATOR'
-                        ? 'bg-blue-50 border-blue-500 text-blue-900 ring-2 ring-blue-500/20'
-                        : 'border-slate-200 hover:bg-slate-50 text-slate-700'
-                      }`}
-                  >
-                    <div className="font-bold flex items-center gap-1">
-                      <Sliders className="w-3.5 h-3.5 text-blue-600" />
-                      <span>Operator</span>
-                    </div>
-                    <p className="text-[10px] text-slate-500 mt-0.5">Generator, Master, & Discovery</p>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setFormData({ ...formData, role: 'ADMIN' })}
-                    className={`p-2.5 rounded-xl border text-left transition ${formData.role === 'ADMIN'
-                        ? 'bg-purple-50 border-purple-500 text-purple-900 ring-2 ring-purple-500/20'
-                        : 'border-slate-200 hover:bg-slate-50 text-slate-700'
-                      }`}
-                  >
-                    <div className="font-bold flex items-center gap-1">
-                      <Shield className="w-3.5 h-3.5 text-purple-600" />
-                      <span>Admin</span>
-                    </div>
-                    <p className="text-[10px] text-slate-500 mt-0.5">Full system management</p>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setFormData({ ...formData, role: 'VIEWER' })}
-                    className={`p-2.5 rounded-xl border text-left transition ${formData.role === 'VIEWER'
-                        ? 'bg-slate-100 border-slate-500 text-slate-900 ring-2 ring-slate-500/20'
-                        : 'border-slate-200 hover:bg-slate-50 text-slate-700'
-                      }`}
-                  >
-                    <div className="font-bold flex items-center gap-1">
-                      <Eye className="w-3.5 h-3.5 text-slate-500" />
-                      <span>Viewer</span>
-                    </div>
-                    <p className="text-[10px] text-slate-500 mt-0.5">Read-only history & PDF</p>
-                  </button>
-                </div>
-              </div>
-
-              {/* Modal Actions */}
-              <div className="pt-3 border-t border-slate-100 flex items-center justify-end space-x-2">
-                <button
-                  type="button"
-                  onClick={() => setIsCreateModalOpen(false)}
-                  className="px-4 py-2 border border-slate-300 rounded-xl text-slate-700 font-semibold hover:bg-slate-50 transition"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={actionLoading}
-                  className="px-5 py-2 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white rounded-xl font-bold shadow-md shadow-orange-500/20 transition disabled:opacity-50"
-                >
-                  {actionLoading ? 'Saving...' : 'Save User'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+            <DialogFooter className="pt-3 border-t border-slate-100">
+              <Button variant="secondary" onClick={() => setIsCreateModalOpen(false)}>
+                Cancel
+              </Button>
+              <Button variant="primary" type="submit" loading={actionLoading}>
+                Save User
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* ================= MODAL: EDIT USER ================= */}
-      {editingUser && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4">
-          <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-md w-full overflow-hidden p-6 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="font-bold text-slate-900 text-base">Edit User Account</h3>
-              <button onClick={() => setEditingUser(null)} className="p-1 text-slate-400 hover:text-slate-600">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleUpdateUser} className="space-y-3.5 text-xs">
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">Full Name</label>
-                <input
-                  type="text"
-                  required
+      <Dialog open={Boolean(editingUser)} onOpenChange={(open) => !open && setEditingUser(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit User Account</DialogTitle>
+          </DialogHeader>
+          {editingUser && (
+            <form onSubmit={handleUpdateUser} className="space-y-4 py-2">
+              <FormField label="Full Name" required>
+                <Input
                   value={editingUser.name}
                   onChange={(e) => setEditingUser({ ...editingUser, name: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-xl font-medium focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
+                  required
                 />
-              </div>
+              </FormField>
 
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">Email</label>
-                <input
+              <FormField label="Email">
+                <Input
                   type="email"
                   value={editingUser.email || ''}
                   onChange={(e) => setEditingUser({ ...editingUser, email: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
                 />
-              </div>
+              </FormField>
 
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">Role Permission</label>
-                <select
+              <FormField label="Role Permission">
+                <Select
                   value={editingUser.role}
-                  onChange={(e) =>
+                  onValueChange={(val) =>
                     setEditingUser({
                       ...editingUser,
-                      role: e.target.value as 'ADMIN' | 'OPERATOR' | 'VIEWER',
+                      role: val as 'ADMIN' | 'OPERATOR' | 'VIEWER',
                     })
                   }
-                  className="w-full px-3 py-2 border border-slate-300 rounded-xl font-bold bg-white focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
                 >
-                  <option value="OPERATOR">Operator (Report Generator & Master)</option>
-                  <option value="ADMIN">Administrator (Full Access)</option>
-                  <option value="VIEWER">Viewer (Read-Only History)</option>
-                </select>
-              </div>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="OPERATOR">Operator (Report Generator & Master)</SelectItem>
+                    <SelectItem value="ADMIN">Administrator (Full Access)</SelectItem>
+                    <SelectItem value="VIEWER">Viewer (Read-Only History)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </FormField>
 
-              <div className="pt-2 flex items-center space-x-2">
-                <input
-                  type="checkbox"
+              <div className="flex items-center space-x-2 pt-1">
+                <Checkbox
                   id="editIsActive"
                   checked={editingUser.isActive}
-                  onChange={(e) => setEditingUser({ ...editingUser, isActive: e.target.checked })}
-                  className="rounded text-orange-600 focus:ring-orange-500 w-4 h-4 cursor-pointer"
+                  onCheckedChange={(c) => setEditingUser({ ...editingUser, isActive: !!c })}
                 />
-                <label htmlFor="editIsActive" className="font-bold text-slate-800 cursor-pointer">
+                <label htmlFor="editIsActive" className="text-[13px] font-sans text-slate-800 cursor-pointer select-none">
                   Account Active
                 </label>
               </div>
 
-              <div className="pt-3 border-t border-slate-100 flex items-center justify-end space-x-2">
-                <button
-                  type="button"
-                  onClick={() => setEditingUser(null)}
-                  className="px-4 py-2 border border-slate-300 rounded-xl text-slate-700 font-semibold hover:bg-slate-50 transition"
-                >
+              <DialogFooter className="pt-3 border-t border-slate-100">
+                <Button variant="secondary" onClick={() => setEditingUser(null)}>
                   Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={actionLoading}
-                  className="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold transition disabled:opacity-50"
-                >
-                  {actionLoading ? 'Saving...' : 'Save Changes'}
-                </button>
-              </div>
+                </Button>
+                <Button variant="primary" type="submit" loading={actionLoading}>
+                  Save Changes
+                </Button>
+              </DialogFooter>
             </form>
-          </div>
-        </div>
-      )}
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* ================= MODAL: RESET PASSWORD ================= */}
-      {passwordModalUser && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4">
-          <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-sm w-full overflow-hidden p-6 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center">
-                  <KeyRound className="w-4 h-4" />
-                </div>
-                <h3 className="font-bold text-slate-900 text-sm">Reset Password</h3>
-              </div>
-              <button onClick={() => setPasswordModalUser(null)} className="p-1 text-slate-400 hover:text-slate-600">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+      <Dialog open={Boolean(passwordModalUser)} onOpenChange={(open) => !open && setPasswordModalUser(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Reset Password</DialogTitle>
+          </DialogHeader>
+          {passwordModalUser && (
+            <form onSubmit={handleResetPassword} className="space-y-4 py-2">
+              <p className="text-[13px] text-slate-600 font-sans leading-relaxed">
+                Reset login password for <strong className="text-slate-900">{passwordModalUser.name}</strong> (@{passwordModalUser.username}).
+              </p>
 
-            <p className="text-xs text-slate-500 leading-relaxed">
-              Reset login password for <strong>{passwordModalUser.name}</strong> (@{passwordModalUser.username}).
-            </p>
-
-            <form onSubmit={handleResetPassword} className="space-y-3.5 text-xs">
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">
-                  New Password <span className="text-red-500">*</span>
-                </label>
-                <input
+              <FormField label="New Password" required hint="Minimum 6 characters">
+                <Input
                   type="password"
                   required
                   minLength={6}
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="Minimum 6 characters"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-xl font-mono focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
+                  placeholder="Enter new password"
                 />
-              </div>
+              </FormField>
 
-              <div className="pt-3 border-t border-slate-100 flex items-center justify-end space-x-2">
-                <button
-                  type="button"
-                  onClick={() => setPasswordModalUser(null)}
-                  className="px-4 py-2 border border-slate-300 rounded-xl text-slate-700 font-semibold hover:bg-slate-50 transition"
-                >
+              <DialogFooter className="pt-3 border-t border-slate-100">
+                <Button variant="secondary" onClick={() => setPasswordModalUser(null)}>
                   Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={actionLoading || !newPassword}
-                  className="px-5 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold transition disabled:opacity-50"
-                >
-                  {actionLoading ? 'Saving...' : 'Update Password'}
-                </button>
-              </div>
+                </Button>
+                <Button variant="primary" type="submit" loading={actionLoading} disabled={!newPassword}>
+                  Update Password
+                </Button>
+              </DialogFooter>
             </form>
-          </div>
-        </div>
-      )}
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirmation Dialog for User Deletion */}
+      <ConfirmDialog
+        open={Boolean(deletingUser)}
+        onOpenChange={(open) => !open && setDeletingUser(null)}
+        title="Delete User Account"
+        description={
+          deletingUser ? (
+            <>
+              Are you sure you want to permanently delete user account <strong className="text-slate-900">{deletingUser.name}</strong> (@{deletingUser.username})? This action cannot be undone.
+            </>
+          ) : null
+        }
+        confirmText="Delete User"
+        variant="destructive"
+        loading={isDeleting}
+        onConfirm={handleConfirmDeleteUser}
+      />
     </div>
   );
 }

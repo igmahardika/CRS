@@ -33,6 +33,8 @@ import { CustomerData } from '@/components/CustomerModal';
 import CustomerFormModal from '@/components/CustomerFormModal';
 import ExcelImportModal from '@/components/ExcelImportModal';
 import { extractNodeFromServiceId } from '@/lib/service-utils';
+import { toast } from 'sonner';
+import { ConfirmDialog } from '@/components/ui';
 import { getSlaByServiceName } from '@/lib/service-sla';
 
 export default function CustomersPage() {
@@ -49,6 +51,10 @@ export default function CustomersPage() {
   const [isSyncingSla, setIsSyncingSla] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+  const [customerToDelete, setCustomerToDelete] = useState<{ id: string; name: string } | null>(null);
+  const [nodesToSync, setNodesToSync] = useState<CustomerData[] | null>(null);
+  const [syncSlaOpen, setSyncSlaOpen] = useState(false);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
 
   // Sorting state
   type SortColumn = 'customerName' | 'customerId' | 'serviceId' | 'serviceName' | 'nodeCount' | 'targetSla';
@@ -139,9 +145,10 @@ export default function CustomersPage() {
         });
         if (!res.ok) {
           const err = await res.json();
-          alert(err.error || 'Failed to save changes.');
+          toast.error(err.error || 'Failed to save changes.');
           return;
         }
+        toast.success(`Customer "${data.customerName}" updated successfully.`);
       } else {
         const res = await fetch('/api/customers', {
           method: 'POST',
@@ -150,49 +157,59 @@ export default function CustomersPage() {
         });
         if (!res.ok) {
           const err = await res.json();
-          alert(err.error || 'Failed to add customer.');
+          toast.error(err.error || 'Failed to add customer.');
           return;
         }
+        toast.success(`Customer "${data.customerName}" added successfully.`);
       }
       setIsModalOpen(false);
       fetchCustomers();
     } catch (err) {
       console.error(err);
-      alert('Failed to save customer.');
+      toast.error('Failed to save customer.');
     }
   };
 
-  const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`Permanently delete customer "${name}"?`)) return;
+  const confirmDeleteCustomer = async () => {
+    if (!customerToDelete) return;
     try {
-      await fetch(`/api/customers?id=${id}`, { method: 'DELETE' });
-      fetchCustomers();
+      const res = await fetch(`/api/customers?id=${customerToDelete.id}`, { method: 'DELETE' });
+      if (res.ok) {
+        toast.success(`Customer "${customerToDelete.name}" deleted.`);
+        fetchCustomers();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        toast.error(data.error || 'Failed to delete customer.');
+      }
     } catch (err) {
       console.error(err);
-      alert('Failed to delete customer.');
+      toast.error('Failed to delete customer.');
+    } finally {
+      setCustomerToDelete(null);
     }
   };
 
   // Feature: Auto-sync all customer nodes in database based on Service ID
-  const handleAutoSyncAllNodes = async () => {
+  const handleAutoSyncAllNodes = () => {
     const toUpdate = customers.filter(c => {
       const expected = extractNodeFromServiceId(c.serviceId);
       return expected !== c.nodeCount;
     });
 
     if (toUpdate.length === 0) {
-      alert('All customer nodes are already synchronized with their Service IDs.');
+      toast.info('All customer nodes are already synchronized with their Service IDs.');
       return;
     }
 
-    if (!confirm(`Found ${toUpdate.length} customers with mismatched node counts. Run auto-synchronization now?`)) {
-      return;
-    }
+    setNodesToSync(toUpdate);
+  };
 
+  const confirmAutoSyncNodes = async () => {
+    if (!nodesToSync || nodesToSync.length === 0) return;
     setIsSyncingNodes(true);
     try {
       let updatedCount = 0;
-      for (const cust of toUpdate) {
+      for (const cust of nodesToSync) {
         const newNode = extractNodeFromServiceId(cust.serviceId);
         await fetch('/api/customers', {
           method: 'PUT',
@@ -204,37 +221,39 @@ export default function CustomersPage() {
         });
         updatedCount++;
       }
-      alert(`Successfully updated ${updatedCount} customer nodes based on Service IDs.`);
+      toast.success(`Successfully updated ${updatedCount} customer nodes based on Service IDs.`);
       fetchCustomers();
     } catch (err) {
       console.error(err);
-      alert('Error occurred while synchronizing nodes.');
+      toast.error('Error occurred while synchronizing nodes.');
     } finally {
       setIsSyncingNodes(false);
+      setNodesToSync(null);
     }
   };
 
   // Sync SLA Otomatis untuk semua pelanggan berdasarkan nama layanan
-  const handleAutoSyncAllSla = async () => {
-    if (!confirm('Auto-synchronize target SLAs for all customers based on service plans?')) {
-      return;
-    }
+  const handleAutoSyncAllSla = () => {
+    setSyncSlaOpen(true);
+  };
 
+  const confirmAutoSyncSla = async () => {
+    setSyncSlaOpen(false);
     setIsSyncingSla(true);
     try {
       const res = await fetch('/api/customers/sync-sla', { method: 'POST' });
       const data = await res.json();
       if (data.success) {
-        alert(
-          `SLA sync complete!\nTotal: ${data.totalCustomers} customers\nUpdated: ${data.updatedCount} records\n\nSLA Distribution:\n• SLA 99.5%: ${data.breakdown['99.5%']}\n• SLA 98.0%: ${data.breakdown['98.0%']}\n• SLA 95.0%: ${data.breakdown['95.0%']}\n• No SLA: ${data.breakdown['Tanpa SLA']}`
+        toast.success(
+          `SLA sync complete: ${data.updatedCount} records updated out of ${data.totalCustomers} customers.`
         );
         fetchCustomers();
       } else {
-        alert(`Failed: ${data.error || 'An unexpected error occurred'}`);
+        toast.error(`Failed: ${data.error || 'An unexpected error occurred'}`);
       }
     } catch (err) {
       console.error(err);
-      alert('Error occurred while synchronizing SLAs.');
+      toast.error('Error occurred while synchronizing SLAs.');
     } finally {
       setIsSyncingSla(false);
     }
@@ -350,16 +369,16 @@ export default function CustomersPage() {
     setSelectedIds(new Set());
   };
 
-  const handleBulkDelete = async () => {
+  const handleBulkDelete = () => {
+    if (selectedIds.size === 0) return;
+    setBulkDeleteOpen(true);
+  };
+
+  const confirmBulkDelete = async () => {
     if (selectedIds.size === 0) return;
     const count = selectedIds.size;
     const isAll = count === customers.length && count > 0;
-    const confirmPrompt = isAll
-      ? `Are you sure you want to delete ALL ${count} customers in the database? This action is permanent and cannot be undone.`
-      : `Are you sure you want to delete ${count} selected customer(s)? This action is permanent and cannot be undone.`;
-
-    if (!confirm(confirmPrompt)) return;
-
+    setBulkDeleteOpen(false);
     setIsBulkDeleting(true);
     try {
       const res = await fetch('/api/customers', {
@@ -369,14 +388,15 @@ export default function CustomersPage() {
       });
       const data = await res.json();
       if (res.ok) {
+        toast.success(`Successfully deleted ${count} customer(s).`);
         setSelectedIds(new Set());
         fetchCustomers();
       } else {
-        alert(data.error || 'Failed to delete selected customers.');
+        toast.error(data.error || 'Failed to delete selected customers.');
       }
     } catch (err) {
       console.error(err);
-      alert('An unexpected error occurred while deleting customers.');
+      toast.error('An unexpected error occurred while deleting customers.');
     } finally {
       setIsBulkDeleting(false);
     }
@@ -930,7 +950,7 @@ export default function CustomersPage() {
                           <Edit2 className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => handleDelete(c.id!, c.customerName)}
+                          onClick={() => setCustomerToDelete({ id: c.id!, name: c.customerName })}
                           className="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition"
                           title="Delete Customer"
                         >
@@ -1033,6 +1053,52 @@ export default function CustomersPage() {
         onClose={() => setIsModalOpen(false)}
         onSubmit={handleSaveCustomer}
         initialData={editingCustomer}
+      />
+
+      {/* Confirm Dialog: Single Customer Delete */}
+      <ConfirmDialog
+        open={customerToDelete !== null}
+        onOpenChange={(open) => !open && setCustomerToDelete(null)}
+        title="Delete Customer"
+        description={`Permanently delete customer "${customerToDelete?.name}"? This action cannot be undone.`}
+        confirmLabel="Delete Customer"
+        variant="destructive"
+        onConfirm={confirmDeleteCustomer}
+      />
+
+      {/* Confirm Dialog: Sync Nodes */}
+      <ConfirmDialog
+        open={nodesToSync !== null}
+        onOpenChange={(open) => !open && setNodesToSync(null)}
+        title="Sync Customer Nodes"
+        description={`Found ${nodesToSync?.length ?? 0} customer(s) with mismatched node counts. Run auto-synchronization now?`}
+        confirmLabel="Sync Nodes"
+        onConfirm={confirmAutoSyncNodes}
+      />
+
+      {/* Confirm Dialog: Sync Target SLA */}
+      <ConfirmDialog
+        open={syncSlaOpen}
+        onOpenChange={setSyncSlaOpen}
+        title="Auto-Sync Target SLA"
+        description="Auto-synchronize target SLAs for all customers based on their service plans?"
+        confirmLabel="Sync Target SLAs"
+        onConfirm={confirmAutoSyncSla}
+      />
+
+      {/* Confirm Dialog: Bulk Delete */}
+      <ConfirmDialog
+        open={bulkDeleteOpen}
+        onOpenChange={setBulkDeleteOpen}
+        title="Delete Selected Customers"
+        description={
+          selectedIds.size === customers.length && customers.length > 0
+            ? `Permanently delete ALL ${selectedIds.size} customers in the database? This action cannot be undone.`
+            : `Permanently delete ${selectedIds.size} selected customer(s)? This action cannot be undone.`
+        }
+        confirmLabel={`Delete ${selectedIds.size} Customer${selectedIds.size === 1 ? '' : 's'}`}
+        variant="destructive"
+        onConfirm={confirmBulkDelete}
       />
     </div>
   );

@@ -25,6 +25,17 @@ import {
   WifiOff,
 } from 'lucide-react';
 import Link from 'next/link';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  Button,
+  Input,
+  FormField,
+  Badge,
+} from '@/components/ui';
 
 // ----------------------------------------------------------------
 // Types
@@ -603,95 +614,77 @@ export default function DiscoveryPage() {
       </div>
 
       {/* Mapping Dialog Modal */}
-      {mapping && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4" onClick={() => setMapping(null)}>
-          <div
-            className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-lg w-full p-6 space-y-4"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Header */}
-            <div className="flex items-start justify-between">
-              <div>
-                <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
-                  <Link2 className="w-4 h-4 text-orange-500" />
-                  Map to Customer Record
-                </h3>
-                <p className="text-xs text-slate-500 mt-1">Associate {mapping.engine} ID with customer directory.</p>
-              </div>
-              <button onClick={() => setMapping(null)} className="p-1 text-slate-400 hover:text-slate-600 rounded-lg transition">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+      <Dialog open={Boolean(mapping)} onOpenChange={(open) => !open && setMapping(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Map to Customer Record</DialogTitle>
+          </DialogHeader>
 
-            {/* Interface Info Card */}
-            <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1.5 text-xs">
-              <div className="flex items-center gap-2">
-                <span className="font-semibold text-slate-600">Interface:</span>
-                <span className="font-bold text-slate-900 truncate">{mapping.fullTitle}</span>
-              </div>
-              <div className="flex items-center gap-4">
-                <span className="flex items-center gap-1.5 font-mono font-bold bg-orange-100 text-orange-800 px-2 py-0.5 rounded border border-orange-200">
-                  {mapping.engine} ID: {mapping.targetId}
-                </span>
-                {mapping.detectedSid && (
-                  <span className="flex items-center gap-1.5 font-mono font-bold bg-emerald-50 text-emerald-800 px-2 py-0.5 rounded border border-emerald-200">
-                    SID: {mapping.detectedSid}
-                  </span>
-                )}
-              </div>
-            </div>
-
-            {/* Auto-matched customer info */}
-            {mapping.matched && (
-              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs space-y-1">
-                <div className="flex items-center gap-1.5 font-bold text-emerald-800">
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  Customer auto-detected
-                </div>
-                <div className="text-emerald-700">
-                  <strong>{mapping.matched.customerName}</strong> — CID: {mapping.matched.customerId} | SID: {mapping.matched.serviceId}
-                </div>
-              </div>
-            )}
-
-            {/* Customer ID Input */}
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                <Users className="w-3.5 h-3.5" />
-                Customer ID
-              </label>
-              <input
-                type="text"
-                value={mapping.customerId}
-                onChange={(e) => setMapping({ ...mapping, customerId: e.target.value, matched: null })}
-                placeholder="Enter Customer ID (e.g. 01.2180.1124)"
-                className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl font-mono focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
-              />
-              <p className="text-[10px] text-slate-400">
-                Enter an existing Customer ID from the directory.
+          {mapping && (
+            <div className="space-y-4 text-[13px] font-sans py-2">
+              <p className="text-[12px] text-slate-500">
+                Associate {mapping.engine} monitoring ID with customer directory.
               </p>
-            </div>
 
-            {/* Actions */}
-            <div className="flex items-center justify-end gap-2 pt-1">
-              <button
-                onClick={() => setMapping(null)}
-                className="px-4 py-2 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmMapping}
-                disabled={!mapping.customerId.trim()}
-                className="inline-flex items-center gap-2 px-5 py-2 text-xs font-bold text-white bg-orange-500 hover:bg-orange-600 active:scale-95 disabled:opacity-50 rounded-xl transition shadow-xs"
-              >
-                <Link2 className="w-3.5 h-3.5" />
-                Save Mapping
-              </button>
+              {/* Interface Info Card */}
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2 text-[12px]">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium text-slate-500">Interface:</span>
+                  <span className="font-semibold text-slate-900 truncate">{mapping.fullTitle}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant="soft" className="font-mono text-[11px]">
+                    {mapping.engine} ID: {mapping.targetId}
+                  </Badge>
+                  {mapping.detectedSid && (
+                    <Badge variant="success" className="font-mono text-[11px]">
+                      SID: {mapping.detectedSid}
+                    </Badge>
+                  )}
+                </div>
+              </div>
+
+              {/* Auto-matched customer info */}
+              {mapping.matched && (
+                <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-[12px] space-y-1">
+                  <div className="flex items-center gap-1.5 font-semibold text-emerald-800">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                    Customer auto-detected
+                  </div>
+                  <div className="text-emerald-700">
+                    <strong>{mapping.matched.customerName}</strong> — CID: {mapping.matched.customerId} | SID: {mapping.matched.serviceId}
+                  </div>
+                </div>
+              )}
+
+              {/* Customer ID Input */}
+              <FormField label="Customer ID" required hint="Enter an existing Customer ID from directory">
+                <Input
+                  value={mapping.customerId}
+                  onChange={(e) => setMapping({ ...mapping, customerId: e.target.value, matched: null })}
+                  placeholder="e.g. 01.2180.1124"
+                  className="font-mono text-[12px]"
+                />
+              </FormField>
+
+              {/* Actions */}
+              <DialogFooter className="pt-3 border-t border-slate-100">
+                <Button variant="secondary" onClick={() => setMapping(null)}>
+                  Cancel
+                </Button>
+                <Button
+                  variant="primary"
+                  onClick={confirmMapping}
+                  disabled={!mapping.customerId.trim()}
+                >
+                  <Link2 className="w-4 h-4 mr-1.5" />
+                  Save Mapping
+                </Button>
+              </DialogFooter>
             </div>
-          </div>
-        </div>
-      )}
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -21,6 +21,17 @@ import {
   RotateCcw,
 } from 'lucide-react';
 import Link from 'next/link';
+import { toast } from 'sonner';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  Button,
+  Badge,
+  ConfirmDialog,
+} from '@/components/ui';
 
 interface SavedReport {
   id: string;
@@ -93,19 +104,26 @@ export default function HistoryPage() {
       .catch(() => { });
   }, []);
 
-  const handleDelete = async (id: string, docNum: string) => {
-    if (!confirm(`Delete report "${docNum}" from archive and server disk?`)) return;
+  const [deletingReport, setDeletingReport] = useState<{ id: string; docNum: string } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    if (!deletingReport) return;
+    setIsDeleting(true);
     try {
-      const res = await fetch(`/api/reports?id=${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/reports?id=${deletingReport.id}`, { method: 'DELETE' });
       if (res.ok) {
+        toast.success(`Report "${deletingReport.docNum}" deleted successfully`);
         fetchReports();
-        if (selectedReport?.id === id) setSelectedReport(null);
+        if (selectedReport?.id === deletingReport.id) setSelectedReport(null);
+        setDeletingReport(null);
       } else {
-        alert('Failed to delete report.');
+        toast.error('Failed to delete report from archive');
       }
-    } catch (err) {
-      console.error(err);
-      alert('Failed to delete report.');
+    } catch {
+      toast.error('An unexpected error occurred while deleting report');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -443,7 +461,7 @@ export default function HistoryPage() {
                         </button>
                         {currentUserRole !== 'VIEWER' && (
                           <button
-                            onClick={() => handleDelete(r.id, r.documentNumber)}
+                            onClick={() => setDeletingReport({ id: r.id, docNum: r.documentNumber })}
                             className="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition"
                             title="Delete Report"
                           >
@@ -461,92 +479,97 @@ export default function HistoryPage() {
       </div>
 
       {/* Modal Quick View Detail */}
-      {selectedReport && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-lg w-full overflow-hidden">
-            <div className="px-6 py-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
-              <div>
-                <h3 className="text-sm font-bold text-slate-900">Detail Ringkasan Laporan</h3>
-                <p className="text-xs text-slate-500 font-mono">{selectedReport.documentNumber}</p>
-              </div>
-              <button
-                onClick={() => setSelectedReport(null)}
-                className="text-slate-400 hover:text-slate-600 text-sm font-bold"
-              >
-                ✕
-              </button>
-            </div>
-            <div className="p-6 space-y-4 text-xs">
+      <Dialog open={Boolean(selectedReport)} onOpenChange={(open) => !open && setSelectedReport(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Report Summary</DialogTitle>
+            <p className="text-[12px] font-mono text-slate-500">{selectedReport?.documentNumber}</p>
+          </DialogHeader>
+
+          {selectedReport && (
+            <div className="space-y-4 text-[13px] font-sans py-2">
               <div className="grid grid-cols-2 gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200">
                 <div>
-                  <span className="text-slate-400 text-[10px]">Customer Name</span>
-                  <div className="font-bold text-slate-800">{selectedReport.customerName}</div>
+                  <span className="text-slate-500 text-[11px] block">Customer Name</span>
+                  <div className="font-semibold text-slate-900">{selectedReport.customerName}</div>
                 </div>
                 <div>
-                  <span className="text-slate-400 text-[10px]">Customer ID / Service ID</span>
+                  <span className="text-slate-500 text-[11px] block">Customer ID / Service ID</span>
                   <div className="font-mono text-slate-700">{selectedReport.customerId} / {selectedReport.serviceId}</div>
                 </div>
                 <div>
-                  <span className="text-slate-400 text-[10px]">Report Period</span>
-                  <div className="font-semibold text-slate-800">{selectedReport.reportPeriod}</div>
+                  <span className="text-slate-500 text-[11px] block">Report Period</span>
+                  <div className="font-medium text-slate-800">{selectedReport.reportPeriod}</div>
                 </div>
                 <div>
-                  <span className="text-slate-400 text-[10px]">Document Type</span>
-                  <div className="font-bold text-orange-600">{selectedReport.reportType} Report</div>
+                  <span className="text-slate-500 text-[11px] block">Document Type</span>
+                  <div className="font-semibold text-[#EA580C]">{selectedReport.reportType} Report</div>
                 </div>
               </div>
 
               {selectedReport.reportType === 'SLA' && (
                 <div>
-                  <div className="text-xs font-bold text-slate-700 mb-2">SLA Performance</div>
+                  <div className="text-[13px] font-semibold text-slate-800 mb-2">SLA Performance</div>
                   <div className="grid grid-cols-3 gap-2 text-center">
-                    <div className="p-2 bg-emerald-50 border border-emerald-200 rounded-lg">
-                      <div className="text-[10px] text-emerald-600 font-semibold">Online</div>
-                      <div className="text-sm font-black text-emerald-700">{(selectedReport.onlinePercent || 100).toFixed(2)}%</div>
+                    <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-lg">
+                      <div className="text-[11px] text-emerald-700 font-medium">Online</div>
+                      <div className="text-[14px] font-bold text-emerald-700 tabular-nums">{(selectedReport.onlinePercent || 100).toFixed(2)}%</div>
                     </div>
-                    <div className="p-2 bg-rose-50 border border-rose-200 rounded-lg">
-                      <div className="text-[10px] text-rose-600 font-semibold">Downtime</div>
-                      <div className="text-sm font-black text-rose-700">{(selectedReport.downtimePercent || 0).toFixed(2)}%</div>
+                    <div className="p-2.5 bg-rose-50 border border-rose-200 rounded-lg">
+                      <div className="text-[11px] text-rose-700 font-medium">Downtime</div>
+                      <div className="text-[14px] font-bold text-rose-700 tabular-nums">{(selectedReport.downtimePercent || 0).toFixed(2)}%</div>
                     </div>
-                    <div className="p-2 bg-blue-50 border border-blue-200 rounded-lg">
-                      <div className="text-[10px] text-blue-600 font-semibold">Target SLA</div>
-                      <div className="text-sm font-black text-blue-700">{(selectedReport.targetSla && selectedReport.targetSla > 0) ? `${selectedReport.targetSla.toFixed(2)}%` : 'No SLA'}</div>
+                    <div className="p-2.5 bg-blue-50 border border-blue-200 rounded-lg">
+                      <div className="text-[11px] text-blue-700 font-medium">Target SLA</div>
+                      <div className="text-[14px] font-bold text-blue-700 tabular-nums">{(selectedReport.targetSla && selectedReport.targetSla > 0) ? `${selectedReport.targetSla.toFixed(2)}%` : 'No SLA'}</div>
                     </div>
                   </div>
-                  <div className="mt-2 text-[11px] text-slate-500 flex justify-between">
-                    <span>Downtime Duration: <strong>{selectedReport.downtimeDurationStr || '-'}</strong></span>
-                    <span>Total Downtime: <strong>{selectedReport.totalDowntimeMinutes || 0} mins</strong></span>
+                  <div className="mt-2 text-[12px] text-slate-500 flex justify-between">
+                    <span>Downtime Duration: <strong className="text-slate-700">{selectedReport.downtimeDurationStr || '-'}</strong></span>
+                    <span>Total Downtime: <strong className="text-slate-700 tabular-nums">{selectedReport.totalDowntimeMinutes || 0} mins</strong></span>
                   </div>
                 </div>
               )}
 
               <div>
-                <div className="text-xs font-bold text-slate-700 mb-1">Traffic Summary</div>
-                <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200 space-y-1 text-[11px]">
+                <div className="text-[13px] font-semibold text-slate-800 mb-1">Traffic Summary</div>
+                <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200 space-y-1 text-[12px] text-slate-700">
                   <div>Download: Average <strong>{selectedReport.dlAvg ?? '-'} {selectedReport.dlUnit || 'Mbps'}</strong>, Peak <strong>{selectedReport.dlMax ?? '-'} {selectedReport.dlUnit || 'Mbps'}</strong></div>
                   <div>Upload: Average <strong>{selectedReport.ulAvg ?? '-'} {selectedReport.ulUnit || 'Mbps'}</strong>, Peak <strong>{selectedReport.ulMax ?? '-'} {selectedReport.ulUnit || 'Mbps'}</strong></div>
                 </div>
               </div>
 
-              <div className="pt-3 border-t border-slate-200 flex justify-end space-x-2">
-                <button
-                  onClick={() => setSelectedReport(null)}
-                  className="px-4 py-2 border border-slate-300 rounded-xl text-slate-600 hover:bg-slate-100 font-semibold"
-                >
+              <DialogFooter className="pt-3 border-t border-slate-100">
+                <Button variant="secondary" onClick={() => setSelectedReport(null)}>
                   Close
-                </button>
-                <button
-                  onClick={() => handleDownloadPdf(selectedReport)}
-                  className="inline-flex items-center space-x-1.5 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-xl font-bold shadow-xs transition"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  <span>Download PDF</span>
-                </button>
-              </div>
+                </Button>
+                <Button variant="primary" onClick={() => handleDownloadPdf(selectedReport)}>
+                  <Download className="w-4 h-4 mr-1.5" />
+                  Download PDF
+                </Button>
+              </DialogFooter>
             </div>
-          </div>
-        </div>
-      )}
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirmation Dialog for Report Deletion */}
+      <ConfirmDialog
+        open={Boolean(deletingReport)}
+        onOpenChange={(open) => !open && setDeletingReport(null)}
+        title="Delete Archived Report"
+        description={
+          deletingReport ? (
+            <>
+              Are you sure you want to permanently delete report <strong className="text-slate-900">{deletingReport.docNum}</strong> from the database and server storage? This action cannot be undone.
+            </>
+          ) : null
+        }
+        confirmText="Delete Report"
+        variant="destructive"
+        loading={isDeleting}
+        onConfirm={handleDelete}
+      />
     </div>
   );
 }
