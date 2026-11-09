@@ -321,7 +321,10 @@ function GeneratorPageContent() {
           setUlAvg(data.metrics.inAvg);
           setUlMax(data.metrics.inMax);
         }
-        if (data.metrics.unit) {
+        if (data.metrics.inUnit) {
+          setDlUnit(trafficDirection === 'NORMAL' ? data.metrics.inUnit : data.metrics.outUnit);
+          setUlUnit(trafficDirection === 'NORMAL' ? data.metrics.outUnit : data.metrics.inUnit);
+        } else if (data.metrics.unit) {
           setDlUnit(data.metrics.unit);
           setUlUnit(data.metrics.unit);
         }

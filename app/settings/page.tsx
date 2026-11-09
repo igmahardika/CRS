@@ -49,11 +49,11 @@ type SettingsTab = 'integrations' | 'templates' | 'defaults';
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<SettingsTab>('integrations');
   const [config, setConfig] = useState<AppConfigState>({
-    mrtgBaseUrl: 'http://cacti.internal.net',
+    mrtgBaseUrl: 'https://mrtg.nexa.net.id',
     mrtgUsername: '',
     mrtgPassword: '',
     mrtgAuthType: 'BASIC',
-    prtgBaseUrl: 'http://prtg.internal.net',
+    prtgBaseUrl: 'http://nms.nexa.net.id',
     prtgUsername: '',
     prtgPassword: '',
     prtgAuthType: 'PASSWORD',
@@ -212,11 +212,12 @@ export default function SettingsPage() {
     setPrtgTestResult(null);
     const startTime = Date.now();
     try {
+      // Use standard sample sensor ID (e.g. 2063) or test endpoint
       const res = await fetch('/api/prtg/graph', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          sensorId: '1',
+          sensorId: '2063',
           month: 10,
           year: 2026,
           configOverride: config,
@@ -225,10 +226,15 @@ export default function SettingsPage() {
       const data = await res.json();
       const latency = Date.now() - startTime;
 
-      if (res.ok && data.success) {
+      if (res.ok && data.success && !data.isFallback) {
         setPrtgTestResult({
           type: 'success',
           message: `Connected successfully (${latency}ms) at ${config.prtgBaseUrl}`,
+        });
+      } else if (data.isFallback) {
+        setPrtgTestResult({
+          type: 'error',
+          message: data.error || `Server responded but sensor was unreachable or credentials invalid at ${config.prtgBaseUrl}.`,
         });
       } else {
         setPrtgTestResult({

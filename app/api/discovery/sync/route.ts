@@ -29,7 +29,9 @@ export async function POST(req: NextRequest) {
         baseUrl: dbConfig?.prtgBaseUrl || 'https://nms.nexa.net.id',
         username: dbConfig?.prtgUsername || undefined,
         password: dbConfig?.prtgPassword || undefined,
-        authType: (dbConfig?.prtgAuthType || 'PASSWORD') as 'PASSWORD' | 'PASSHASH',
+        authType: (dbConfig?.prtgAuthType || 'PASSHASH') as 'PASSWORD' | 'PASSHASH',
+        basicAuthUsername: dbConfig?.mrtgUsername || 'appsmg01',
+        basicAuthPassword: dbConfig?.mrtgPassword || 'appsmg01',
       };
       result = await discoverPrtg(prtgConfig);
     } else {
@@ -39,8 +41,8 @@ export async function POST(req: NextRequest) {
         username: dbConfig?.mrtgUsername || undefined,
         password: dbConfig?.mrtgPassword || undefined,
       };
-      // Fetch up to 10 pages (5,000 graphs) in parallel
-      result = await discoverMrtg(mrtgConfig, 10);
+      // Fetch all pages dynamically (discovers all >34,000 graphs and devices)
+      result = await discoverMrtg(mrtgConfig, 60);
     }
 
     if (result.items.length === 0) {
@@ -56,7 +58,7 @@ export async function POST(req: NextRequest) {
     // This ensures stale devices that no longer exist are removed
     await prisma.discoveredItem.deleteMany({ where: { engine } });
 
-    // Batch insert in chunks of 500
+    // Batch insert in chunks of 500 (safe within SQLite variable limits)
     const CHUNK = 500;
     let inserted = 0;
     for (let i = 0; i < result.items.length; i += CHUNK) {

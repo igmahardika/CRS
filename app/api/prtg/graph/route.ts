@@ -27,10 +27,12 @@ export async function POST(req: NextRequest) {
     });
 
     const prtgConfig: PrtgAuthConfig = {
-      baseUrl: configOverride?.prtgBaseUrl || dbConfig?.prtgBaseUrl || 'http://prtg.internal.net',
+      baseUrl: configOverride?.prtgBaseUrl || dbConfig?.prtgBaseUrl || 'https://nms.nexa.net.id',
       username: configOverride?.prtgUsername !== undefined ? configOverride.prtgUsername : dbConfig?.prtgUsername,
       password: configOverride?.prtgPassword !== undefined ? configOverride.prtgPassword : dbConfig?.prtgPassword,
-      authType: (configOverride?.prtgAuthType || dbConfig?.prtgAuthType || 'PASSWORD') as 'PASSWORD' | 'PASSHASH',
+      authType: (configOverride?.prtgAuthType || dbConfig?.prtgAuthType || 'PASSHASH') as 'PASSWORD' | 'PASSHASH',
+      basicAuthUsername: dbConfig?.mrtgUsername || 'appsmg01',
+      basicAuthPassword: dbConfig?.mrtgPassword || 'appsmg01',
     };
 
     // Parallel fetch for PRTG graph image and traffic metrics
@@ -40,7 +42,7 @@ export async function POST(req: NextRequest) {
     ]);
 
     return NextResponse.json({
-      success: true,
+      success: !graphResult.isFallback || Boolean(graphResult.imageBase64),
       engine: 'PRTG',
       imageBase64: graphResult.imageBase64,
       metrics: metricsResult.metrics,
@@ -49,6 +51,7 @@ export async function POST(req: NextRequest) {
       startDateStr,
       endDateStr,
       isFallback: graphResult.isFallback || metricsResult.isFallback,
+      error: graphResult.error || metricsResult.error || null,
     });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
