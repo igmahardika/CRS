@@ -22,7 +22,7 @@ export function StatCard({
   return (
     <div
       className={cn(
-        'flex flex-col justify-between p-5 rounded-xl border border-slate-200 bg-white shadow-sm transition-colors',
+        'flex flex-col justify-between p-5 rounded-lg border border-slate-200 bg-white shadow-sm transition-colors',
         className
       )}
     >

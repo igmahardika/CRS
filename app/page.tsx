@@ -29,7 +29,19 @@ import { ReportData } from '@/lib/pdf-template';
 import { TicketItem, CaseItem } from '@/lib/sla-calculator';
 import { generateDocumentNumber } from '@/lib/doc-number';
 import { toast } from 'sonner';
-import { ConfirmDialog, PageHeader, Button } from '@/components/ui';
+import {
+  ConfirmDialog,
+  PageHeader,
+  Button,
+  Input,
+  FormField,
+  Badge,
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui';
 import { getSlaByServiceName } from '@/lib/service-sla';
 import { extractNodeFromServiceId } from '@/lib/service-utils';
 
@@ -528,88 +540,81 @@ function GeneratorPageContent() {
       {/* Main 2-Column Split: Left = Input Form, Right = Live Preview */}
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
         {/* ================= LEFT COLUMN: DYNAMIC FORM ================= */}
-        <div className="xl:col-span-5 space-y-6">
+        <div className="xl:col-span-6 2xl:col-span-5 space-y-5">
           {/* 1. Customer & Document Metadata Card */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs space-y-4">
+          <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-xs space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="font-semibold text-slate-800 text-sm flex items-center gap-2">
-                <span className="w-5 h-5 rounded-full bg-orange-100 text-orange-700 text-[11px] font-bold flex items-center justify-center">1</span>
+              <h3 className="font-heading font-semibold text-slate-900 text-sm flex items-center gap-2">
+                <span className="w-5 h-5 rounded-full bg-orange-100 text-[#C2410C] text-[11px] font-bold flex items-center justify-center">
+                  1
+                </span>
                 <span>Customer & Report Period</span>
               </h3>
-              <button
+              <Button
                 type="button"
+                variant="secondary"
+                size="sm"
                 onClick={() => setIsCustomerModalOpen(true)}
-                className="inline-flex items-center space-x-1.5 px-3 py-1 bg-orange-50 hover:bg-orange-100 text-orange-700 border border-orange-200 rounded-lg text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
-                title="Open Customer Directory (Shortcut: Ctrl+Shift+K)"
+                title="Open Customer Directory (Ctrl+Shift+K)"
               >
-                <Search className="w-3.5 h-3.5 text-orange-600" />
+                <Search className="w-3.5 h-3.5 mr-1 text-slate-500" />
                 <span>Select Customer</span>
-                <kbd className="hidden sm:inline-block ml-1 text-[10px] font-mono bg-orange-200/60 text-orange-800 px-1 py-0.2 rounded border border-orange-300/60 font-semibold">
+                <kbd className="hidden sm:inline-block ml-1.5 text-[10px] font-mono bg-slate-100 text-slate-600 px-1 py-0.5 rounded border border-slate-200">
                   Ctrl+Shift+K
                 </kbd>
-              </button>
+              </Button>
             </div>
 
-            <div className="space-y-3 text-xs">
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">
-                  Customer Name <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
+            <div className="space-y-3.5">
+              <FormField label="Customer Name" required>
+                <Input
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
                   placeholder="e.g. RSJ. Dr. Soeharto Heerdjan"
                 />
-              </div>
+              </FormField>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="font-bold text-slate-700 block mb-1">
-                    Customer ID <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <FormField label="Customer ID" required>
+                  <Input
                     value={customerId}
                     onChange={(e) => setCustomerId(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs font-mono font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
+                    className="font-mono"
                     placeholder="e.g. 01.2180.1124"
                   />
-                </div>
-                <div>
-                  <label className="font-bold text-slate-700 block mb-1">
-                    Service ID <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
+                </FormField>
+                <FormField label="Service ID" required>
+                  <Input
                     value={serviceId}
                     onChange={(e) => {
                       const newSid = e.target.value;
                       setServiceId(newSid);
                       setNodeCount(extractNodeFromServiceId(newSid));
                     }}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs font-mono font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
+                    className="font-mono"
                     placeholder="e.g. 01.2180.1"
                   />
-                </div>
+                </FormField>
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
-                <div className="col-span-2">
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="font-bold text-slate-700">Service Plan / Bandwidth</label>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-start">
+                <div className="sm:col-span-2">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-medium text-slate-700">Service Plan / Bandwidth</label>
                     {serviceName && (
-                      <span className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full transition-all duration-300 shadow-2xs ${targetSla > 0
-                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                          : 'bg-slate-100 text-slate-500 border border-slate-200'
-                        }`}>
+                      <Badge
+                        variant="outline"
+                        className={`text-[10px] ${
+                          targetSla > 0
+                            ? 'border-emerald-200 text-emerald-700 bg-emerald-50'
+                            : 'border-slate-200 text-slate-500 bg-slate-50'
+                        }`}
+                      >
                         {targetSla > 0 ? `Target SLA: ${targetSla}%` : 'No SLA'}
-                      </span>
+                      </Badge>
                     )}
                   </div>
-                  <input
-                    type="text"
+                  <Input
                     value={serviceName}
                     onChange={(e) => {
                       const newServiceName = e.target.value;
@@ -617,35 +622,26 @@ function GeneratorPageContent() {
                       const match = getSlaByServiceName(newServiceName);
                       setTargetSla(match.targetSla);
                     }}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
                     placeholder="e.g. Prime 300 Mbps or Impressive 100Mbps"
                   />
                 </div>
-                <div>
-                  <label className="font-bold text-slate-700 block mb-1">Node Count</label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={nodeCount}
-                    onChange={(e) => setNodeCount(parseInt(e.target.value, 10) || 1)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs font-bold text-center"
-                  />
+                <div className="sm:col-span-1">
+                  <FormField label="Node Count">
+                    <Input
+                      type="number"
+                      min="1"
+                      value={nodeCount}
+                      onChange={(e) => setNodeCount(parseInt(e.target.value, 10) || 1)}
+                      className="text-center font-medium"
+                    />
+                  </FormField>
                 </div>
               </div>
 
-              {/* Period Selector */}
-              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-slate-800 text-[11px] uppercase tracking-wider">
-                    Report Period
-                  </span>
-                  <span className="text-[10px] text-slate-500">
-                    Monthly auto-resetting sequence
-                  </span>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-[11px] text-slate-600 block mb-1 font-semibold">Month</label>
+              {/* Period & Document Number Row */}
+              <div className="pt-2 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
+                <div className="sm:col-span-4">
+                  <FormField label="Report Month">
                     <select
                       value={month}
                       onChange={(e) => {
@@ -653,7 +649,7 @@ function GeneratorPageContent() {
                         setMonth(newM);
                         fetchNextDocNumber(newM, year, reportType);
                       }}
-                      className="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg text-xs font-bold bg-white"
+                      className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#EA580C]/40 focus:border-[#EA580C]"
                     >
                       {monthNames.map((m, idx) => (
                         <option key={idx} value={idx + 1}>
@@ -661,10 +657,11 @@ function GeneratorPageContent() {
                         </option>
                       ))}
                     </select>
-                  </div>
-                  <div>
-                    <label className="text-[11px] text-slate-600 block mb-1 font-semibold">Year</label>
-                    <input
+                  </FormField>
+                </div>
+                <div className="sm:col-span-3">
+                  <FormField label="Report Year">
+                    <Input
                       type="number"
                       value={year}
                       onChange={(e) => {
@@ -672,169 +669,174 @@ function GeneratorPageContent() {
                         setYear(newY);
                         fetchNextDocNumber(month, newY, reportType);
                       }}
-                      className="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg text-xs font-bold bg-white"
+                      className="font-mono text-center"
                     />
+                  </FormField>
+                </div>
+                <div className="sm:col-span-5">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-medium text-slate-700">Document Number</label>
+                    <button
+                      type="button"
+                      onClick={() => fetchNextDocNumber(month, year, reportType)}
+                      className="text-[11px] text-[#C2410C] hover:text-[#EA580C] font-medium flex items-center gap-1 transition"
+                      title="Auto-generate sequence number"
+                    >
+                      <RefreshCw className={`w-3 h-3 ${isLoadingDocNumber ? 'animate-spin' : ''}`} />
+                      <span>Auto</span>
+                    </button>
                   </div>
-                </div>
-              </div>
-
-              {/* Document Number with Auto-generate & Manual Reset */}
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="font-bold text-slate-700">
-                    Document Number
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => fetchNextDocNumber(month, year, reportType)}
-                    className="text-[10px] text-orange-600 hover:text-orange-700 font-bold flex items-center gap-1"
-                    title="Auto-generate sequence number"
-                  >
-                    <RefreshCw className={`w-3 h-3 ${isLoadingDocNumber ? 'animate-spin' : ''}`} />
-                    <span>Auto Sequence</span>
-                  </button>
-                </div>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
+                  <Input
                     value={documentNumber}
                     onChange={(e) => {
                       setDocumentNumber(e.target.value);
                       setIsManualDocNumber(true);
                     }}
-                    className="flex-1 px-3 py-2 border border-slate-300 rounded-xl text-xs font-mono font-bold text-slate-900 bg-white"
+                    className="font-mono text-xs"
                     placeholder="01/IMUN.01/SLA/10/2026"
                   />
                 </div>
-                <div className="text-[10px] text-slate-400 mt-1 flex items-center justify-between">
-                  <span>Format: <code>{`{01}/IMUN.01/{${reportType}}/{${String(month).padStart(2, '0')}}/{${year}}`}</code></span>
-                  {isManualDocNumber && (
-                    <span className="text-amber-600 font-semibold">(Manually Edited)</span>
-                  )}
-                </div>
+              </div>
+              <div className="text-[11px] text-slate-400 flex items-center justify-between">
+                <span>
+                  Format:{' '}
+                  <code className="font-mono">{`{01}/IMUN.01/{${reportType}}/{${String(month).padStart(2, '0')}}/{${year}}`}</code>
+                </span>
+                {isManualDocNumber && (
+                  <span className="text-amber-600 font-medium">(Manually Edited)</span>
+                )}
               </div>
             </div>
           </div>
 
           {/* 2. MRTG / PRTG Integration Card */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs space-y-4">
+          <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-xs space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="font-semibold text-slate-800 text-sm flex items-center gap-2">
-                <span className="w-5 h-5 rounded-full bg-orange-100 text-orange-700 text-[11px] font-bold flex items-center justify-center">2</span>
-                <span>Traffic Graph Integration (MRTG / PRTG)</span>
+              <h3 className="font-heading font-semibold text-slate-900 text-sm flex items-center gap-2">
+                <span className="w-5 h-5 rounded-md bg-[#FFF7ED] text-[#C2410C] text-[11px] font-bold flex items-center justify-center">
+                  2
+                </span>
+                <span>Traffic Graph Integration</span>
               </h3>
               {isGraphIdSynced && (
-                <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                <Badge variant="outline" className="border-emerald-200 text-emerald-700 bg-emerald-50 text-[10px] gap-1">
                   <CheckCircle2 className="w-3 h-3 text-emerald-600" />
                   <span>ID Synced</span>
-                </span>
+                </Badge>
               )}
             </div>
 
-            {/* Engine Tabs: MRTG (Cacti) vs PRTG Network Monitor (MRTG Default) */}
-            <div className="flex p-1 bg-slate-100 rounded-xl gap-1">
+            {/* Engine Tabs */}
+            <div className="grid grid-cols-2 p-1 bg-slate-100 rounded-lg gap-1 text-xs">
               <button
                 type="button"
                 onClick={() => switchEngine('MRTG')}
-                className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition flex items-center justify-between ${graphEngine === 'MRTG'
-                    ? 'bg-white text-orange-600 shadow-xs border border-orange-200'
+                className={`py-2 px-3 rounded-md text-xs font-medium transition flex items-center justify-between ${
+                  graphEngine === 'MRTG'
+                    ? 'bg-white text-slate-900 shadow-xs border border-slate-200 font-semibold'
                     : 'text-slate-600 hover:text-slate-900'
-                  }`}
+                }`}
               >
-                <div className="flex items-center gap-1.5">
-                  <Server className="w-3.5 h-3.5" />
+                <div className="flex items-center gap-2">
+                  <Server className="w-3.5 h-3.5 text-slate-500" />
                   <span>MRTG (Cacti)</span>
-                  <span className="text-[9px] px-1.5 py-0.5 bg-orange-50 text-orange-700 rounded font-bold border border-orange-200">Default</span>
                 </div>
                 {cactiGraphId ? (
-                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-orange-100 text-orange-800 font-bold border border-orange-200">
+                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 font-medium">
                     ID: {cactiGraphId}
                   </span>
                 ) : (
-                  <span className="text-[10px] text-slate-400 font-normal">None</span>
+                  <span className="text-[10px] text-slate-400">Default</span>
                 )}
               </button>
               <button
                 type="button"
                 onClick={() => switchEngine('PRTG')}
-                className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition flex items-center justify-between ${graphEngine === 'PRTG'
-                    ? 'bg-white text-blue-600 shadow-xs border border-blue-200'
+                className={`py-2 px-3 rounded-md text-xs font-medium transition flex items-center justify-between ${
+                  graphEngine === 'PRTG'
+                    ? 'bg-white text-slate-900 shadow-xs border border-slate-200 font-semibold'
                     : 'text-slate-600 hover:text-slate-900'
-                  }`}
+                }`}
               >
-                <div className="flex items-center gap-1.5">
-                  <Layers className="w-3.5 h-3.5" />
-                  <span>PRTG Network Monitor</span>
+                <div className="flex items-center gap-2">
+                  <Layers className="w-3.5 h-3.5 text-slate-500" />
+                  <span>PRTG Monitor</span>
                 </div>
                 {prtgSensorId ? (
-                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 font-bold border border-blue-200">
-                    Sensor: {prtgSensorId}
+                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 font-medium">
+                    ID: {prtgSensorId}
                   </span>
                 ) : (
-                  <span className="text-[10px] text-slate-400 font-normal">None</span>
+                  <span className="text-[10px] text-slate-400">None</span>
                 )}
               </button>
             </div>
 
-            <div className="space-y-3 text-xs">
+            <div className="space-y-3.5">
               <div>
-                <label className="font-bold text-slate-700 block mb-1">
-                  {graphEngine === 'PRTG' ? 'PRTG Sensor ID / Object ID' : 'Cacti Graph ID (Local Graph ID)'}
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={graphId}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setGraphId(val);
-                      if (graphEngine === 'MRTG') {
-                        setCactiGraphId(val);
-                      } else {
-                        setPrtgSensorId(val);
+                <FormField
+                  label={graphEngine === 'PRTG' ? 'PRTG Sensor ID / Object ID' : 'Cacti Graph ID (Local Graph ID)'}
+                >
+                  <div className="flex gap-2">
+                    <Input
+                      value={graphId}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setGraphId(val);
+                        if (graphEngine === 'MRTG') {
+                          setCactiGraphId(val);
+                        } else {
+                          setPrtgSensorId(val);
+                        }
+                      }}
+                      placeholder={graphEngine === 'PRTG' ? 'e.g. 10542' : 'e.g. 2180'}
+                      className="flex-1 font-mono font-medium"
+                    />
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={graphEngine === 'PRTG' ? handleFetchPrtg : handleFetchCacti}
+                      disabled={
+                        graphEngine === 'PRTG'
+                          ? isFetchingPrtg || !graphId
+                          : isFetchingCacti || !graphId
                       }
-                    }}
-                    placeholder={graphEngine === 'PRTG' ? 'e.g. 10542' : 'e.g. 2180'}
-                    className="flex-1 px-3 py-2 border border-slate-300 rounded-xl text-xs font-mono font-bold"
-                  />
-                  {graphEngine === 'PRTG' ? (
-                    <button
-                      type="button"
-                      onClick={handleFetchPrtg}
-                      disabled={isFetchingPrtg || !graphId}
-                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shrink-0 shadow-xs disabled:opacity-50"
+                      className="shrink-0"
                     >
-                      <RefreshCw className={`w-3.5 h-3.5 ${isFetchingPrtg ? 'animate-spin' : ''}`} />
-                      <span>{isFetchingPrtg ? 'Fetching...' : 'Fetch PRTG Graph'}</span>
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={handleFetchCacti}
-                      disabled={isFetchingCacti || !graphId}
-                      className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shrink-0 shadow-xs disabled:opacity-50"
-                    >
-                      <RefreshCw className={`w-3.5 h-3.5 ${isFetchingCacti ? 'animate-spin' : ''}`} />
-                      <span>{isFetchingCacti ? 'Fetching...' : 'Fetch Cacti Graph'}</span>
-                    </button>
-                  )}
-                </div>
-                <p className="text-[10px] text-slate-400 mt-1">
+                      <RefreshCw
+                        className={`w-3.5 h-3.5 mr-1.5 ${
+                          (graphEngine === 'PRTG' ? isFetchingPrtg : isFetchingCacti) ? 'animate-spin' : ''
+                        }`}
+                      />
+                      <span>
+                        {graphEngine === 'PRTG'
+                          ? isFetchingPrtg
+                            ? 'Fetching...'
+                            : 'Fetch Graph'
+                          : isFetchingCacti
+                          ? 'Fetching...'
+                          : 'Fetch Graph'}
+                      </span>
+                    </Button>
+                  </div>
+                </FormField>
+                <p className="text-[11px] text-slate-400 mt-1">
                   {graphEngine === 'PRTG'
-                    ? `PRTG graph fetched via Historic Data & Chart API (/chart.png): ${monthNames[month - 1]} ${year} (avg=3600).`
-                    : `Graph query locked to cycle: ${monthNames[month - 1]} ${year} (01/${String(month).padStart(2, '0')} 00:00 - End of Month 23:59 WIB).`}
+                    ? `PRTG graph fetched via Historic Data & Chart API: ${monthNames[month - 1]} ${year}.`
+                    : `Graph query cycle: ${monthNames[month - 1]} ${year} (01/${String(month).padStart(2, '0')} 00:00 - End of Month 23:59 WIB).`}
                 </p>
               </div>
 
               {/* Status Message */}
               {cactiStatusMessage && (
                 <div
-                  className={`p-3 rounded-xl text-xs flex items-start gap-2.5 ${cactiStatusMessage.type === 'success'
+                  className={`p-3 rounded-lg text-xs flex items-start gap-2.5 ${
+                    cactiStatusMessage.type === 'success'
                       ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
                       : cactiStatusMessage.type === 'warning'
-                        ? 'bg-amber-50 text-amber-800 border border-amber-200'
-                        : 'bg-rose-50 text-rose-800 border border-rose-200'
-                    }`}
+                      ? 'bg-amber-50 text-amber-800 border border-amber-200'
+                      : 'bg-rose-50 text-rose-800 border border-rose-200'
+                  }`}
                 >
                   {cactiStatusMessage.type === 'success' ? (
                     <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
@@ -846,23 +848,21 @@ function GeneratorPageContent() {
               )}
 
               {/* Manual Upload Fallback */}
-              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
-                <label className="font-bold text-slate-700 block mb-1 text-[11px]">
-                  Upload Graph Image (Fallback)
-                </label>
+              <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-3">
+                <span className="text-xs font-medium text-slate-700 shrink-0">Upload Graph Image (Fallback)</span>
                 <input
                   type="file"
                   accept="image/*"
                   onChange={handleManualImageUpload}
-                  className="text-xs text-slate-500 file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100 cursor-pointer"
+                  className="text-xs text-slate-500 file:mr-2 file:py-1 file:px-2.5 file:rounded-md file:border-0 file:text-xs file:font-medium file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 cursor-pointer"
                 />
               </div>
 
-              {/* Traffic Direction Mapping */}
+              {/* Traffic Direction */}
               <div className="pt-2 border-t border-slate-100">
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="font-bold text-slate-700">Traffic Direction ({graphEngine})</label>
-                  <span className="text-[10px] text-slate-500">Align with switch port or sensor mapping</span>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-xs font-medium text-slate-700">Traffic Direction ({graphEngine})</label>
+                  <span className="text-[11px] text-slate-500">Switch port or sensor mapping</span>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <button
@@ -871,13 +871,14 @@ function GeneratorPageContent() {
                       setTrafficDirection('NORMAL');
                       autoSaveGraphIdToMaster(customerId, graphId, 'NORMAL', graphEngine);
                     }}
-                    className={`py-2 px-2.5 rounded-xl text-xs font-bold text-center border transition ${trafficDirection === 'NORMAL'
-                        ? 'bg-orange-500 text-white border-orange-500 shadow-xs'
+                    className={`p-2.5 rounded-lg text-xs text-center border transition ${
+                      trafficDirection === 'NORMAL'
+                        ? 'bg-[#FFF7ED] text-[#C2410C] border-[#EA580C] font-semibold'
                         : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
-                      }`}
+                    }`}
                   >
-                    <div>Normal</div>
-                    <div className="text-[10px] font-normal opacity-90">In: DL | Out: UL</div>
+                    <div className="font-medium">Normal</div>
+                    <div className="text-[10px] text-slate-500">In: DL | Out: UL</div>
                   </button>
                   <button
                     type="button"
@@ -885,97 +886,94 @@ function GeneratorPageContent() {
                       setTrafficDirection('REVERSED');
                       autoSaveGraphIdToMaster(customerId, graphId, 'REVERSED', graphEngine);
                     }}
-                    className={`py-2 px-2.5 rounded-xl text-xs font-bold text-center border transition ${trafficDirection === 'REVERSED'
-                        ? 'bg-orange-500 text-white border-orange-500 shadow-xs'
+                    className={`p-2.5 rounded-lg text-xs text-center border transition ${
+                      trafficDirection === 'REVERSED'
+                        ? 'bg-[#FFF7ED] text-[#C2410C] border-[#EA580C] font-semibold'
                         : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
-                      }`}
+                    }`}
                   >
-                    <div>Reversed</div>
-                    <div className="text-[10px] font-normal opacity-90">Out: DL | In: UL</div>
+                    <div className="font-medium">Reversed</div>
+                    <div className="text-[10px] text-slate-500">Out: DL | In: UL</div>
                   </button>
                 </div>
               </div>
 
-              {/* Traffic Metrics Override Inputs */}
-              <div className="space-y-2 pt-2 border-t border-slate-100">
-                <div className="font-bold text-slate-700 flex justify-between items-center">
-                  <span>Traffic Metrics (Average & Maximum)</span>
-                  <span className="text-[10px] text-slate-400 font-normal">Auto-populated or manual override</span>
+              {/* Traffic Metrics */}
+              <div className="pt-2 border-t border-slate-100 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-slate-700">Traffic Metrics (Average & Maximum)</span>
+                  <span className="text-[11px] text-slate-400">Auto-populated or manual</span>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2.5">
-                  <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
-                    <span className="font-bold text-slate-800 block mb-1">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-2">
+                    <span className="text-xs font-semibold text-slate-800 block">
                       Download ({dlDirectionLabel})
                     </span>
-                    <div className="space-y-1.5">
-                      <div>
-                        <label className="text-[10px] text-slate-500">Average ({dlUnit})</label>
-                        <input
+                    <div className="grid grid-cols-2 gap-2">
+                      <FormField label={`Average (${dlUnit})`}>
+                        <Input
                           type="number"
                           step="0.01"
                           value={dlAvg}
                           onChange={(e) => setDlAvg(parseFloat(e.target.value) || 0)}
-                          className="w-full px-2 py-1 border border-slate-300 rounded-lg bg-white text-xs font-bold"
+                          className="font-mono text-center text-xs"
                         />
-                      </div>
-                      <div>
-                        <label className="text-[10px] text-slate-500">Maximum ({dlUnit})</label>
-                        <input
+                      </FormField>
+                      <FormField label={`Maximum (${dlUnit})`}>
+                        <Input
                           type="number"
                           step="0.01"
                           value={dlMax}
                           onChange={(e) => setDlMax(parseFloat(e.target.value) || 0)}
-                          className="w-full px-2 py-1 border border-slate-300 rounded-lg bg-white text-xs font-bold"
+                          className="font-mono text-center text-xs"
                         />
-                      </div>
+                      </FormField>
                     </div>
                   </div>
 
-                  <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
-                    <span className="font-bold text-slate-800 block mb-1">
+                  <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-2">
+                    <span className="text-xs font-semibold text-slate-800 block">
                       Upload ({ulDirectionLabel})
                     </span>
-                    <div className="space-y-1.5">
-                      <div>
-                        <label className="text-[10px] text-slate-500">Average ({ulUnit})</label>
-                        <input
+                    <div className="grid grid-cols-2 gap-2">
+                      <FormField label={`Average (${ulUnit})`}>
+                        <Input
                           type="number"
                           step="0.01"
                           value={ulAvg}
                           onChange={(e) => setUlAvg(parseFloat(e.target.value) || 0)}
-                          className="w-full px-2 py-1 border border-slate-300 rounded-lg bg-white text-xs font-bold"
+                          className="font-mono text-center text-xs"
                         />
-                      </div>
-                      <div>
-                        <label className="text-[10px] text-slate-500">Maximum ({ulUnit})</label>
-                        <input
+                      </FormField>
+                      <FormField label={`Maximum (${ulUnit})`}>
+                        <Input
                           type="number"
                           step="0.01"
                           value={ulMax}
                           onChange={(e) => setUlMax(parseFloat(e.target.value) || 0)}
-                          className="w-full px-2 py-1 border border-slate-300 rounded-lg bg-white text-xs font-bold"
+                          className="font-mono text-center text-xs"
                         />
-                      </div>
+                      </FormField>
                     </div>
                   </div>
                 </div>
 
                 {/* Conclusion Sentence Preview */}
-                <div className="p-3 bg-amber-50/70 rounded-xl border border-amber-200/80 text-[11px] space-y-1 text-slate-800">
-                  <div className="font-bold text-amber-900">Summary Sentence Preview:</div>
-                  <p>
-                    <span>{`○ Download Traffic (${dlDirectionLabel}) : The average usage is `}</span>
-                    <strong>{`${dlAvg} ${dlUnit}`}</strong>
-                    <span>{`, with the maximum usage reaching `}</span>
-                    <strong>{`${dlMax} ${dlUnit}`}</strong>
+                <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 text-xs space-y-1 text-slate-700">
+                  <div className="font-semibold text-slate-800">Summary Sentence Preview:</div>
+                  <p className="leading-relaxed">
+                    <span>{`○ Download Traffic (${dlDirectionLabel}): Average usage is `}</span>
+                    <strong className="text-slate-900 font-mono">{`${dlAvg} ${dlUnit}`}</strong>
+                    <span>{`, maximum usage reaching `}</span>
+                    <strong className="text-slate-900 font-mono">{`${dlMax} ${dlUnit}`}</strong>
                     <span>.</span>
                   </p>
-                  <p>
-                    <span>{`○ Upload Traffic (${ulDirectionLabel}) : The average usage is `}</span>
-                    <strong>{`${ulAvg} ${ulUnit}`}</strong>
-                    <span>{`, with the maximum usage reaching `}</span>
-                    <strong>{`${ulMax} ${ulUnit}`}</strong>
+                  <p className="leading-relaxed">
+                    <span>{`○ Upload Traffic (${ulDirectionLabel}): Average usage is `}</span>
+                    <strong className="text-slate-900 font-mono">{`${ulAvg} ${ulUnit}`}</strong>
+                    <span>{`, maximum usage reaching `}</span>
+                    <strong className="text-slate-900 font-mono">{`${ulMax} ${ulUnit}`}</strong>
                     <span>.</span>
                   </p>
                 </div>
@@ -997,63 +995,65 @@ function GeneratorPageContent() {
           )}
 
           {/* Actions Bar */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs flex flex-wrap gap-2.5 items-center justify-between">
-            <button
+          <div className="bg-white rounded-lg border border-slate-200 p-4 shadow-xs flex flex-wrap gap-2.5 items-center justify-between">
+            <Button
               type="button"
+              variant="ghost"
               onClick={() => setShowResetConfirm(true)}
-              className="px-3.5 py-2 text-slate-600 hover:text-slate-900 border border-slate-300 rounded-xl text-xs font-semibold hover:bg-slate-50 transition flex items-center gap-1.5"
+              className="text-slate-600 hover:text-slate-900"
             >
-              <RotateCcw className="w-3.5 h-3.5" />
+              <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
               <span>Reset</span>
-            </button>
+            </Button>
 
             <div className="flex items-center space-x-2">
-              <button
+              <Button
                 type="button"
+                variant="secondary"
                 onClick={handleSaveReport}
                 disabled={isSavingReport}
-                className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-xs disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
               >
-                <Save className="w-3.5 h-3.5" />
+                <Save className="w-3.5 h-3.5 mr-1.5" />
                 <span>{isSavingReport ? 'Archiving...' : 'Save & Archive PDF'}</span>
-              </button>
+              </Button>
 
-              <button
+              <Button
                 type="button"
+                variant="primary"
                 onClick={handleExportPdf}
                 disabled={isGeneratingPdf}
-                className="px-5 py-2 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 active:scale-95 text-white rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-xs disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
-                title="Export Official A4 PDF Document (Shortcut: Ctrl+Enter)"
+                title="Export Official A4 PDF Document (Ctrl+Enter)"
               >
                 {isGeneratingPdf ? (
                   <>
-                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <RefreshCw className="w-3.5 h-3.5 mr-1.5 animate-spin" />
                     <span>Exporting PDF...</span>
                   </>
                 ) : (
                   <>
-                    <Download className="w-4 h-4" />
+                    <Download className="w-3.5 h-3.5 mr-1.5" />
                     <span>Export PDF</span>
-                    <kbd className="hidden sm:inline-block ml-1 text-[10px] font-mono bg-white/20 text-white px-1.5 py-0.5 rounded font-medium">
+                    <kbd className="hidden sm:inline-block ml-1.5 text-[10px] font-mono bg-white/20 text-white px-1.5 py-0.5 rounded font-medium">
                       Ctrl+↵
                     </kbd>
                   </>
                 )}
-              </button>
+              </Button>
             </div>
           </div>
 
           {/* Success Save Banner */}
           {savedDocInfo && (
-            <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl text-emerald-900 text-xs space-y-1.5 shadow-xs">
+            <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-900 text-xs space-y-1.5 shadow-xs">
               <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2 font-bold">
+                <div className="flex items-center space-x-2 font-semibold">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                   <span>Report successfully saved to history and physical storage!</span>
                 </div>
                 <button
+                  type="button"
                   onClick={() => setSavedDocInfo(null)}
-                  className="text-emerald-500 hover:text-emerald-700 font-bold"
+                  className="text-emerald-500 hover:text-emerald-700 font-bold p-1"
                 >
                   ✕
                 </button>
@@ -1064,14 +1064,14 @@ function GeneratorPageContent() {
               <div className="pt-1 flex items-center space-x-3 text-[11px]">
                 <Link
                   href="/history"
-                  className="font-bold text-emerald-800 underline hover:text-emerald-950 flex items-center gap-1"
+                  className="font-semibold text-emerald-800 underline hover:text-emerald-950 flex items-center gap-1"
                 >
                   <span>Open Report History</span>
                   <ExternalLink className="w-3 h-3" />
                 </Link>
                 <a
                   href={`/api/reports/download?id=${savedDocInfo.id}`}
-                  className="font-bold text-orange-700 underline hover:text-orange-900 flex items-center gap-1"
+                  className="font-semibold text-[#C2410C] underline hover:text-[#EA580C] flex items-center gap-1"
                 >
                   <span>Download PDF</span>
                   <Download className="w-3 h-3" />
@@ -1082,7 +1082,7 @@ function GeneratorPageContent() {
         </div>
 
         {/* ================= RIGHT COLUMN: LIVE PREVIEW ================= */}
-        <div className="xl:col-span-7 sticky top-20 h-[calc(100vh-6rem)]">
+        <div className="xl:col-span-6 2xl:col-span-7 sticky top-20 h-[calc(100vh-6rem)]">
           <LivePreview
             data={currentReportData}
             isGeneratingPdf={isGeneratingPdf}

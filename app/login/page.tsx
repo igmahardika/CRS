@@ -52,10 +52,10 @@ function LoginForm() {
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center p-4 sm:p-6 bg-[#F8FAFC]">
-      <div className="w-full max-w-sm bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8 space-y-6">
+      <div className="w-full max-w-sm bg-white rounded-lg border border-slate-200 shadow-sm p-6 sm:p-8 space-y-6">
         {/* Brand Header */}
         <div className="text-center">
-          <div className="w-12 h-12 rounded-xl bg-[#EA580C] text-white flex items-center justify-center mx-auto mb-3 shadow-xs">
+          <div className="w-10 h-10 rounded-lg bg-[#EA580C] text-white flex items-center justify-center mx-auto mb-3 shadow-xs">
             <BarChart3 className="w-6 h-6 stroke-[2]" />
           </div>
           <h1 className="font-heading text-2xl font-semibold text-slate-900 tracking-tight">

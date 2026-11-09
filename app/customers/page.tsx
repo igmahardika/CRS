@@ -495,7 +495,7 @@ export default function CustomersPage() {
       />
 
       {/* Filter & Search Bar Card */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs space-y-3">
+      <div className="bg-white rounded-lg border border-slate-200 p-4 shadow-xs space-y-3">
         <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
           {/* Search Box */}
           <div className="relative flex-1">
@@ -505,7 +505,7 @@ export default function CustomersPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by customer name, CID, SID, or sensor ID..."
-              className="w-full pl-10 pr-4 py-2 text-xs sm:text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
+              className="w-full pl-10 pr-4 py-2 text-xs sm:text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
             />
             {search && (
               <button
@@ -525,7 +525,7 @@ export default function CustomersPage() {
               <select
                 value={serviceFilter}
                 onChange={(e) => setServiceFilter(e.target.value)}
-                className="pl-8 pr-8 py-2 text-xs font-semibold bg-white border border-slate-300 rounded-xl text-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition appearance-none cursor-pointer"
+                className="pl-8 pr-8 py-2 text-xs font-semibold bg-white border border-slate-300 rounded-lg text-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition appearance-none cursor-pointer"
                 title="Filter by service plan"
               >
                 <option value="ALL">All Plans ({customers.length})</option>
@@ -547,7 +547,7 @@ export default function CustomersPage() {
               <select
                 value={slaFilter}
                 onChange={(e) => setSlaFilter(e.target.value as 'ALL' | '99.5' | '98' | '95' | 'NO_SLA')}
-                className="pl-8 pr-8 py-2 text-xs font-semibold bg-white border border-slate-300 rounded-xl text-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition appearance-none cursor-pointer"
+                className="pl-8 pr-8 py-2 text-xs font-semibold bg-white border border-slate-300 rounded-lg text-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition appearance-none cursor-pointer"
                 title="Filter by SLA target"
               >
                 <option value="ALL">All SLAs ({customers.length})</option>
@@ -632,7 +632,7 @@ export default function CustomersPage() {
 
       {/* Batch Selection Action Bar */}
       {selectedIds.size > 0 && (
-        <div className="bg-orange-50 border border-orange-200 rounded-2xl p-3.5 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3 animate-in fade-in slide-in-from-top-2">
+        <div className="bg-orange-50 border border-orange-200 rounded-lg p-3.5 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3 animate-in fade-in slide-in-from-top-2">
           <div className="flex flex-wrap items-center gap-2 text-xs text-orange-950">
             <span className="font-bold flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-orange-500 animate-pulse" />
@@ -662,7 +662,7 @@ export default function CustomersPage() {
               type="button"
               onClick={handleBulkDelete}
               disabled={isBulkDeleting}
-              className="inline-flex items-center gap-1.5 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-xs transition active:scale-95 disabled:opacity-50 cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold shadow-xs transition active:scale-95 disabled:opacity-50 cursor-pointer"
             >
               <Trash2 className="w-3.5 h-3.5" />
               <span>{isBulkDeleting ? 'Deleting...' : `Delete Selected (${selectedIds.size})`}</span>
@@ -672,7 +672,7 @@ export default function CustomersPage() {
       )}
 
       {/* Customer Table Container */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+      <div className="bg-white rounded-lg border border-slate-200 shadow-xs overflow-hidden">
         {loading ? (
           <div className="py-16 text-center text-xs text-slate-400">
             <RefreshCw className="w-5 h-5 animate-spin mx-auto text-orange-500 mb-2" />
@@ -680,8 +680,8 @@ export default function CustomersPage() {
           </div>
         ) : customers.length === 0 ? (
           <div className="py-16 px-4 text-center flex flex-col items-center justify-center">
-            <div className="w-14 h-14 rounded-2xl bg-orange-50 border border-orange-100 flex items-center justify-center text-orange-500 mb-3 shadow-xs">
-              <Users className="w-7 h-7" />
+            <div className="w-12 h-12 rounded-lg bg-orange-50 border border-orange-100 flex items-center justify-center text-orange-500 mb-3 shadow-xs">
+              <Users className="w-6 h-6" />
             </div>
             <h3 className="text-sm font-bold text-slate-800 mb-1">
               Customer Directory is Empty
@@ -693,7 +693,7 @@ export default function CustomersPage() {
               <button
                 type="button"
                 onClick={() => setIsImportModalOpen(true)}
-                className="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-xs transition cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow-xs transition cursor-pointer"
               >
                 <Upload className="w-3.5 h-3.5" />
                 <span>Import Excel</span>
@@ -701,7 +701,7 @@ export default function CustomersPage() {
               <button
                 type="button"
                 onClick={handleOpenAdd}
-                className="inline-flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white rounded-xl text-xs font-semibold shadow-xs transition cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-xs font-semibold shadow-xs transition cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>Add Customer</span>
@@ -710,8 +710,8 @@ export default function CustomersPage() {
           </div>
         ) : filtered.length === 0 ? (
           <div className="py-16 px-4 text-center flex flex-col items-center justify-center">
-            <div className="w-14 h-14 rounded-2xl bg-orange-50 border border-orange-100 flex items-center justify-center text-orange-500 mb-3 shadow-xs">
-              <SearchX className="w-7 h-7" />
+            <div className="w-12 h-12 rounded-lg bg-orange-50 border border-orange-100 flex items-center justify-center text-orange-500 mb-3 shadow-xs">
+              <SearchX className="w-6 h-6" />
             </div>
             <h3 className="text-sm font-bold text-slate-800 mb-1">
               No Customers Found
@@ -727,7 +727,7 @@ export default function CustomersPage() {
               <button
                 type="button"
                 onClick={handleResetAllFilters}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-orange-500 hover:bg-orange-600 active:scale-95 text-white rounded-xl text-xs font-semibold shadow-xs transition"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-orange-500 hover:bg-orange-600 active:scale-95 text-white rounded-lg text-xs font-semibold shadow-xs transition"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
                 <span>Reset Filters</span>

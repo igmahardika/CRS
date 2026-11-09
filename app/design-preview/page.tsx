@@ -128,7 +128,7 @@ export default function DesignPreviewPage() {
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
-          <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-sm flex flex-col justify-between h-24">
+          <div className="bg-white border border-slate-200 rounded-lg p-3 shadow-sm flex flex-col justify-between h-24">
             <div className="h-6 w-full rounded-md bg-[#F16614]" />
             <div>
               <p className="text-[12px] font-medium text-slate-900">Brand Logo</p>
@@ -136,7 +136,7 @@ export default function DesignPreviewPage() {
             </div>
           </div>
 
-          <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-sm flex flex-col justify-between h-24">
+          <div className="bg-white border border-slate-200 rounded-lg p-3 shadow-sm flex flex-col justify-between h-24">
             <div className="h-6 w-full rounded-md bg-[#EA580C]" />
             <div>
               <p className="text-[12px] font-medium text-slate-900">Primary Solid</p>
@@ -144,7 +144,7 @@ export default function DesignPreviewPage() {
             </div>
           </div>
 
-          <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-sm flex flex-col justify-between h-24">
+          <div className="bg-white border border-slate-200 rounded-lg p-3 shadow-sm flex flex-col justify-between h-24">
             <div className="h-6 w-full rounded-md bg-[#C2410C]" />
             <div>
               <p className="text-[12px] font-medium text-slate-900">Strong / Hover</p>
@@ -152,7 +152,7 @@ export default function DesignPreviewPage() {
             </div>
           </div>
 
-          <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-sm flex flex-col justify-between h-24">
+          <div className="bg-white border border-slate-200 rounded-lg p-3 shadow-sm flex flex-col justify-between h-24">
             <div className="h-6 w-full rounded-md bg-[#FFF7ED] border border-orange-200" />
             <div>
               <p className="text-[12px] font-medium text-slate-900">Soft Pill Nav</p>
@@ -160,7 +160,7 @@ export default function DesignPreviewPage() {
             </div>
           </div>
 
-          <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-sm flex flex-col justify-between h-24">
+          <div className="bg-white border border-slate-200 rounded-lg p-3 shadow-sm flex flex-col justify-between h-24">
             <div className="h-6 w-full rounded-md bg-emerald-600" />
             <div>
               <p className="text-[12px] font-medium text-slate-900">Success Status</p>
@@ -168,7 +168,7 @@ export default function DesignPreviewPage() {
             </div>
           </div>
 
-          <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-sm flex flex-col justify-between h-24">
+          <div className="bg-white border border-slate-200 rounded-lg p-3 shadow-sm flex flex-col justify-between h-24">
             <div className="h-6 w-full rounded-md bg-red-600" />
             <div>
               <p className="text-[12px] font-medium text-slate-900">Destructive Status</p>
@@ -176,7 +176,7 @@ export default function DesignPreviewPage() {
             </div>
           </div>
 
-          <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-sm flex flex-col justify-between h-24">
+          <div className="bg-white border border-slate-200 rounded-lg p-3 shadow-sm flex flex-col justify-between h-24">
             <div className="h-6 w-full rounded-md bg-amber-600" />
             <div>
               <p className="text-[12px] font-medium text-slate-900">Warning Status</p>
@@ -184,7 +184,7 @@ export default function DesignPreviewPage() {
             </div>
           </div>
 
-          <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-sm flex flex-col justify-between h-24">
+          <div className="bg-white border border-slate-200 rounded-lg p-3 shadow-sm flex flex-col justify-between h-24">
             <div className="h-6 w-full rounded-md bg-blue-600" />
             <div>
               <p className="text-[12px] font-medium text-slate-900">Info Status</p>
@@ -199,7 +199,7 @@ export default function DesignPreviewPage() {
         <h2 className="text-[16px] font-heading font-semibold text-slate-900">
           Typography Scale (Strict 12 / 13 / 14 / 16 / 20 / 24)
         </h2>
-        <div className="border border-slate-200 bg-white rounded-xl p-6 shadow-sm space-y-4">
+        <div className="border border-slate-200 bg-white rounded-lg p-6 shadow-sm space-y-4">
           <div className="flex items-baseline justify-between border-b border-slate-100 pb-3">
             <span className="text-[12px] font-medium text-slate-500 uppercase tracking-wider w-40">
               Page Title (24/600)
@@ -293,7 +293,7 @@ export default function DesignPreviewPage() {
         <h2 className="text-[16px] font-heading font-semibold text-slate-900">
           Button Matrix (Rule A6: Exactly 4 Variants, sm & md)
         </h2>
-        <div className="border border-slate-200 bg-white rounded-xl p-6 shadow-sm space-y-6">
+        <div className="border border-slate-200 bg-white rounded-lg p-6 shadow-sm space-y-6">
           {/* Primary Buttons */}
           <div className="flex flex-wrap items-center gap-4">
             <span className="text-[13px] font-medium text-slate-500 w-28">Primary</span>
@@ -386,7 +386,7 @@ export default function DesignPreviewPage() {
         <h2 className="text-[16px] font-heading font-semibold text-slate-900">
           Form Controls & Inline Validation
         </h2>
-        <div className="border border-slate-200 bg-white rounded-xl p-6 shadow-sm grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="border border-slate-200 bg-white rounded-lg p-6 shadow-sm grid grid-cols-1 md:grid-cols-3 gap-6">
           <FormField label="Customer Identifier" required hint="Alphanumeric ID code">
             <Input
               value={inputValue}
@@ -450,7 +450,7 @@ export default function DesignPreviewPage() {
         <h2 className="text-[16px] font-heading font-semibold text-slate-900">
           Segmented Controls, Semantic Badges & Tabs
         </h2>
-        <div className="border border-slate-200 bg-white rounded-xl p-6 shadow-sm space-y-6">
+        <div className="border border-slate-200 bg-white rounded-lg p-6 shadow-sm space-y-6">
           {/* Segmented Controls */}
           <div className="flex flex-wrap items-center gap-6">
             <div className="space-y-1.5">
@@ -527,7 +527,7 @@ export default function DesignPreviewPage() {
           <span className="text-[12px] text-slate-500">Kebab dropdown actions, zero raw button/input tags</span>
         </div>
 
-        <div className="border border-slate-200 bg-white rounded-xl shadow-sm overflow-hidden">
+        <div className="border border-slate-200 bg-white rounded-lg shadow-sm overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
@@ -685,7 +685,7 @@ export default function DesignPreviewPage() {
         <h2 className="text-[16px] font-heading font-semibold text-slate-900">
           Dialogs & Feedback (Rule Phase 2: Sonner Toasts & ConfirmDialog)
         </h2>
-        <div className="border border-slate-200 bg-white rounded-xl p-6 shadow-sm flex flex-wrap gap-3">
+        <div className="border border-slate-200 bg-white rounded-lg p-6 shadow-sm flex flex-wrap gap-3">
           <Button
             variant="secondary"
             onClick={() => setIsDialogOpen(true)}
@@ -725,7 +725,7 @@ export default function DesignPreviewPage() {
 
       {/* 10. Skeletons & Empty State */}
       <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="space-y-3 border border-slate-200 bg-white rounded-xl p-6 shadow-sm">
+        <div className="space-y-3 border border-slate-200 bg-white rounded-lg p-6 shadow-sm">
           <h3 className="text-[16px] font-heading font-semibold text-slate-900 mb-2">
             Loading Skeleton Placeholder
           </h3>

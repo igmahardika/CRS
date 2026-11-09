@@ -308,8 +308,8 @@ export default function UsersManagementPage() {
 
       {/* Role Stat Badges */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center font-bold">
+        <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-xs flex items-center space-x-3">
+          <div className="w-10 h-10 rounded-md bg-slate-100 text-slate-600 flex items-center justify-center font-bold">
             <Users className="w-5 h-5" />
           </div>
           <div>
@@ -318,33 +318,33 @@ export default function UsersManagementPage() {
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-bold">
+        <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-xs flex items-center space-x-3">
+          <div className="w-10 h-10 rounded-md bg-slate-100 text-slate-600 flex items-center justify-center font-bold">
             <Shield className="w-5 h-5" />
           </div>
           <div>
-            <div className="text-[11px] font-semibold text-purple-700">Administrators</div>
-            <div className="text-lg font-black text-purple-900">{adminCount}</div>
+            <div className="text-[11px] font-semibold text-slate-500">Administrators</div>
+            <div className="text-lg font-black text-slate-900">{adminCount}</div>
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center font-bold">
+        <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-xs flex items-center space-x-3">
+          <div className="w-10 h-10 rounded-md bg-slate-100 text-slate-600 flex items-center justify-center font-bold">
             <Sliders className="w-5 h-5" />
           </div>
           <div>
-            <div className="text-[11px] font-semibold text-blue-700">Operators</div>
-            <div className="text-lg font-black text-blue-900">{operatorCount}</div>
+            <div className="text-[11px] font-semibold text-slate-500">Operators</div>
+            <div className="text-lg font-black text-slate-900">{operatorCount}</div>
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center font-bold">
+        <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-xs flex items-center space-x-3">
+          <div className="w-10 h-10 rounded-md bg-slate-100 text-slate-600 flex items-center justify-center font-bold">
             <Eye className="w-5 h-5" />
           </div>
           <div>
-            <div className="text-[11px] font-semibold text-slate-600">Viewers</div>
-            <div className="text-lg font-black text-slate-800">{viewerCount}</div>
+            <div className="text-[11px] font-semibold text-slate-500">Viewers</div>
+            <div className="text-lg font-black text-slate-900">{viewerCount}</div>
           </div>
         </div>
       </div>
@@ -352,7 +352,7 @@ export default function UsersManagementPage() {
       {/* Feedback Banner */}
       {feedback && (
         <div
-          className={`p-4 rounded-2xl border text-xs flex items-center justify-between shadow-xs ${feedback.type === 'success'
+          className={`p-4 rounded-lg border text-xs flex items-center justify-between shadow-xs ${feedback.type === 'success'
               ? 'bg-emerald-50 border-emerald-200 text-emerald-900'
               : 'bg-rose-50 border-rose-200 text-rose-900'
             }`}
@@ -375,7 +375,7 @@ export default function UsersManagementPage() {
       )}
 
       {/* Filter & Search Bar */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs flex flex-col md:flex-row items-center justify-between gap-3">
+      <div className="bg-white rounded-lg border border-slate-200 p-4 shadow-xs flex flex-col md:flex-row items-center justify-between gap-3">
         {/* Search */}
         <div className="relative w-full md:max-w-md">
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
@@ -384,36 +384,36 @@ export default function UsersManagementPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search name, username, or email..."
-            className="w-full pl-10 pr-4 py-2 text-xs sm:text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
+            className="w-full pl-10 pr-4 py-2 text-xs sm:text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
           />
         </div>
 
         {/* Role Tabs */}
-        <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200 self-start md:self-auto text-xs font-bold">
+        <div className="flex bg-slate-100 p-1 rounded-lg border border-slate-200 self-start md:self-auto text-xs font-bold">
           <button
             onClick={() => setRoleFilter('ALL')}
-            className={`px-3 py-1.5 rounded-lg transition ${roleFilter === 'ALL' ? 'bg-white text-orange-600 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+            className={`px-3 py-1.5 rounded-md transition ${roleFilter === 'ALL' ? 'bg-white text-orange-600 shadow-xs' : 'text-slate-600 hover:text-slate-900'
               }`}
           >
             All Roles ({users.length})
           </button>
           <button
             onClick={() => setRoleFilter('ADMIN')}
-            className={`px-3 py-1.5 rounded-lg transition ${roleFilter === 'ADMIN' ? 'bg-white text-purple-600 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+            className={`px-3 py-1.5 rounded-md transition ${roleFilter === 'ADMIN' ? 'bg-white text-orange-600 shadow-xs' : 'text-slate-600 hover:text-slate-900'
               }`}
           >
             Admin ({adminCount})
           </button>
           <button
             onClick={() => setRoleFilter('OPERATOR')}
-            className={`px-3 py-1.5 rounded-lg transition ${roleFilter === 'OPERATOR' ? 'bg-white text-blue-600 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+            className={`px-3 py-1.5 rounded-md transition ${roleFilter === 'OPERATOR' ? 'bg-white text-orange-600 shadow-xs' : 'text-slate-600 hover:text-slate-900'
               }`}
           >
             Operator ({operatorCount})
           </button>
           <button
             onClick={() => setRoleFilter('VIEWER')}
-            className={`px-3 py-1.5 rounded-lg transition ${roleFilter === 'VIEWER' ? 'bg-white text-slate-800 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+            className={`px-3 py-1.5 rounded-md transition ${roleFilter === 'VIEWER' ? 'bg-white text-orange-600 shadow-xs' : 'text-slate-600 hover:text-slate-900'
               }`}
           >
             Viewer ({viewerCount})
@@ -422,7 +422,7 @@ export default function UsersManagementPage() {
       </div>
 
       {/* Users Table */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+      <div className="bg-white rounded-lg border border-slate-200 shadow-xs overflow-hidden">
         {loading ? (
           <div className="py-16 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
             <RefreshCw className="w-4 h-4 animate-spin text-orange-500" />
@@ -463,7 +463,7 @@ export default function UsersManagementPage() {
                       {/* Name & Username */}
                       <td className="py-3.5 px-5">
                         <div className="flex items-center space-x-3">
-                          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-slate-700 to-slate-900 text-white font-bold flex items-center justify-center text-xs shrink-0 shadow-xs">
+                          <div className="w-9 h-9 rounded-md bg-slate-900 text-white font-bold flex items-center justify-center text-xs shrink-0 shadow-xs">
                             {initials}
                           </div>
                           <div>

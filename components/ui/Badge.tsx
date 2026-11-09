@@ -2,7 +2,7 @@ import React from 'react';
 import { cn } from '@/lib/utils';
 
 export interface BadgeProps extends React.HTMLAttributes<HTMLDivElement> {
-  variant?: 'neutral' | 'success' | 'destructive' | 'warning' | 'info' | 'soft';
+  variant?: 'neutral' | 'success' | 'destructive' | 'warning' | 'info' | 'soft' | 'outline';
   dot?: boolean;
 }
 
@@ -15,6 +15,7 @@ export const Badge = React.forwardRef<HTMLDivElement, BadgeProps>(
       warning: 'bg-amber-50 text-amber-700 border-amber-200',
       info: 'bg-blue-50 text-blue-700 border-blue-200',
       soft: 'bg-[#FFF7ED] text-[#C2410C] border-orange-200',
+      outline: 'bg-transparent text-slate-700 border-slate-200',
     };
 
     const dotColorClasses = {
@@ -24,6 +25,7 @@ export const Badge = React.forwardRef<HTMLDivElement, BadgeProps>(
       warning: 'bg-amber-500',
       info: 'bg-blue-500',
       soft: 'bg-[#EA580C]',
+      outline: 'bg-slate-400',
     };
 
     return (

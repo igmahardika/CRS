@@ -135,7 +135,7 @@ export default function ExcelImportModal({
 
         <div className="overflow-y-auto space-y-4 py-2 flex-1">
           {/* Template info card */}
-          <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+          <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg space-y-3">
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="text-[13px] font-semibold text-slate-900">
@@ -171,7 +171,7 @@ export default function ExcelImportModal({
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={handleDrop}
                 onClick={() => fileInputRef.current?.click()}
-                className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors flex flex-col items-center justify-center ${
+                className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors flex flex-col items-center justify-center ${
                   file
                     ? 'border-emerald-400 bg-emerald-50/20'
                     : 'border-slate-300 hover:border-orange-400 bg-white hover:bg-orange-50/10'
@@ -245,7 +245,7 @@ export default function ExcelImportModal({
           {/* Result Summary */}
           {result && (
             <div className="space-y-3">
-              <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
+              <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-lg">
                 <div className="flex items-center gap-2 text-emerald-800 font-semibold text-[14px]">
                   <CheckCircle2 className="w-5 h-5 text-emerald-600 stroke-[1.75]" />
                   <span>Import Completed Successfully</span>

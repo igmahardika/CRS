@@ -337,12 +337,12 @@ export default function DiscoveryPage() {
       />
 
       {/* Engine Selector & Controls */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3">
+      <div className="bg-white rounded-lg border border-slate-200 p-4 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3">
         {/* Engine Tabs */}
-        <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-bold self-start">
+        <div className="flex bg-slate-100 p-1 rounded-lg border border-slate-200 text-xs font-bold self-start">
           <button
             onClick={() => { setActiveEngine('MRTG'); setSyncResult(null); }}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-lg transition ${activeEngine === 'MRTG' ? 'bg-white text-orange-600 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+            className={`flex items-center gap-1.5 px-4 py-2 rounded-md transition ${activeEngine === 'MRTG' ? 'bg-white text-orange-600 shadow-xs' : 'text-slate-600 hover:text-slate-900'
               }`}
           >
             <Network className="w-3.5 h-3.5" />
@@ -355,7 +355,7 @@ export default function DiscoveryPage() {
           </button>
           <button
             onClick={() => { setActiveEngine('PRTG'); setSyncResult(null); }}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-lg transition ${activeEngine === 'PRTG' ? 'bg-white text-blue-600 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+            className={`flex items-center gap-1.5 px-4 py-2 rounded-md transition ${activeEngine === 'PRTG' ? 'bg-white text-blue-600 shadow-xs' : 'text-slate-600 hover:text-slate-900'
               }`}
           >
             <Activity className="w-3.5 h-3.5" />
@@ -381,7 +381,7 @@ export default function DiscoveryPage() {
           <button
             onClick={handleSync}
             disabled={syncing}
-            className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition shadow-xs disabled:opacity-60 active:scale-95 ${activeEngine === 'MRTG'
+            className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition shadow-xs disabled:opacity-60 active:scale-95 ${activeEngine === 'MRTG'
                 ? 'bg-orange-500 hover:bg-orange-600 text-white'
                 : 'bg-blue-500 hover:bg-blue-600 text-white'
               }`}
@@ -394,7 +394,7 @@ export default function DiscoveryPage() {
 
       {/* Sync Result Banner */}
       {syncResult && (
-        <div className={`flex items-start gap-3 p-4 rounded-2xl border text-xs font-medium shadow-xs ${syncResult.success
+        <div className={`flex items-start gap-3 p-4 rounded-lg border text-xs font-medium shadow-xs ${syncResult.success
             ? 'bg-emerald-50 border-emerald-200 text-emerald-900'
             : 'bg-rose-50 border-rose-200 text-rose-900'
           }`}>
@@ -423,7 +423,7 @@ export default function DiscoveryPage() {
 
       {/* Mapping Status Banner */}
       {mappingStatus && (
-        <div className={`flex items-center gap-3 p-3.5 rounded-2xl border text-xs font-medium shadow-xs ${mappingStatus.success ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-rose-50 border-rose-200 text-rose-800'
+        <div className={`flex items-center gap-3 p-3.5 rounded-lg border text-xs font-medium shadow-xs ${mappingStatus.success ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-rose-50 border-rose-200 text-rose-800'
           }`}>
           {mappingStatus.success ? <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" /> : <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" />}
           <span className="flex-1">{mappingStatus.msg}</span>
@@ -432,7 +432,7 @@ export default function DiscoveryPage() {
       )}
 
       {/* Search + Expand Controls */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs flex flex-col sm:flex-row gap-3 items-center">
+      <div className="bg-white rounded-lg border border-slate-200 p-4 shadow-xs flex flex-col sm:flex-row gap-3 items-center">
         <div className="relative flex-1 w-full">
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
           <input
@@ -440,7 +440,7 @@ export default function DiscoveryPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search device, interface, Service ID, or Graph ID..."
-            className="w-full pl-10 pr-4 py-2 text-xs border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
+            className="w-full pl-10 pr-4 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
           />
           {search && (
             <button onClick={() => setSearch('')} className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600">
@@ -463,7 +463,7 @@ export default function DiscoveryPage() {
       </div>
 
       {/* Tree View */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+      <div className="bg-white rounded-lg border border-slate-200 shadow-xs overflow-hidden">
         {loading ? (
           <div className="py-20 text-center">
             <RefreshCw className="w-6 h-6 text-orange-500 animate-spin mx-auto mb-2" />
@@ -471,8 +471,8 @@ export default function DiscoveryPage() {
           </div>
         ) : tree.length === 0 ? (
           <div className="py-20 px-6 flex flex-col items-center text-center gap-3">
-            <div className="w-14 h-14 rounded-2xl bg-orange-50 border border-orange-100 flex items-center justify-center text-orange-400">
-              <Radio className="w-7 h-7" />
+            <div className="w-12 h-12 rounded-lg bg-orange-50 border border-orange-100 flex items-center justify-center text-orange-400">
+              <Radio className="w-6 h-6" />
             </div>
             <div>
               <h3 className="text-sm font-bold text-slate-800 mb-1">No Discovery Data Yet</h3>
@@ -486,7 +486,7 @@ export default function DiscoveryPage() {
               <button
                 onClick={handleSync}
                 disabled={syncing}
-                className="mt-1 inline-flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-xl text-xs font-bold shadow-xs transition active:scale-95 disabled:opacity-60"
+                className="mt-1 inline-flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-xs font-bold shadow-xs transition active:scale-95 disabled:opacity-60"
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${syncing ? 'animate-spin' : ''}`} />
                 <span>{syncing ? 'Connecting...' : `Run ${activeEngine} Discovery Now`}</span>
@@ -619,7 +619,7 @@ export default function DiscoveryPage() {
               </p>
 
               {/* Interface Info Card */}
-              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2 text-[12px]">
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-2 text-[12px]">
                 <div className="flex items-center gap-2">
                   <span className="font-medium text-slate-500">Interface:</span>
                   <span className="font-semibold text-slate-900 truncate">{mapping.fullTitle}</span>
@@ -638,7 +638,7 @@ export default function DiscoveryPage() {
 
               {/* Auto-matched customer info */}
               {mapping.matched && (
-                <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-[12px] space-y-1">
+                <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-[12px] space-y-1">
                   <div className="flex items-center gap-1.5 font-semibold text-emerald-800">
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                     Customer auto-detected

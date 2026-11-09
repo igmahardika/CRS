@@ -243,7 +243,7 @@ export default function SettingsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* ================= LEFT COLUMN: TEMPLATE ASSETS ================= */}
         <div className="lg:col-span-6 space-y-5">
-          <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs space-y-4">
+          <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-xs space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="font-semibold text-slate-800 text-sm flex items-center gap-2">
                 <ImageIcon className="w-4 h-4 text-orange-500" />
@@ -257,7 +257,7 @@ export default function SettingsPage() {
             </p>
 
             {/* Template Asset 1: Cover MRTG */}
-            <div className="border border-slate-200 rounded-xl p-4 bg-slate-50/50 space-y-3">
+            <div className="border border-slate-200 rounded-lg p-4 bg-slate-50/50 space-y-3">
               <div className="flex items-start justify-between">
                 <div>
                   <h4 className="font-semibold text-xs text-slate-900">1. MRTG Report Cover</h4>
@@ -300,7 +300,7 @@ export default function SettingsPage() {
             </div>
 
             {/* Template Asset 2: Cover SLA */}
-            <div className="border border-slate-200 rounded-xl p-4 bg-slate-50/50 space-y-3">
+            <div className="border border-slate-200 rounded-lg p-4 bg-slate-50/50 space-y-3">
               <div className="flex items-start justify-between">
                 <div>
                   <h4 className="font-semibold text-xs text-slate-900">2. SLA Report Cover</h4>
@@ -343,7 +343,7 @@ export default function SettingsPage() {
             </div>
 
             {/* Template Asset 3: Background Isi (page_bg) */}
-            <div className="border border-slate-200 rounded-xl p-4 bg-slate-50/50 space-y-3">
+            <div className="border border-slate-200 rounded-lg p-4 bg-slate-50/50 space-y-3">
               <div className="flex items-start justify-between">
                 <div>
                   <h4 className="font-semibold text-xs text-slate-900">3. Content Page Background (Header & Footer)</h4>
@@ -391,7 +391,7 @@ export default function SettingsPage() {
         <div className="lg:col-span-6 space-y-5">
           <form onSubmit={handleSaveConfig} className="space-y-5">
             {/* 1. MRTG / Cacti Server Configuration */}
-            <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs space-y-4">
+            <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-xs space-y-4">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <h3 className="font-semibold text-slate-800 text-sm flex items-center gap-2">
                   <Server className="w-4 h-4 text-orange-500" />
@@ -486,7 +486,7 @@ export default function SettingsPage() {
             </div>
 
             {/* 2. PRTG Network Monitor Server Configuration */}
-            <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs space-y-4">
+            <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-xs space-y-4">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <h3 className="font-semibold text-slate-800 text-sm flex items-center gap-2">
                   <Activity className="w-4 h-4 text-blue-600" />
@@ -582,7 +582,7 @@ export default function SettingsPage() {
             </div>
 
             {/* 3. Global Report Parameters & Action */}
-            <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs space-y-4">
+            <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-xs space-y-4">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <h3 className="font-semibold text-slate-800 text-sm flex items-center gap-2">
                   <ShieldCheck className="w-4 h-4 text-orange-500" />
@@ -619,7 +619,7 @@ export default function SettingsPage() {
                 <button
                   type="submit"
                   disabled={saving}
-                  className="px-5 py-2.5 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white rounded-xl text-xs font-semibold transition shadow-xs flex items-center gap-2 disabled:opacity-50 cursor-pointer"
+                  className="px-5 py-2.5 bg-[#EA580C] hover:bg-[#C2410C] text-white rounded-lg text-xs font-semibold transition shadow-xs flex items-center gap-2 disabled:opacity-50 cursor-pointer"
                 >
                   <Save className="w-4 h-4" />
                   <span>{saving ? 'Saving...' : 'Save All Settings'}</span>
@@ -627,7 +627,7 @@ export default function SettingsPage() {
               </div>
 
               {saveSuccess && (
-                <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-xs flex items-center gap-2">
+                <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-800 text-xs flex items-center gap-2">
                   <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
                   <span>MRTG, PRTG, and template settings saved successfully!</span>
                 </div>
