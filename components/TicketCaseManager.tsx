@@ -9,7 +9,16 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { TicketItem, CaseItem, calculateSla } from '@/lib/sla-calculator';
-import { Button, Input, Badge } from '@/components/ui';
+import {
+  Button,
+  Input,
+  Badge,
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui';
 
 interface TicketCaseManagerProps {
   tickets: TicketItem[];
@@ -241,16 +250,20 @@ export default function TicketCaseManager({
                 </div>
                 <div className="sm:col-span-1">
                   <span className="sm:hidden text-[10px] font-medium text-slate-500 block mb-0.5">Status</span>
-                  <select
+                  <Select
                     value={t.status}
-                    onChange={(e) => handleUpdateTicket(idx, 'status', e.target.value)}
-                    className="w-full h-8 px-1.5 text-xs font-medium rounded-md border border-slate-200 bg-white text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/25"
+                    onValueChange={(val) => handleUpdateTicket(idx, 'status', val)}
                   >
-                    <option value="Closed">Closed</option>
-                    <option value="Resolved">Resolved</option>
-                    <option value="Pending">Pending</option>
-                    <option value="Open">Open</option>
-                  </select>
+                    <SelectTrigger className="h-8 text-xs font-medium px-2">
+                      <SelectValue placeholder="Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Closed">Closed</SelectItem>
+                      <SelectItem value="Resolved">Resolved</SelectItem>
+                      <SelectItem value="Pending">Pending</SelectItem>
+                      <SelectItem value="Open">Open</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="sm:col-span-1 flex justify-end">
                   <Button

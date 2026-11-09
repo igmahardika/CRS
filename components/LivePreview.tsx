@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Download, ZoomIn, ZoomOut, Layers } from 'lucide-react';
+import { Download, ZoomIn, ZoomOut, Layers, RefreshCw } from 'lucide-react';
 import { ReportData } from '@/lib/pdf-template';
 import { calculateSla } from '@/lib/sla-calculator';
+import { Button, Badge } from '@/components/ui';
 
 interface LivePreviewProps {
   data: ReportData;
@@ -81,108 +82,131 @@ export default function LivePreview({
       {/* Top Toolbar */}
       <div className="bg-white border-b border-slate-200 px-4 py-2.5 flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center space-x-2">
-          <Layers className="w-4 h-4 text-orange-500" />
-          <span className="text-sm font-semibold text-slate-800">
+          <Layers className="w-4 h-4 text-[#EA580C]" />
+          <span className="font-heading text-sm font-semibold text-slate-900">
             {`Live Preview (${totalPages} A4 Pages)`}
           </span>
-          <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-medium">
+          <Badge variant="neutral" className="text-[11px]">
             {data.reportType}
-          </span>
+          </Badge>
         </div>
 
         {/* View Controls & Action */}
         <div className="flex items-center space-x-2">
           {/* Page switch tabs */}
           <div className="hidden sm:flex bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-xs">
-            <button
+            <Button
+              type="button"
+              variant={activePage === 'all' ? 'secondary' : 'ghost'}
+              size="sm"
               onClick={() => setActivePage('all')}
-              className={`px-2 py-1 rounded-md font-medium transition ${
-                activePage === 'all'
-                  ? 'bg-white text-orange-600 shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
+              className={`h-7 px-2.5 text-xs font-medium ${
+                activePage === 'all' ? 'bg-white text-[#C2410C] shadow-xs' : 'text-slate-600'
               }`}
             >
               All
-            </button>
+            </Button>
             {Array.from({ length: totalPages }).map((_, i) => (
-              <button
+              <Button
                 key={i}
+                type="button"
+                variant={activePage === i + 1 ? 'secondary' : 'ghost'}
+                size="sm"
                 onClick={() => setActivePage(i + 1)}
-                className={`px-2 py-1 rounded-md font-medium transition ${
-                  activePage === i + 1
-                    ? 'bg-white text-orange-600 shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900'
+                className={`h-7 px-2.5 text-xs font-medium ${
+                  activePage === i + 1 ? 'bg-white text-[#C2410C] shadow-xs' : 'text-slate-600'
                 }`}
               >
                 {`Page ${i + 1}`}
-              </button>
+              </Button>
             ))}
           </div>
 
           {/* Zoom controls with Quick Presets */}
           <div className="flex items-center space-x-1 bg-slate-100 p-1 rounded-lg border border-slate-200 text-xs text-slate-700">
-            <button
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
               onClick={() => setZoom(z => Math.max(40, z - 10))}
-              className="p-1 hover:text-slate-900 rounded hover:bg-slate-200/60 transition"
+              className="h-7 w-7 text-slate-600 hover:text-slate-900"
               title="Zoom Out (-10%)"
             >
               <ZoomOut className="w-3.5 h-3.5" />
-            </button>
-            <span className="w-10 text-center font-bold font-mono text-[11px] tabular-nums">{`${zoom}%`}</span>
-            <button
+            </Button>
+            <span className="w-10 text-center font-bold font-mono text-[11px] tabular-nums text-slate-900">{`${zoom}%`}</span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
               onClick={() => setZoom(z => Math.min(130, z + 10))}
-              className="p-1 hover:text-slate-900 rounded hover:bg-slate-200/60 transition"
+              className="h-7 w-7 text-slate-600 hover:text-slate-900"
               title="Zoom In (+10%)"
             >
               <ZoomIn className="w-3.5 h-3.5" />
-            </button>
+            </Button>
             <div className="hidden lg:flex items-center space-x-0.5 border-l border-slate-300 pl-1 ml-0.5">
-              <button
+              <Button
+                type="button"
+                variant={zoom === 50 ? 'secondary' : 'ghost'}
+                size="sm"
                 onClick={() => setZoom(50)}
-                className={`px-1.5 py-0.5 text-[10px] font-bold rounded transition ${zoom === 50 ? 'bg-white text-orange-600 shadow-2xs' : 'text-slate-500 hover:text-slate-800'}`}
+                className={`h-6 px-1.5 text-[10px] font-medium ${
+                  zoom === 50 ? 'bg-white text-[#C2410C] shadow-2xs font-semibold' : 'text-slate-500'
+                }`}
                 title="Zoom 50% (Fit)"
               >
                 Fit
-              </button>
-              <button
+              </Button>
+              <Button
+                type="button"
+                variant={zoom === 65 ? 'secondary' : 'ghost'}
+                size="sm"
                 onClick={() => setZoom(65)}
-                className={`px-1.5 py-0.5 text-[10px] font-bold rounded transition ${zoom === 65 ? 'bg-white text-orange-600 shadow-2xs' : 'text-slate-500 hover:text-slate-800'}`}
+                className={`h-6 px-1.5 text-[10px] font-medium ${
+                  zoom === 65 ? 'bg-white text-[#C2410C] shadow-2xs font-semibold' : 'text-slate-500'
+                }`}
                 title="Zoom 65% (Optimal)"
               >
                 65%
-              </button>
-              <button
+              </Button>
+              <Button
+                type="button"
+                variant={zoom === 100 ? 'secondary' : 'ghost'}
+                size="sm"
                 onClick={() => setZoom(100)}
-                className={`px-1.5 py-0.5 text-[10px] font-bold rounded transition ${zoom === 100 ? 'bg-white text-orange-600 shadow-2xs' : 'text-slate-500 hover:text-slate-800'}`}
+                className={`h-6 px-1.5 text-[10px] font-medium ${
+                  zoom === 100 ? 'bg-white text-[#C2410C] shadow-2xs font-semibold' : 'text-slate-500'
+                }`}
                 title="Zoom 100% (Real Size)"
               >
                 100%
-              </button>
+              </Button>
             </div>
           </div>
 
-          {/* Export PDF Button */}
+          {/* Download PDF Button */}
           {onDownloadPdf && (
-            <button
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
               onClick={onDownloadPdf}
               disabled={isGeneratingPdf}
-              className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 bg-[#EA580C] hover:bg-[#C2410C] text-white rounded-lg text-xs font-semibold transition shadow-xs disabled:opacity-50"
+              className="text-[#C2410C] border-orange-200 hover:bg-orange-50 font-medium"
             >
               {isGeneratingPdf ? (
                 <>
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
-                  </svg>
+                  <RefreshCw className="w-3.5 h-3.5 mr-1.5 animate-spin" />
                   <span>Generating PDF...</span>
                 </>
               ) : (
                 <>
-                  <Download className="w-4 h-4" />
+                  <Download className="w-3.5 h-3.5 mr-1.5 text-[#EA580C]" />
                   <span>Download PDF</span>
                 </>
               )}
-            </button>
+            </Button>
           )}
         </div>
       </div>

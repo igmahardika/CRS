@@ -642,21 +642,25 @@ function GeneratorPageContent() {
               <div className="pt-2 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
                 <div className="sm:col-span-4">
                   <FormField label="Report Month">
-                    <select
-                      value={month}
-                      onChange={(e) => {
-                        const newM = parseInt(e.target.value, 10);
+                    <Select
+                      value={String(month)}
+                      onValueChange={(val) => {
+                        const newM = parseInt(val, 10);
                         setMonth(newM);
                         fetchNextDocNumber(newM, year, reportType);
                       }}
-                      className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#EA580C]/40 focus:border-[#EA580C]"
                     >
-                      {monthNames.map((m, idx) => (
-                        <option key={idx} value={idx + 1}>
-                          {m}
-                        </option>
-                      ))}
-                    </select>
+                      <SelectTrigger className="h-9 w-full text-xs">
+                        <SelectValue placeholder="Select Month" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {monthNames.map((m, idx) => (
+                          <SelectItem key={idx} value={String(idx + 1)}>
+                            {m}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </FormField>
                 </div>
                 <div className="sm:col-span-3">
@@ -676,15 +680,17 @@ function GeneratorPageContent() {
                 <div className="sm:col-span-5">
                   <div className="flex items-center justify-between mb-1.5">
                     <label className="text-xs font-medium text-slate-700">Document Number</label>
-                    <button
+                    <Button
                       type="button"
+                      variant="ghost"
+                      size="sm"
                       onClick={() => fetchNextDocNumber(month, year, reportType)}
-                      className="text-[11px] text-[#C2410C] hover:text-[#EA580C] font-medium flex items-center gap-1 transition"
+                      className="h-auto p-0 text-[11px] text-[#C2410C] hover:text-[#EA580C] hover:bg-transparent font-medium flex items-center gap-1 transition"
                       title="Auto-generate sequence number"
                     >
                       <RefreshCw className={`w-3 h-3 ${isLoadingDocNumber ? 'animate-spin' : ''}`} />
                       <span>Auto</span>
-                    </button>
+                    </Button>
                   </div>
                   <Input
                     value={documentNumber}
@@ -728,12 +734,14 @@ function GeneratorPageContent() {
 
             {/* Engine Tabs */}
             <div className="grid grid-cols-2 p-1 bg-slate-100 rounded-lg gap-1 text-xs">
-              <button
+              <Button
                 type="button"
+                variant={graphEngine === 'MRTG' ? 'secondary' : 'ghost'}
+                size="sm"
                 onClick={() => switchEngine('MRTG')}
-                className={`py-2 px-3 rounded-md text-xs font-medium transition flex items-center justify-between ${
+                className={`h-auto py-2 px-3 text-xs justify-between font-medium ${
                   graphEngine === 'MRTG'
-                    ? 'bg-white text-slate-900 shadow-xs border border-slate-200 font-semibold'
+                    ? 'bg-white text-slate-900 shadow-xs border border-slate-200 font-semibold hover:bg-white'
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
@@ -748,13 +756,15 @@ function GeneratorPageContent() {
                 ) : (
                   <span className="text-[10px] text-slate-400">Default</span>
                 )}
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                variant={graphEngine === 'PRTG' ? 'secondary' : 'ghost'}
+                size="sm"
                 onClick={() => switchEngine('PRTG')}
-                className={`py-2 px-3 rounded-md text-xs font-medium transition flex items-center justify-between ${
+                className={`h-auto py-2 px-3 text-xs justify-between font-medium ${
                   graphEngine === 'PRTG'
-                    ? 'bg-white text-slate-900 shadow-xs border border-slate-200 font-semibold'
+                    ? 'bg-white text-slate-900 shadow-xs border border-slate-200 font-semibold hover:bg-white'
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
@@ -769,7 +779,7 @@ function GeneratorPageContent() {
                 ) : (
                   <span className="text-[10px] text-slate-400">None</span>
                 )}
-              </button>
+              </Button>
             </div>
 
             <div className="space-y-3.5">
@@ -850,11 +860,12 @@ function GeneratorPageContent() {
               {/* Manual Upload Fallback */}
               <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-3">
                 <span className="text-xs font-medium text-slate-700 shrink-0">Upload Graph Image (Fallback)</span>
-                <input
+                <Input
                   type="file"
                   accept="image/*"
                   onChange={handleManualImageUpload}
-                  className="text-xs text-slate-500 file:mr-2 file:py-1 file:px-2.5 file:rounded-md file:border-0 file:text-xs file:font-medium file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 cursor-pointer"
+                  inputSize="sm"
+                  className="w-auto h-8 text-xs text-slate-500 file:mr-2 file:py-0.5 file:px-2 file:rounded-md file:border-0 file:text-xs file:font-medium file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 cursor-pointer"
                 />
               </div>
 
@@ -865,36 +876,38 @@ function GeneratorPageContent() {
                   <span className="text-[11px] text-slate-500">Switch port or sensor mapping</span>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
-                  <button
+                  <Button
                     type="button"
+                    variant={trafficDirection === 'NORMAL' ? 'secondary' : 'ghost'}
                     onClick={() => {
                       setTrafficDirection('NORMAL');
                       autoSaveGraphIdToMaster(customerId, graphId, 'NORMAL', graphEngine);
                     }}
-                    className={`p-2.5 rounded-lg text-xs text-center border transition ${
+                    className={`h-auto p-2.5 rounded-lg flex-col items-center justify-center border transition ${
                       trafficDirection === 'NORMAL'
-                        ? 'bg-[#FFF7ED] text-[#C2410C] border-[#EA580C] font-semibold'
+                        ? 'bg-[#FFF7ED] text-[#C2410C] border-[#EA580C] font-semibold hover:bg-[#FFF7ED]'
                         : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
                     }`}
                   >
-                    <div className="font-medium">Normal</div>
-                    <div className="text-[10px] text-slate-500">In: DL | Out: UL</div>
-                  </button>
-                  <button
+                    <div className="font-medium text-xs">Normal</div>
+                    <div className="text-[10px] text-slate-500 font-normal">In: DL | Out: UL</div>
+                  </Button>
+                  <Button
                     type="button"
+                    variant={trafficDirection === 'REVERSED' ? 'secondary' : 'ghost'}
                     onClick={() => {
                       setTrafficDirection('REVERSED');
                       autoSaveGraphIdToMaster(customerId, graphId, 'REVERSED', graphEngine);
                     }}
-                    className={`p-2.5 rounded-lg text-xs text-center border transition ${
+                    className={`h-auto p-2.5 rounded-lg flex-col items-center justify-center border transition ${
                       trafficDirection === 'REVERSED'
-                        ? 'bg-[#FFF7ED] text-[#C2410C] border-[#EA580C] font-semibold'
+                        ? 'bg-[#FFF7ED] text-[#C2410C] border-[#EA580C] font-semibold hover:bg-[#FFF7ED]'
                         : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
                     }`}
                   >
-                    <div className="font-medium">Reversed</div>
-                    <div className="text-[10px] text-slate-500">Out: DL | In: UL</div>
-                  </button>
+                    <div className="font-medium text-xs">Reversed</div>
+                    <div className="text-[10px] text-slate-500 font-normal">Out: DL | In: UL</div>
+                  </Button>
                 </div>
               </div>
 
@@ -1050,13 +1063,16 @@ function GeneratorPageContent() {
                   <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                   <span>Report successfully saved to history and physical storage!</span>
                 </div>
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="icon-sm"
                   onClick={() => setSavedDocInfo(null)}
-                  className="text-emerald-500 hover:text-emerald-700 font-bold p-1"
+                  className="h-6 w-6 text-emerald-600 hover:text-emerald-800 hover:bg-emerald-100/50"
+                  title="Dismiss notification"
                 >
                   ✕
-                </button>
+                </Button>
               </div>
               <p className="text-[11px] text-emerald-700">
                 Document <strong>{savedDocInfo.docNum}</strong> is permanently archived and available for instant download.
