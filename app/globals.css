@@ -7,6 +7,45 @@
   --font-poppins: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --background: #f8fafc;
   --foreground: #0f172a;
+
+  /* Card & Surfaces */
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+  --popover: #ffffff;
+  --popover-foreground: #0f172a;
+
+  /* Nexa Brand & Orange Accents (A5 Tokens) */
+  --primary-brand: #f16614;
+  --primary: #ea580c;
+  --primary-foreground: #ffffff;
+  --primary-strong: #c2410c;
+  --primary-soft: #fff7ed;
+
+  /* Secondary & Muted */
+  --secondary: #f1f5f9;
+  --secondary-foreground: #0f172a;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+
+  /* Status Colors */
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+  --success: #16a34a;
+  --success-foreground: #ffffff;
+  --warning: #d97706;
+  --warning-foreground: #ffffff;
+  --info: #2563eb;
+  --info-foreground: #ffffff;
+
+  /* Borders, Inputs & Rings */
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --ring: rgba(234, 88, 12, 0.4);
+
+  /* Radius Tokens */
+  --radius: 0.5rem;       /* 8px: controls (button, input, badge) */
+  --radius-card: 0.75rem; /* 12px: cards, containers */
+  --radius-dialog: 1rem;  /* 16px: dialogs, modals */
 }
 
 body {
