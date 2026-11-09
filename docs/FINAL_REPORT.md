@@ -101,6 +101,10 @@ The goal of modernizing the portal into an enterprise-grade, clean, and intuitiv
 - **Automated Flow Verification:** Tested live endpoints with zero regressions.
 - **Computed Font Audit:** Automated headless browser audit confirmed 0 serif fallbacks and 0 monospace classes across all 7 views.
 - **Dual-Viewport Visual Capture:** Captured 1440px and 1920px final screenshots across all 7 views in `docs/final/`.
+- **Ticket & Incident Case UX Enhancement:**
+  - Solved single-line truncation: transitioned each item into a spacious 2-tier card (Tier 1: Identifiers, Date, Status/Downtime; Tier 2: Wide 50%-50% Issue Description & Action Taken).
+  - Added **Batch Paste from Excel / Spreadsheet**: intelligent parser supporting TSV/CSV with live preview and Append/Replace modes.
+  - Added **Quick Multi-Add (+3, +5, +10)**: 1-click batch generation with auto-incremented sequence numbers.
 
 ---
 
@@ -174,3 +178,4 @@ All final visual captures are archived in `docs/final/`:
 - [x] **Protocol B5:** Each phase cleanly committed and tagged with `phase-N`.
 
 **Conclusion:** The GENRE Reporting portal redesign is 100% complete, fully verified, and ready for deployment.
+
