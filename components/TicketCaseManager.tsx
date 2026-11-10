@@ -401,7 +401,8 @@ export default function TicketCaseManager({
             descParts.push(cols[c].trim());
           }
         }
-        const fullDesc = descParts.join(' — ') || 'Kendala Layanan Pelanggan';
+        let fullDesc = descParts.join(' — ') || 'Kendala Layanan Pelanggan';
+        fullDesc = fullDesc.replace(/\s{2,}/g, ' — ').replace(/ —\s*— /g, ' — ');
 
         // Find status column from the tail (e.g. "CLOSE CASE", "CLOSE TICKET", "Open", "Pending")
         let statusColIdx = -1;
@@ -428,19 +429,40 @@ export default function TicketCaseManager({
           const dtCandidate = cols[statusColIdx - 1];
           downtimeMinutes = parseDurationToMinutes(dtCandidate);
         }
-        if (!downtimeMinutes && startDate && endDate) {
-          downtimeMinutes = calculateMinutesBetween(startDate, endDate);
-        }
 
         const rawNo = cols[1] || '';
         const kategori = cols[2] || '';
+        const statusRaw = statusColIdx > 0 ? cols[statusColIdx].toUpperCase() : '';
 
-        // Identify if row is a downtime case or support ticket
-        const isCaseRow =
+        // Priority 1: Explicit status or category or ticket number
+        const isExplicitTicket =
+          statusRaw.includes('TICKET') ||
+          kategori.toLowerCase().includes('komplain') ||
+          kategori.toLowerCase().includes('request') ||
+          kategori.toLowerCase().includes('inquiry') ||
+          rawNo.toUpperCase().startsWith('TKT') ||
+          rawNo.toUpperCase().startsWith('N');
+
+        const isExplicitCase =
+          statusRaw.includes('CASE') ||
           kategori.toLowerCase().includes('problem') ||
+          kategori.toLowerCase().includes('incident') ||
           rawNo.toLowerCase() === 'case' ||
-          (statusColIdx > 0 && cols[statusColIdx].toUpperCase().includes('CASE')) ||
-          downtimeMinutes > 0;
+          rawNo.toUpperCase().startsWith('CASE');
+
+        let isCaseRow = false;
+        if (isExplicitCase) {
+          isCaseRow = true;
+        } else if (isExplicitTicket) {
+          isCaseRow = false;
+        } else {
+          isCaseRow = downtimeMinutes > 0;
+        }
+
+        // Only calculate downtime from start/end IF it's confirmed to be a case and downtime was 0
+        if (isCaseRow && !downtimeMinutes && startDate && endDate) {
+          downtimeMinutes = calculateMinutesBetween(startDate, endDate);
+        }
 
         if (isCaseRow) {
           const noCase =
