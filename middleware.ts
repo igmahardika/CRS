@@ -5,14 +5,16 @@ import { AUTH_COOKIE_NAME, verifyTokenEdge } from '@/lib/token-edge';
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // 1. Allow static assets, internal Next.js routes, and auth APIs
+  // 1. Allow static assets, internal Next.js routes, auth APIs, and public request form
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/assets') ||
     pathname.startsWith('/favicon.ico') ||
     pathname.startsWith('/api/auth/login') ||
     pathname.startsWith('/api/auth/logout') ||
-    pathname.startsWith('/design-preview')
+    pathname.startsWith('/design-preview') ||
+    pathname.startsWith('/request-report') ||
+    (pathname === '/api/requests' && req.method === 'POST')
   ) {
     return NextResponse.next();
   }
