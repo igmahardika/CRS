@@ -301,7 +301,7 @@ export function generateReportHtml(data: ReportData): string {
       margin-bottom: 8px;
     }
 
-    /* SLA Metric Boxes */
+    /* SLA Metric Boxes & Dual Progress Bars (Option A) */
     .metric-grid {
       display: flex;
       gap: 10px;
@@ -328,6 +328,91 @@ export function generateReportHtml(data: ReportData): string {
       font-weight: 800;
       color: #000000;
       margin-top: 1px;
+    }
+
+    .sla-progress-card {
+      border: 1px solid #e2e8f0;
+      background: #ffffff;
+      border-radius: 4px;
+      padding: 8px 12px;
+      margin-top: 5px;
+      margin-bottom: 6px;
+    }
+    .sla-progress-row {
+      margin-bottom: 7px;
+    }
+    .sla-progress-row:last-child {
+      margin-bottom: 0;
+    }
+    .sla-progress-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 8pt;
+      margin-bottom: 4px;
+    }
+    .sla-progress-title {
+      font-weight: 700;
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .sla-progress-dot {
+      display: inline-block;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+    }
+    .sla-progress-values {
+      font-size: 8pt;
+      font-weight: 600;
+    }
+    .sla-progress-track {
+      width: 100%;
+      height: 12px;
+      background: #fee2e2;
+      border-radius: 3px;
+      overflow: hidden;
+      display: flex;
+    }
+    .sla-progress-online {
+      background: #10b981;
+      height: 100%;
+    }
+    .sla-progress-downtime {
+      background: #ef4444;
+      height: 100%;
+    }
+    .sla-progress-target-track {
+      width: 100%;
+      height: 10px;
+      background: #e2e8f0;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .sla-progress-target-fill {
+      background: #0284c7;
+      height: 100%;
+    }
+    .sla-badge {
+      display: inline-block;
+      padding: 1.5px 7px;
+      border-radius: 3px;
+      font-size: 7.5pt;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+      line-height: 1.25;
+    }
+    .sla-badge-met {
+      background: #ecfdf5;
+      color: #065f46;
+      border: 1px solid #a7f3d0;
+    }
+    .sla-badge-breach {
+      background: #fef2f2;
+      color: #991b1b;
+      border: 1px solid #fecaca;
     }
 
     /* MRTG Graph Styles */
@@ -606,23 +691,53 @@ export function generateReportHtml(data: ReportData): string {
         <span>Downtime Duration : ${slaCalc.downtimeDurationStr}</span>
       </div>
 
-      <!-- Section 4: SLA Service -->
+      <!-- Section 4: SLA Service (Dual Progress Bar - Option A) -->
       <div>
         <div class="section-title">SLA Service</div>
       </div>
       <div class="section-desc">Detailed SLA Service for ${data.customerName} ${data.reportPeriod} :</div>
-      <div class="metric-grid">
-        <div class="metric-card">
-          <div class="metric-label">Online</div>
-          <div class="metric-value">${slaCalc.onlinePercent.toFixed(2)}%</div>
+      <div class="sla-progress-card">
+        <!-- Bar 1: Actual Availability (Online + Downtime) -->
+        <div class="sla-progress-row">
+          <div class="sla-progress-header">
+            <div class="sla-progress-title">
+              <span class="sla-progress-dot" style="background-color: #10b981;"></span>
+              <span>Service Availability (Actual)</span>
+            </div>
+            <div class="sla-progress-values">
+              <span style="color: #047857; font-weight: 700;">Online ${slaCalc.onlinePercent.toFixed(2)}%</span>
+              <span style="color: #94a3b8; margin: 0 5px;">|</span>
+              <span style="color: #dc2626; font-weight: 700;">Downtime ${slaCalc.downtimePercent.toFixed(2)}%</span>
+            </div>
+          </div>
+          <div class="sla-progress-track">
+            <div class="sla-progress-online" style="width: ${Math.min(100, Math.max(0, slaCalc.onlinePercent))}%;"></div>
+            <div class="sla-progress-downtime" style="width: ${Math.min(100, Math.max(0, slaCalc.downtimePercent))}%;"></div>
+          </div>
         </div>
-        <div class="metric-card">
-          <div class="metric-label">Downtime</div>
-          <div class="metric-value">${slaCalc.downtimePercent.toFixed(2)}%</div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-label">SLA</div>
-          <div class="metric-value">${data.targetSla > 0 ? `${data.targetSla.toFixed(2)}%` : '-'}</div>
+
+        <!-- Bar 2: Target SLA & Status Badge -->
+        <div class="sla-progress-row">
+          <div class="sla-progress-header">
+            <div class="sla-progress-title">
+              <span class="sla-progress-dot" style="background-color: #0284c7;"></span>
+              <span>Target SLA : <strong style="color: #0284c7;">${data.targetSla > 0 ? `${data.targetSla.toFixed(2)}%` : '-'}</strong></span>
+            </div>
+            <div>
+              ${data.targetSla > 0 ? (
+                slaCalc.onlinePercent >= data.targetSla ? `
+                  <span class="sla-badge sla-badge-met">✓ SLA MET (+${(slaCalc.onlinePercent - data.targetSla).toFixed(2)}%)</span>
+                ` : `
+                  <span class="sla-badge sla-badge-breach">✕ SLA BREACHED (-${(data.targetSla - slaCalc.onlinePercent).toFixed(2)}%)</span>
+                `
+              ) : `
+                <span class="sla-badge" style="background: #f1f5f9; color: #64748b; border: 1px solid #cbd5e1;">N/A</span>
+              `}
+            </div>
+          </div>
+          <div class="sla-progress-target-track">
+            <div class="sla-progress-target-fill" style="width: ${Math.min(100, Math.max(0, data.targetSla > 0 ? data.targetSla : 100))}%;"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -826,23 +941,53 @@ export function generateReportHtml(data: ReportData): string {
         <span>Downtime Duration : ${slaCalc.downtimeDurationStr}</span>
       </div>
 
-      <!-- Section: SLA Service -->
+      <!-- Section: SLA Service (Dual Progress Bar - Option A) -->
       <div style="margin-top: 14px;">
         <div class="section-title">SLA Service</div>
       </div>
       <div class="section-desc">Detailed SLA Service for ${data.customerName} ${data.reportPeriod} :</div>
-      <div class="metric-grid">
-        <div class="metric-card">
-          <div class="metric-label">Online</div>
-          <div class="metric-value">${slaCalc.onlinePercent.toFixed(2)}%</div>
+      <div class="sla-progress-card">
+        <!-- Bar 1: Actual Availability (Online + Downtime) -->
+        <div class="sla-progress-row">
+          <div class="sla-progress-header">
+            <div class="sla-progress-title">
+              <span class="sla-progress-dot" style="background-color: #10b981;"></span>
+              <span>Service Availability (Actual)</span>
+            </div>
+            <div class="sla-progress-values">
+              <span style="color: #047857; font-weight: 700;">Online ${slaCalc.onlinePercent.toFixed(2)}%</span>
+              <span style="color: #94a3b8; margin: 0 5px;">|</span>
+              <span style="color: #dc2626; font-weight: 700;">Downtime ${slaCalc.downtimePercent.toFixed(2)}%</span>
+            </div>
+          </div>
+          <div class="sla-progress-track">
+            <div class="sla-progress-online" style="width: ${Math.min(100, Math.max(0, slaCalc.onlinePercent))}%;"></div>
+            <div class="sla-progress-downtime" style="width: ${Math.min(100, Math.max(0, slaCalc.downtimePercent))}%;"></div>
+          </div>
         </div>
-        <div class="metric-card">
-          <div class="metric-label">Downtime</div>
-          <div class="metric-value">${slaCalc.downtimePercent.toFixed(2)}%</div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-label">SLA</div>
-          <div class="metric-value">${data.targetSla > 0 ? `${data.targetSla.toFixed(2)}%` : '-'}</div>
+
+        <!-- Bar 2: Target SLA & Status Badge -->
+        <div class="sla-progress-row">
+          <div class="sla-progress-header">
+            <div class="sla-progress-title">
+              <span class="sla-progress-dot" style="background-color: #0284c7;"></span>
+              <span>Target SLA : <strong style="color: #0284c7;">${data.targetSla > 0 ? `${data.targetSla.toFixed(2)}%` : '-'}</strong></span>
+            </div>
+            <div>
+              ${data.targetSla > 0 ? (
+                slaCalc.onlinePercent >= data.targetSla ? `
+                  <span class="sla-badge sla-badge-met">✓ SLA MET (+${(slaCalc.onlinePercent - data.targetSla).toFixed(2)}%)</span>
+                ` : `
+                  <span class="sla-badge sla-badge-breach">✕ SLA BREACHED (-${(data.targetSla - slaCalc.onlinePercent).toFixed(2)}%)</span>
+                `
+              ) : `
+                <span class="sla-badge" style="background: #f1f5f9; color: #64748b; border: 1px solid #cbd5e1;">N/A</span>
+              `}
+            </div>
+          </div>
+          <div class="sla-progress-target-track">
+            <div class="sla-progress-target-fill" style="width: ${Math.min(100, Math.max(0, data.targetSla > 0 ? data.targetSla : 100))}%;"></div>
+          </div>
         </div>
       </div>
     </div>

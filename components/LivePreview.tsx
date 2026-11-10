@@ -537,7 +537,7 @@ export default function LivePreview({
                     <span>{`Downtime Duration : ${slaCalc.downtimeDurationStr}`}</span>
                   </div>
 
-                  {/* Section 4: SLA Service */}
+                  {/* Section 4: SLA Service (Dual Progress Bar - Option A) */}
                   <div className="mt-1.5">
                     <div className="font-heading text-[11.5pt] font-bold text-black inline-block">
                       SLA Service
@@ -546,18 +546,70 @@ export default function LivePreview({
                   <div className="text-[8.5pt] text-slate-700 mb-1 leading-tight">
                     {`Detailed SLA Service for ${data.customerName} ${data.reportPeriod} :`}
                   </div>
-                  <div className="flex gap-2.5 mt-1.5 mb-1">
-                    <div className="flex-1 border-[1.5px] border-[#FF9900] rounded-[3px] py-1.5 px-2.5 text-center bg-white shadow-2xs">
-                      <div className="text-[8.5pt] font-bold text-slate-600 uppercase tracking-wider">Online</div>
-                      <div className="text-[15pt] font-extrabold text-black mt-0.5">{`${slaCalc.onlinePercent.toFixed(2)}%`}</div>
+                  <div className="border border-slate-200 bg-white rounded p-2.5 my-1.5 space-y-2">
+                    {/* Bar 1: Actual Availability (Online + Downtime) */}
+                    <div>
+                      <div className="flex justify-between items-center text-[8pt] mb-1">
+                        <div className="font-bold text-slate-900 flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block"></span>
+                          <span>Service Availability (Actual)</span>
+                        </div>
+                        <div className="font-semibold text-[8pt]">
+                          <span className="text-emerald-700 font-bold">{`Online ${slaCalc.onlinePercent.toFixed(2)}%`}</span>
+                          <span className="text-slate-300 mx-1.5">|</span>
+                          <span className="text-rose-600 font-bold">{`Downtime ${slaCalc.downtimePercent.toFixed(2)}%`}</span>
+                        </div>
+                      </div>
+                      <div className="w-full h-3 bg-rose-100 rounded overflow-hidden flex">
+                        <div
+                          className="bg-emerald-500 h-full"
+                          style={{ width: `${Math.min(100, Math.max(0, slaCalc.onlinePercent))}%` }}
+                        />
+                        <div
+                          className="bg-rose-500 h-full"
+                          style={{ width: `${Math.min(100, Math.max(0, slaCalc.downtimePercent))}%` }}
+                        />
+                      </div>
                     </div>
-                    <div className="flex-1 border-[1.5px] border-[#FF9900] rounded-[3px] py-1.5 px-2.5 text-center bg-white shadow-2xs">
-                      <div className="text-[8.5pt] font-bold text-slate-600 uppercase tracking-wider">Downtime</div>
-                      <div className="text-[15pt] font-extrabold text-black mt-0.5">{`${slaCalc.downtimePercent.toFixed(2)}%`}</div>
-                    </div>
-                    <div className="flex-1 border-[1.5px] border-[#FF9900] rounded-[3px] py-1.5 px-2.5 text-center bg-white shadow-2xs">
-                      <div className="text-[8.5pt] font-bold text-slate-600 uppercase tracking-wider">SLA</div>
-                      <div className="text-[15pt] font-extrabold text-black mt-0.5">{data.targetSla > 0 ? `${data.targetSla.toFixed(2)}%` : '-'}</div>
+
+                    {/* Bar 2: Target SLA & Status Badge */}
+                    <div>
+                      <div className="flex justify-between items-center text-[8pt] mb-1">
+                        <div className="font-bold text-slate-900 flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-sky-600 inline-block"></span>
+                          <span>
+                            Target SLA :{' '}
+                            <strong className="text-sky-600">
+                              {data.targetSla > 0 ? `${data.targetSla.toFixed(2)}%` : '-'}
+                            </strong>
+                          </span>
+                        </div>
+                        <div>
+                          {data.targetSla > 0 ? (
+                            slaCalc.onlinePercent >= data.targetSla ? (
+                              <span className="inline-block py-0.5 px-2 rounded text-[7.5pt] font-bold bg-emerald-50 text-emerald-800 border border-emerald-300">
+                                {`✓ SLA MET (+${(slaCalc.onlinePercent - data.targetSla).toFixed(2)}%)`}
+                              </span>
+                            ) : (
+                              <span className="inline-block py-0.5 px-2 rounded text-[7.5pt] font-bold bg-rose-50 text-rose-800 border border-rose-300">
+                                {`✕ SLA BREACHED (-${(data.targetSla - slaCalc.onlinePercent).toFixed(2)}%)`}
+                              </span>
+                            )
+                          ) : (
+                            <span className="inline-block py-0.5 px-2 rounded text-[7.5pt] font-bold bg-slate-100 text-slate-600 border border-slate-300">
+                              N/A
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="w-full h-2.5 bg-slate-200 rounded overflow-hidden">
+                        <div
+                          className="bg-sky-600 h-full"
+                          style={{
+                            width: `${Math.min(100, Math.max(0, data.targetSla > 0 ? data.targetSla : 100))}%`,
+                          }}
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -836,7 +888,7 @@ export default function LivePreview({
                     <span>{`Downtime Duration : ${slaCalc.downtimeDurationStr}`}</span>
                   </div>
 
-                  {/* Section: SLA Service */}
+                  {/* Section: SLA Service (Dual Progress Bar - Option A) */}
                   <div className="mt-2">
                     <div className="font-heading text-[11.5pt] font-bold text-black inline-block">
                       SLA Service
@@ -845,18 +897,70 @@ export default function LivePreview({
                   <div className="text-[8.5pt] text-slate-700 mb-1 leading-tight">
                     {`Detailed SLA Service for ${data.customerName} ${data.reportPeriod} :`}
                   </div>
-                  <div className="flex gap-2.5 mt-1.5 mb-1">
-                    <div className="flex-1 border-[1.5px] border-[#FF9900] rounded-[3px] py-1.5 px-2.5 text-center bg-white shadow-2xs">
-                      <div className="text-[8.5pt] font-bold text-slate-600 uppercase tracking-wider">Online</div>
-                      <div className="text-[15pt] font-extrabold text-black mt-0.5">{`${slaCalc.onlinePercent.toFixed(2)}%`}</div>
+                  <div className="border border-slate-200 bg-white rounded p-2.5 my-1.5 space-y-2">
+                    {/* Bar 1: Actual Availability (Online + Downtime) */}
+                    <div>
+                      <div className="flex justify-between items-center text-[8pt] mb-1">
+                        <div className="font-bold text-slate-900 flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block"></span>
+                          <span>Service Availability (Actual)</span>
+                        </div>
+                        <div className="font-semibold text-[8pt]">
+                          <span className="text-emerald-700 font-bold">{`Online ${slaCalc.onlinePercent.toFixed(2)}%`}</span>
+                          <span className="text-slate-300 mx-1.5">|</span>
+                          <span className="text-rose-600 font-bold">{`Downtime ${slaCalc.downtimePercent.toFixed(2)}%`}</span>
+                        </div>
+                      </div>
+                      <div className="w-full h-3 bg-rose-100 rounded overflow-hidden flex">
+                        <div
+                          className="bg-emerald-500 h-full"
+                          style={{ width: `${Math.min(100, Math.max(0, slaCalc.onlinePercent))}%` }}
+                        />
+                        <div
+                          className="bg-rose-500 h-full"
+                          style={{ width: `${Math.min(100, Math.max(0, slaCalc.downtimePercent))}%` }}
+                        />
+                      </div>
                     </div>
-                    <div className="flex-1 border-[1.5px] border-[#FF9900] rounded-[3px] py-1.5 px-2.5 text-center bg-white shadow-2xs">
-                      <div className="text-[8.5pt] font-bold text-slate-600 uppercase tracking-wider">Downtime</div>
-                      <div className="text-[15pt] font-extrabold text-black mt-0.5">{`${slaCalc.downtimePercent.toFixed(2)}%`}</div>
-                    </div>
-                    <div className="flex-1 border-[1.5px] border-[#FF9900] rounded-[3px] py-1.5 px-2.5 text-center bg-white shadow-2xs">
-                      <div className="text-[8.5pt] font-bold text-slate-600 uppercase tracking-wider">SLA</div>
-                      <div className="text-[15pt] font-extrabold text-black mt-0.5">{data.targetSla > 0 ? `${data.targetSla.toFixed(2)}%` : '-'}</div>
+
+                    {/* Bar 2: Target SLA & Status Badge */}
+                    <div>
+                      <div className="flex justify-between items-center text-[8pt] mb-1">
+                        <div className="font-bold text-slate-900 flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-sky-600 inline-block"></span>
+                          <span>
+                            Target SLA :{' '}
+                            <strong className="text-sky-600">
+                              {data.targetSla > 0 ? `${data.targetSla.toFixed(2)}%` : '-'}
+                            </strong>
+                          </span>
+                        </div>
+                        <div>
+                          {data.targetSla > 0 ? (
+                            slaCalc.onlinePercent >= data.targetSla ? (
+                              <span className="inline-block py-0.5 px-2 rounded text-[7.5pt] font-bold bg-emerald-50 text-emerald-800 border border-emerald-300">
+                                {`✓ SLA MET (+${(slaCalc.onlinePercent - data.targetSla).toFixed(2)}%)`}
+                              </span>
+                            ) : (
+                              <span className="inline-block py-0.5 px-2 rounded text-[7.5pt] font-bold bg-rose-50 text-rose-800 border border-rose-300">
+                                {`✕ SLA BREACHED (-${(data.targetSla - slaCalc.onlinePercent).toFixed(2)}%)`}
+                              </span>
+                            )
+                          ) : (
+                            <span className="inline-block py-0.5 px-2 rounded text-[7.5pt] font-bold bg-slate-100 text-slate-600 border border-slate-300">
+                              N/A
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="w-full h-2.5 bg-slate-200 rounded overflow-hidden">
+                        <div
+                          className="bg-sky-600 h-full"
+                          style={{
+                            width: `${Math.min(100, Math.max(0, data.targetSla > 0 ? data.targetSla : 100))}%`,
+                          }}
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>

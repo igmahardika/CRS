@@ -824,15 +824,36 @@ export default function TicketCaseManager({
                 key={idx}
                 className="bg-slate-50/70 hover:bg-slate-50 border border-slate-200 rounded-lg p-3 sm:p-3.5 space-y-2.5 transition"
               >
-                {/* Baris 1: Nomor, Tanggal, Status, & Tombol Hapus */}
-                <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5">
-                  <div className="flex items-center gap-1 shrink-0">
-                    <span className="w-6 h-6 rounded-md bg-blue-100 text-blue-700 text-xs font-semibold flex items-center justify-center tabular-nums">
+                {/* Header Item: Nomor, Judul & Tombol Hapus */}
+                <div className="flex items-center justify-between pb-1.5 border-b border-slate-200/60">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="w-6 h-6 rounded-md bg-blue-100 text-blue-700 text-xs font-bold flex items-center justify-center tabular-nums shrink-0">
                       {idx + 1}
                     </span>
+                    <span className="text-xs font-semibold text-slate-800 truncate">
+                      {t.noTicket ? t.noTicket : `Tiket #${idx + 1}`}
+                    </span>
+                    {t.status && (
+                      <Badge variant="outline" className="text-[10px] py-0 px-1.5">
+                        {t.status}
+                      </Badge>
+                    )}
                   </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={() => handleDeleteTicket(idx)}
+                    className="text-slate-400 hover:text-rose-600 hover:bg-rose-50 -mr-1 shrink-0"
+                    title="Hapus Tiket Ini"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
 
-                  <div className="flex-1 min-w-[150px] max-w-xs">
+                {/* Baris 1: Grid Input Metadata (No. Tiket, Start, End, Status) */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+                  <div className="min-w-0">
                     <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider block mb-1">
                       No. Tiket
                     </span>
@@ -846,7 +867,7 @@ export default function TicketCaseManager({
                     />
                   </div>
 
-                  <div className="w-36 shrink-0">
+                  <div className="min-w-0">
                     <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider block mb-1">
                       Start (Tgl & Jam)
                     </span>
@@ -865,7 +886,7 @@ export default function TicketCaseManager({
                     />
                   </div>
 
-                  <div className="w-36 shrink-0">
+                  <div className="min-w-0">
                     <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider block mb-1">
                       End (Tgl & Jam)
                     </span>
@@ -879,7 +900,7 @@ export default function TicketCaseManager({
                     />
                   </div>
 
-                  <div className="w-36 shrink-0">
+                  <div className="min-w-0">
                     <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider block mb-1">
                       Status
                     </span>
@@ -930,19 +951,6 @@ export default function TicketCaseManager({
                         </SelectItem>
                       </SelectContent>
                     </Select>
-                  </div>
-
-                  <div className="ml-auto pt-4 sm:pt-4">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon-sm"
-                      onClick={() => handleDeleteTicket(idx)}
-                      className="text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition"
-                      title="Hapus Tiket Ini"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
                   </div>
                 </div>
 
@@ -1103,15 +1111,34 @@ export default function TicketCaseManager({
                 key={idx}
                 className="bg-slate-50/70 hover:bg-slate-50 border border-slate-200 rounded-lg p-3 sm:p-3.5 space-y-2.5 transition"
               >
-                {/* Baris 1: Nomor Kasus, Tanggal, Durasi Downtime, & Tombol Hapus */}
-                <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5">
-                  <div className="flex items-center gap-1 shrink-0">
-                    <span className="w-6 h-6 rounded-md bg-rose-100 text-rose-700 text-xs font-semibold flex items-center justify-center tabular-nums">
+                {/* Header item: nomor urut, judul kasus, badge downtime, & tombol hapus */}
+                <div className="flex items-center justify-between pb-1 border-b border-slate-200/50">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="w-6 h-6 rounded-md bg-rose-100 text-rose-700 text-xs font-bold flex items-center justify-center tabular-nums shrink-0">
                       {idx + 1}
                     </span>
+                    <span className="text-xs font-semibold text-slate-800 truncate">
+                      {c.noCase ? c.noCase : `Kasus #${idx + 1}`}
+                    </span>
+                    <Badge variant="outline" className="text-[10px] py-0 px-1.5 text-rose-700 bg-rose-50 border-rose-200">
+                      {c.downtimeMinutes} Mnt
+                    </Badge>
                   </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={() => handleDeleteCase(idx)}
+                    className="text-slate-400 hover:text-rose-600 hover:bg-rose-50 -mr-1 shrink-0"
+                    title="Hapus Kasus Ini"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
 
-                  <div className="flex-1 min-w-[150px] max-w-xs">
+                {/* Baris 1: Grid Input Metadata (No. Kasus, Start, End, Downtime) */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+                  <div className="min-w-0">
                     <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider block mb-1">
                       No. Kasus
                     </span>
@@ -1125,7 +1152,7 @@ export default function TicketCaseManager({
                     />
                   </div>
 
-                  <div className="w-36 shrink-0">
+                  <div className="min-w-0">
                     <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider block mb-1">
                       Start (Tgl & Jam)
                     </span>
@@ -1148,7 +1175,7 @@ export default function TicketCaseManager({
                     />
                   </div>
 
-                  <div className="w-36 shrink-0">
+                  <div className="min-w-0">
                     <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider block mb-1">
                       End (Tgl & Jam)
                     </span>
@@ -1170,7 +1197,7 @@ export default function TicketCaseManager({
                     />
                   </div>
 
-                  <div className="w-32 shrink-0">
+                  <div className="min-w-0">
                     <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider block mb-1">
                       Downtime
                     </span>
@@ -1194,19 +1221,6 @@ export default function TicketCaseManager({
                         Mnt
                       </span>
                     </div>
-                  </div>
-
-                  <div className="ml-auto pt-4 sm:pt-4">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon-sm"
-                      onClick={() => handleDeleteCase(idx)}
-                      className="text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition"
-                      title="Hapus Kasus Ini"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
                   </div>
                 </div>
 
