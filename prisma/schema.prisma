@@ -102,19 +102,23 @@ model User {
 }
 
 model AppConfig {
-  id                   String   @id @default("default")
-  mrtgBaseUrl          String   @default("http://cacti.internal.net")
-  mrtgUsername         String   @default("")
-  mrtgPassword         String   @default("")
-  mrtgAuthType         String   @default("BASIC") // "BASIC" or "COOKIE"
-  prtgBaseUrl          String   @default("http://prtg.internal.net")
-  prtgUsername         String   @default("")
-  prtgPassword         String   @default("")
-  prtgAuthType         String   @default("PASSWORD") // "PASSWORD" or "PASSHASH"
-  coverMrtgPath        String   @default("/assets/templates/cover_mrtg.png")
-  coverSlaPath         String   @default("/assets/templates/cover_sla.png")
-  pageBgPath           String   @default("/assets/templates/page_bg.png")
-  defaultTargetSla     Float    @default(99.5)
-  documentNumberPrefix String   @default("IMUN.01")
-  updatedAt            DateTime @updatedAt
+  id                           String   @id @default("default")
+  mrtgBaseUrl                  String   @default("http://cacti.internal.net")
+  mrtgUsername                 String   @default("")
+  mrtgPassword                 String   @default("")
+  mrtgAuthType                 String   @default("BASIC") // "BASIC" or "COOKIE"
+  prtgBaseUrl                  String   @default("http://prtg.internal.net")
+  prtgUsername                 String   @default("")
+  prtgPassword                 String   @default("")
+  prtgAuthType                 String   @default("PASSWORD") // "PASSWORD" or "PASSHASH"
+  coverMrtgPath                String   @default("/assets/templates/cover_mrtg.png")
+  coverSlaPath                 String   @default("/assets/templates/cover_sla.png")
+  pageBgPath                   String   @default("/assets/templates/page_bg.png")
+  defaultTargetSla             Float    @default(99.5)
+  documentNumberPrefix         String   @default("IMUN.01")
+  telegramBotToken             String   @default("")
+  telegramChatId               String   @default("")
+  telegramThreadId             String   @default("") // Topic ID / message_thread_id
+  telegramNotificationsEnabled Boolean  @default(false)
+  updatedAt                    DateTime @updatedAt
 }

@@ -13,6 +13,7 @@ import {
   Upload,
   Eye,
   EyeOff,
+  Send,
 } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
@@ -42,6 +43,10 @@ interface AppConfigState {
   pageBgPath: string;
   defaultTargetSla: number;
   documentNumberPrefix: string;
+  telegramBotToken: string;
+  telegramChatId: string;
+  telegramThreadId: string;
+  telegramNotificationsEnabled: boolean;
 }
 
 type SettingsTab = 'integrations' | 'templates' | 'defaults';
@@ -62,6 +67,10 @@ export default function SettingsPage() {
     pageBgPath: '/assets/templates/page_bg.png',
     defaultTargetSla: 99.5,
     documentNumberPrefix: 'IMUN.01',
+    telegramBotToken: '',
+    telegramChatId: '',
+    telegramThreadId: '',
+    telegramNotificationsEnabled: false,
   });
 
   const [loading, setLoading] = useState(false);
@@ -71,6 +80,7 @@ export default function SettingsPage() {
   // Password visibility toggles
   const [showMrtgPassword, setShowMrtgPassword] = useState(false);
   const [showPrtgPassword, setShowPrtgPassword] = useState(false);
+  const [showTelegramToken, setShowTelegramToken] = useState(false);
 
   // File input refs
   const mrtgFileRef = useRef<HTMLInputElement>(null);
@@ -84,6 +94,10 @@ export default function SettingsPage() {
   // PRTG Test Connection
   const [testingPrtgConnection, setTestingPrtgConnection] = useState(false);
   const [prtgTestResult, setPrtgTestResult] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  // Telegram Test Connection
+  const [testingTelegram, setTestingTelegram] = useState(false);
+  const [telegramTestResult, setTelegramTestResult] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   // Cache buster for re-uploaded template images
   const [cacheBuster, setCacheBuster] = useState<number | string>('');
@@ -250,6 +264,45 @@ export default function SettingsPage() {
       });
     } finally {
       setTestingPrtgConnection(false);
+    }
+  };
+
+  const handleTestTelegram = async () => {
+    setTestingTelegram(true);
+    setTelegramTestResult(null);
+    try {
+      const res = await fetch('/api/telegram/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          botToken: config.telegramBotToken,
+          chatId: config.telegramChatId,
+          threadId: config.telegramThreadId,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setTelegramTestResult({
+          type: 'success',
+          message: data.message || 'Pesan uji coba berhasil terkirim ke topik Telegram!',
+        });
+        toast.success('Pesan uji coba berhasil terkirim ke topik Telegram!');
+      } else {
+        setTelegramTestResult({
+          type: 'error',
+          message: data.error || 'Gagal mengirim pesan ke Telegram. Periksa token dan chat ID.',
+        });
+        toast.error(data.error || 'Gagal kirim pesan ke Telegram.');
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setTelegramTestResult({
+        type: 'error',
+        message: `Koneksi error: ${msg}`,
+      });
+      toast.error(msg);
+    } finally {
+      setTestingTelegram(false);
     }
   };
 
@@ -531,6 +584,124 @@ export default function SettingsPage() {
                     >
                       <Activity className="w-3.5 h-3.5 mr-1.5 text-blue-600" />
                       <span>Test PRTG Connection</span>
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {/* 3. Telegram Bot Notifications */}
+              <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-xs space-y-4">
+                <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
+                  <h3 className="font-heading font-semibold text-slate-900 text-sm flex items-center gap-2">
+                    <Send className="w-4 h-4 text-[#0088cc]" />
+                    <span>Telegram Bot Notifications (Grup &amp; Topik)</span>
+                  </h3>
+                  <label className="flex items-center gap-2 cursor-pointer text-xs font-medium text-slate-700">
+                    <input
+                      type="checkbox"
+                      checked={config.telegramNotificationsEnabled}
+                      onChange={(e) =>
+                        setConfig({ ...config, telegramNotificationsEnabled: e.target.checked })
+                      }
+                      className="rounded border-slate-300 text-[#EA580C] focus:ring-[#EA580C] w-4 h-4"
+                    />
+                    <span>Aktifkan Notifikasi Telegram</span>
+                  </label>
+                </div>
+
+                <div className="space-y-3.5 text-xs">
+                  <p className="text-[11px] text-slate-500">
+                    Notifikasi otomatis akan dikirimkan langsung ke topik khusus grup Telegram ini untuk: permintaan baru dari departemen lain, penugasan laporan bulanan (SLA 24 jam), dan notifikasi draft report yang butuh approval supervisor.
+                  </p>
+
+                  <div>
+                    <label className="font-medium text-slate-700 block mb-1">
+                      Telegram Bot Token <span className="text-rose-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <Input
+                        type={showTelegramToken ? 'text' : 'password'}
+                        value={config.telegramBotToken}
+                        onChange={(e) => setConfig({ ...config, telegramBotToken: e.target.value })}
+                        className="text-xs pr-8 font-mono"
+                        placeholder="Contoh: 123456789:ABCdefGhIJKlmNoPQRstuVWXyz"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => setShowTelegramToken(!showTelegramToken)}
+                        className="absolute right-0.5 top-0.5 h-7 w-7 text-slate-400 hover:text-slate-600"
+                        title={showTelegramToken ? 'Sembunyikan Token' : 'Lihat Token'}
+                      >
+                        {showTelegramToken ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                      </Button>
+                    </div>
+                    <span className="text-[11px] text-slate-400 mt-1 block">
+                      Dibuat melalui bot resmi <code>@BotFather</code> di Telegram.
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="font-medium text-slate-700 block mb-1">
+                        Group Chat ID <span className="text-rose-500">*</span>
+                      </label>
+                      <Input
+                        value={config.telegramChatId}
+                        onChange={(e) => setConfig({ ...config, telegramChatId: e.target.value })}
+                        className="text-xs font-mono"
+                        placeholder="Contoh: -1001234567890"
+                      />
+                      <span className="text-[11px] text-slate-400 mt-1 block">
+                        ID Grup Telegram (diawali <code>-100...</code> untuk supergroup).
+                      </span>
+                    </div>
+
+                    <div>
+                      <label className="font-medium text-slate-700 block mb-1">
+                        ID Topik Grup (Message Thread ID)
+                      </label>
+                      <Input
+                        value={config.telegramThreadId}
+                        onChange={(e) => setConfig({ ...config, telegramThreadId: e.target.value })}
+                        className="text-xs font-mono"
+                        placeholder="Contoh: 12 atau kosongkan jika general"
+                      />
+                      <span className="text-[11px] text-slate-400 mt-1 block">
+                        ID Topik khusus forum di grup tempat pesan akan masuk.
+                      </span>
+                    </div>
+                  </div>
+
+                  {telegramTestResult && (
+                    <div
+                      className={`p-3 rounded-lg text-xs flex items-start gap-2 ${
+                        telegramTestResult.type === 'success'
+                          ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                          : 'bg-red-50 text-red-800 border border-red-200'
+                      }`}
+                    >
+                      {telegramTestResult.type === 'success' ? (
+                        <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                      ) : (
+                        <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+                      )}
+                      <span>{telegramTestResult.message}</span>
+                    </div>
+                  )}
+
+                  <div className="pt-1 flex items-center justify-between">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={handleTestTelegram}
+                      loading={testingTelegram}
+                      disabled={!config.telegramBotToken.trim() || !config.telegramChatId.trim()}
+                    >
+                      <Send className="w-3.5 h-3.5 mr-1.5 text-[#0088cc]" />
+                      <span>Test Kirim ke Topik Telegram</span>
                     </Button>
                   </div>
                 </div>

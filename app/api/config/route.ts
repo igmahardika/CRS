@@ -66,6 +66,10 @@ export async function POST(req: NextRequest) {
         pageBgPath: body.pageBgPath,
         defaultTargetSla: parseFloat(body.defaultTargetSla) || 99.5,
         documentNumberPrefix: body.documentNumberPrefix || 'IMUN.01',
+        telegramBotToken: body.telegramBotToken !== undefined ? body.telegramBotToken : '',
+        telegramChatId: body.telegramChatId !== undefined ? body.telegramChatId : '',
+        telegramThreadId: body.telegramThreadId !== undefined ? body.telegramThreadId : '',
+        telegramNotificationsEnabled: Boolean(body.telegramNotificationsEnabled),
       },
       create: {
         id: 'default',
@@ -82,6 +86,10 @@ export async function POST(req: NextRequest) {
         pageBgPath: body.pageBgPath || '/assets/templates/page_bg.png',
         defaultTargetSla: parseFloat(body.defaultTargetSla) || 99.5,
         documentNumberPrefix: body.documentNumberPrefix || 'IMUN.01',
+        telegramBotToken: body.telegramBotToken !== undefined ? body.telegramBotToken : '',
+        telegramChatId: body.telegramChatId !== undefined ? body.telegramChatId : '',
+        telegramThreadId: body.telegramThreadId !== undefined ? body.telegramThreadId : '',
+        telegramNotificationsEnabled: Boolean(body.telegramNotificationsEnabled),
       },
     });
 
