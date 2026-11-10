@@ -17,7 +17,7 @@ import {
   ArrowRightLeft,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { TicketItem, CaseItem, calculateSla, calculateMinutesBetween } from '@/lib/sla-calculator';
+import { TicketItem, CaseItem, calculateSla, calculateMinutesBetween, formatPeriodDisplay } from '@/lib/sla-calculator';
 import {
   Button,
   Input,
@@ -1400,7 +1400,7 @@ export default function TicketCaseManager({
                         <th className="p-1.5 border-b border-slate-200">
                           {importMode === 'tickets' ? 'No. Tiket' : 'No. Kasus'}
                         </th>
-                        <th className="p-1.5 border-b border-slate-200">Tanggal</th>
+                        <th className="p-1.5 border-b border-slate-200">Date & Time</th>
                         <th className="p-1.5 border-b border-slate-200">
                           {importMode === 'tickets' ? 'Deskripsi Kendala' : 'Penyebab Gangguan'}
                         </th>
@@ -1412,44 +1412,56 @@ export default function TicketCaseManager({
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {importMode === 'tickets'
-                        ? parsedData.tickets.slice(0, 5).map((item, i) => (
-                            <tr key={i} className="hover:bg-slate-50">
-                              <td className="p-1.5 font-semibold text-slate-900 whitespace-nowrap">
-                                {item.noTicket}
-                              </td>
-                              <td className="p-1.5 text-slate-600 whitespace-nowrap tabular-nums">
-                                {item.date}
-                              </td>
-                              <td className="p-1.5 text-slate-600 truncate max-w-[140px]" title={item.description}>
-                                {item.description || '-'}
-                              </td>
-                              <td className="p-1.5 text-slate-600 truncate max-w-[140px]" title={item.action}>
-                                {item.action || '-'}
-                              </td>
-                              <td className="p-1.5 font-medium text-emerald-700 whitespace-nowrap">
-                                {item.status}
-                              </td>
-                            </tr>
-                          ))
-                        : parsedData.cases.slice(0, 5).map((item, i) => (
-                            <tr key={i} className="hover:bg-slate-50">
-                              <td className="p-1.5 font-semibold text-slate-900 whitespace-nowrap">
-                                {item.noCase}
-                              </td>
-                              <td className="p-1.5 text-slate-600 whitespace-nowrap tabular-nums">
-                                {item.date}
-                              </td>
-                              <td className="p-1.5 text-slate-600 truncate max-w-[140px]" title={item.description}>
-                                {item.description || '-'}
-                              </td>
-                              <td className="p-1.5 text-slate-600 truncate max-w-[140px]" title={item.action}>
-                                {item.action || '-'}
-                              </td>
-                              <td className="p-1.5 font-semibold text-rose-600 whitespace-nowrap tabular-nums">
-                                {item.downtimeMinutes} Mnt
-                              </td>
-                            </tr>
-                          ))}
+                        ? parsedData.tickets.slice(0, 5).map((item, i) => {
+                            const period = formatPeriodDisplay(item);
+                            return (
+                              <tr key={i} className="hover:bg-slate-50">
+                                <td className="p-1.5 font-semibold text-slate-900 whitespace-nowrap">
+                                  {item.noTicket}
+                                </td>
+                                <td className="p-1.5 text-slate-600 whitespace-nowrap tabular-nums text-[10px] leading-tight">
+                                  <div className="font-semibold text-slate-800">{period.start}</div>
+                                  {period.end && (
+                                    <div className="text-[9.5px] text-slate-500">{`s/d ${period.end}`}</div>
+                                  )}
+                                </td>
+                                <td className="p-1.5 text-slate-600 truncate max-w-[140px]" title={item.description}>
+                                  {item.description || '-'}
+                                </td>
+                                <td className="p-1.5 text-slate-600 truncate max-w-[140px]" title={item.action}>
+                                  {item.action || '-'}
+                                </td>
+                                <td className="p-1.5 font-medium text-emerald-700 whitespace-nowrap">
+                                  {item.status}
+                                </td>
+                              </tr>
+                            );
+                          })
+                        : parsedData.cases.slice(0, 5).map((item, i) => {
+                            const period = formatPeriodDisplay(item);
+                            return (
+                              <tr key={i} className="hover:bg-slate-50">
+                                <td className="p-1.5 font-semibold text-slate-900 whitespace-nowrap">
+                                  {item.noCase}
+                                </td>
+                                <td className="p-1.5 text-slate-600 whitespace-nowrap tabular-nums text-[10px] leading-tight">
+                                  <div className="font-semibold text-slate-800">{period.start}</div>
+                                  {period.end && (
+                                    <div className="text-[9.5px] text-slate-500">{`s/d ${period.end}`}</div>
+                                  )}
+                                </td>
+                                <td className="p-1.5 text-slate-600 truncate max-w-[140px]" title={item.description}>
+                                  {item.description || '-'}
+                                </td>
+                                <td className="p-1.5 text-slate-600 truncate max-w-[140px]" title={item.action}>
+                                  {item.action || '-'}
+                                </td>
+                                <td className="p-1.5 font-semibold text-rose-600 whitespace-nowrap tabular-nums">
+                                  {item.downtimeMinutes} Mnt
+                                </td>
+                              </tr>
+                            );
+                          })}
                     </tbody>
                   </table>
                 </div>

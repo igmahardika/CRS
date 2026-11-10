@@ -261,10 +261,12 @@ export function generateReportHtml(data: ReportData): string {
     /* Tables - Pure Black Borders & Clean Corporate Styling */
     .data-table {
       width: 100%;
+      table-layout: fixed;
       border-collapse: collapse;
       margin-bottom: 4px;
       font-size: 8.5pt;
       border: 1px solid #000000;
+      word-break: break-word;
     }
     .data-table th {
       background-color: #ffffff;
@@ -523,11 +525,11 @@ export function generateReportHtml(data: ReportData): string {
       <table class="data-table">
         <thead>
           <tr>
-            <th style="width: 85px;">No. Ticket</th>
-            <th style="width: 105px;">Date & Time</th>
-            <th>Description</th>
-            <th style="width: 135px;">Action</th>
-            <th style="width: 65px;">Status</th>
+            <th style="width: 15%;">No. Ticket</th>
+            <th style="width: 16%;">Date & Time</th>
+            <th style="width: 37%;">Description</th>
+            <th style="width: 22%;">Action</th>
+            <th style="width: 10%;">Status</th>
           </tr>
         </thead>
         <tbody>
@@ -543,7 +545,7 @@ export function generateReportHtml(data: ReportData): string {
             const period = formatPeriodDisplay(t);
             return `
             <tr>
-              <td>${t.noTicket}</td>
+              <td style="white-space: nowrap;">${t.noTicket}</td>
               <td style="white-space: nowrap; font-size: 7.5pt; line-height: 1.25;">
                 <div style="font-weight: 600;">${period.start}</div>
                 ${period.end ? `<div style="font-size: 7pt; color: #475569; margin-top: 1px;">s/d ${period.end}</div>` : ''}
@@ -565,11 +567,11 @@ export function generateReportHtml(data: ReportData): string {
       <table class="data-table">
         <thead>
           <tr>
-            <th style="width: 85px;">No. Case</th>
-            <th style="width: 105px;">Date & Time</th>
-            <th>Description</th>
-            <th style="width: 135px;">Action</th>
-            <th style="width: 75px;">Downtime</th>
+            <th style="width: 15%;">No. Case</th>
+            <th style="width: 16%;">Date & Time</th>
+            <th style="width: 37%;">Description</th>
+            <th style="width: 22%;">Action</th>
+            <th style="width: 10%;">Downtime</th>
           </tr>
         </thead>
         <tbody>
@@ -730,11 +732,11 @@ export function generateReportHtml(data: ReportData): string {
       <table class="data-table">
         <thead>
           <tr>
-            <th style="width: 85px;">No. Ticket</th>
-            <th style="width: 105px;">Date & Time</th>
-            <th>Description</th>
-            <th style="width: 135px;">Action</th>
-            <th style="width: 65px;">Status</th>
+            <th style="width: 15%;">No. Ticket</th>
+            <th style="width: 16%;">Date & Time</th>
+            <th style="width: 37%;">Description</th>
+            <th style="width: 22%;">Action</th>
+            <th style="width: 10%;">Status</th>
           </tr>
         </thead>
         <tbody>
@@ -750,7 +752,7 @@ export function generateReportHtml(data: ReportData): string {
             const period = formatPeriodDisplay(t);
             return `
             <tr>
-              <td>${t.noTicket}</td>
+              <td style="white-space: nowrap;">${t.noTicket}</td>
               <td style="white-space: nowrap; font-size: 7.5pt; line-height: 1.25;">
                 <div style="font-weight: 600;">${period.start}</div>
                 ${period.end ? `<div style="font-size: 7pt; color: #475569; margin-top: 1px;">s/d ${period.end}</div>` : ''}
@@ -785,11 +787,11 @@ export function generateReportHtml(data: ReportData): string {
       <table class="data-table">
         <thead>
           <tr>
-            <th style="width: 85px;">No. Case</th>
-            <th style="width: 105px;">Date & Time</th>
-            <th>Description</th>
-            <th style="width: 135px;">Action</th>
-            <th style="width: 75px;">Downtime</th>
+            <th style="width: 15%;">No. Case</th>
+            <th style="width: 16%;">Date & Time</th>
+            <th style="width: 37%;">Description</th>
+            <th style="width: 22%;">Action</th>
+            <th style="width: 10%;">Downtime</th>
           </tr>
         </thead>
         <tbody>

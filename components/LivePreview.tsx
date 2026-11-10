@@ -441,14 +441,14 @@ export default function LivePreview({
                   </div>
 
                   {/* Ticket Table */}
-                  <table className="w-full border-collapse border border-black text-[8.5pt] leading-[1.25] mb-1 text-center">
+                  <table className="w-full table-fixed border-collapse border border-black text-[8.5pt] leading-[1.25] mb-1 text-center">
                     <thead>
                       <tr className="bg-white text-black font-bold">
-                        <th className="border border-black py-1 px-1 w-[85px]">No. Ticket</th>
-                        <th className="border border-black py-1 px-1 w-[105px]">Date & Time</th>
-                        <th className="border border-black py-1 px-1 text-left pl-2">Description</th>
-                        <th className="border border-black py-1 px-1 text-left pl-2 w-[135px]">Action</th>
-                        <th className="border border-black py-1 px-1 w-[65px]">Status</th>
+                        <th className="border border-black py-1 px-1 w-[15%]">No. Ticket</th>
+                        <th className="border border-black py-1 px-1 w-[16%]">Date & Time</th>
+                        <th className="border border-black py-1 px-1 text-left pl-2 w-[37%]">Description</th>
+                        <th className="border border-black py-1 px-1 text-left pl-2 w-[22%]">Action</th>
+                        <th className="border border-black py-1 px-1 w-[10%]">Status</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -465,7 +465,7 @@ export default function LivePreview({
                           const period = formatPeriodDisplay(t);
                           return (
                             <tr key={idx}>
-                              <td className="border border-black py-1">{t.noTicket}</td>
+                              <td className="border border-black py-1 whitespace-nowrap">{t.noTicket}</td>
                               <td className="border border-black py-1 whitespace-nowrap text-[7.5pt] leading-[1.25]">
                                 <div className="font-semibold">{period.start}</div>
                                 {period.end && (
@@ -474,8 +474,8 @@ export default function LivePreview({
                                   </div>
                                 )}
                               </td>
-                              <td className="border border-black py-1 text-left px-2 leading-[1.25]">{t.description}</td>
-                              <td className="border border-black py-1 text-left px-2 leading-[1.25]">{t.action}</td>
+                              <td className="border border-black py-1 text-left px-2 leading-[1.25] break-words">{t.description}</td>
+                              <td className="border border-black py-1 text-left px-2 leading-[1.25] break-words">{t.action}</td>
                               <td className="border border-black py-1">{t.status}</td>
                             </tr>
                           );
@@ -489,14 +489,14 @@ export default function LivePreview({
                   </div>
 
                   {/* Case Table */}
-                  <table className="w-full border-collapse border border-black text-[8.5pt] leading-[1.25] mb-1 text-center">
+                  <table className="w-full table-fixed border-collapse border border-black text-[8.5pt] leading-[1.25] mb-1 text-center">
                     <thead>
                       <tr className="bg-white text-black font-bold">
-                        <th className="border border-black py-1 px-1 w-[85px]">No. Case</th>
-                        <th className="border border-black py-1 px-1 w-[105px]">Date & Time</th>
-                        <th className="border border-black py-1 px-1 text-left pl-2">Description</th>
-                        <th className="border border-black py-1 px-1 text-left pl-2 w-[135px]">Action</th>
-                        <th className="border border-black py-1 px-1 w-[75px]">Downtime</th>
+                        <th className="border border-black py-1 px-1 w-[15%]">No. Case</th>
+                        <th className="border border-black py-1 px-1 w-[16%]">Date & Time</th>
+                        <th className="border border-black py-1 px-1 text-left pl-2 w-[37%]">Description</th>
+                        <th className="border border-black py-1 px-1 text-left pl-2 w-[22%]">Action</th>
+                        <th className="border border-black py-1 px-1 w-[10%]">Downtime</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -513,7 +513,7 @@ export default function LivePreview({
                           const period = formatPeriodDisplay(c);
                           return (
                             <tr key={idx}>
-                              <td className="border border-black py-1">{c.noCase}</td>
+                              <td className="border border-black py-1 whitespace-nowrap">{c.noCase}</td>
                               <td className="border border-black py-1 whitespace-nowrap text-[7.5pt] leading-[1.25]">
                                 <div className="font-semibold">{period.start}</div>
                                 {period.end && (
@@ -522,8 +522,8 @@ export default function LivePreview({
                                   </div>
                                 )}
                               </td>
-                              <td className="border border-black py-1 text-left px-2 leading-[1.25]">{c.description}</td>
-                              <td className="border border-black py-1 text-left px-2 leading-[1.25]">{c.action}</td>
+                              <td className="border border-black py-1 text-left px-2 leading-[1.25] break-words">{c.description}</td>
+                              <td className="border border-black py-1 text-left px-2 leading-[1.25] break-words">{c.action}</td>
                               <td className="border border-black py-1">{`${c.downtimeMinutes} Mins`}</td>
                             </tr>
                           );
@@ -718,14 +718,14 @@ export default function LivePreview({
                   </div>
 
                   {/* Ticket Table */}
-                  <table className="w-full border-collapse border border-black text-[8.5pt] leading-[1.25] mb-1 text-center">
+                  <table className="w-full table-fixed border-collapse border border-black text-[8.5pt] leading-[1.25] mb-1 text-center">
                     <thead>
                       <tr className="bg-white text-black font-bold">
-                        <th className="border border-black py-1 px-1 w-[85px]">No. Ticket</th>
-                        <th className="border border-black py-1 px-1 w-[105px]">Date & Time</th>
-                        <th className="border border-black py-1 px-1 text-left pl-2">Description</th>
-                        <th className="border border-black py-1 px-1 text-left pl-2 w-[135px]">Action</th>
-                        <th className="border border-black py-1 px-1 w-[65px]">Status</th>
+                        <th className="border border-black py-1 px-1 w-[15%]">No. Ticket</th>
+                        <th className="border border-black py-1 px-1 w-[16%]">Date & Time</th>
+                        <th className="border border-black py-1 px-1 text-left pl-2 w-[37%]">Description</th>
+                        <th className="border border-black py-1 px-1 text-left pl-2 w-[22%]">Action</th>
+                        <th className="border border-black py-1 px-1 w-[10%]">Status</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -742,7 +742,7 @@ export default function LivePreview({
                           const period = formatPeriodDisplay(t);
                           return (
                             <tr key={idx}>
-                              <td className="border border-black py-1">{t.noTicket}</td>
+                              <td className="border border-black py-1 whitespace-nowrap">{t.noTicket}</td>
                               <td className="border border-black py-1 whitespace-nowrap text-[7.5pt] leading-[1.25]">
                                 <div className="font-semibold">{period.start}</div>
                                 {period.end && (
@@ -751,8 +751,8 @@ export default function LivePreview({
                                   </div>
                                 )}
                               </td>
-                              <td className="border border-black py-1 text-left px-2 leading-[1.25]">{t.description}</td>
-                              <td className="border border-black py-1 text-left px-2 leading-[1.25]">{t.action}</td>
+                              <td className="border border-black py-1 text-left px-2 leading-[1.25] break-words">{t.description}</td>
+                              <td className="border border-black py-1 text-left px-2 leading-[1.25] break-words">{t.action}</td>
                               <td className="border border-black py-1">{t.status}</td>
                             </tr>
                           );
@@ -788,14 +788,14 @@ export default function LivePreview({
                   </div>
 
                   {/* Case Table */}
-                  <table className="w-full border-collapse border border-black text-[8.5pt] leading-[1.25] mb-1 text-center">
+                  <table className="w-full table-fixed border-collapse border border-black text-[8.5pt] leading-[1.25] mb-1 text-center">
                     <thead>
                       <tr className="bg-white text-black font-bold">
-                        <th className="border border-black py-1 px-1 w-[85px]">No. Case</th>
-                        <th className="border border-black py-1 px-1 w-[105px]">Date & Time</th>
-                        <th className="border border-black py-1 px-1 text-left pl-2">Description</th>
-                        <th className="border border-black py-1 px-1 text-left pl-2 w-[135px]">Action</th>
-                        <th className="border border-black py-1 px-1 w-[75px]">Downtime</th>
+                        <th className="border border-black py-1 px-1 w-[15%]">No. Case</th>
+                        <th className="border border-black py-1 px-1 w-[16%]">Date & Time</th>
+                        <th className="border border-black py-1 px-1 text-left pl-2 w-[37%]">Description</th>
+                        <th className="border border-black py-1 px-1 text-left pl-2 w-[22%]">Action</th>
+                        <th className="border border-black py-1 px-1 w-[10%]">Downtime</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -812,7 +812,7 @@ export default function LivePreview({
                           const period = formatPeriodDisplay(c);
                           return (
                             <tr key={idx}>
-                              <td className="border border-black py-1">{c.noCase}</td>
+                              <td className="border border-black py-1 whitespace-nowrap">{c.noCase}</td>
                               <td className="border border-black py-1 whitespace-nowrap text-[7.5pt] leading-[1.25]">
                                 <div className="font-semibold">{period.start}</div>
                                 {period.end && (
@@ -821,8 +821,8 @@ export default function LivePreview({
                                   </div>
                                 )}
                               </td>
-                              <td className="border border-black py-1 text-left px-2 leading-[1.25]">{c.description}</td>
-                              <td className="border border-black py-1 text-left px-2 leading-[1.25]">{c.action}</td>
+                              <td className="border border-black py-1 text-left px-2 leading-[1.25] break-words">{c.description}</td>
+                              <td className="border border-black py-1 text-left px-2 leading-[1.25] break-words">{c.action}</td>
                               <td className="border border-black py-1">{`${c.downtimeMinutes} Mins`}</td>
                             </tr>
                           );
