@@ -331,15 +331,11 @@ export function generateReportHtml(data: ReportData): string {
     }
 
     .sla-progress-card {
-      border: 1px solid #e2e8f0;
-      background: #ffffff;
-      border-radius: 4px;
-      padding: 8px 12px;
-      margin-top: 5px;
+      margin-top: 6px;
       margin-bottom: 6px;
     }
     .sla-progress-row {
-      margin-bottom: 7px;
+      margin-bottom: 8px;
     }
     .sla-progress-row:last-child {
       margin-bottom: 0;
@@ -370,7 +366,7 @@ export function generateReportHtml(data: ReportData): string {
     }
     .sla-progress-track {
       width: 100%;
-      height: 12px;
+      height: 11px;
       background: #fee2e2;
       border-radius: 3px;
       overflow: hidden;
@@ -386,7 +382,7 @@ export function generateReportHtml(data: ReportData): string {
     }
     .sla-progress-target-track {
       width: 100%;
-      height: 10px;
+      height: 9px;
       background: #e2e8f0;
       border-radius: 3px;
       overflow: hidden;
@@ -395,24 +391,9 @@ export function generateReportHtml(data: ReportData): string {
       background: #0284c7;
       height: 100%;
     }
-    .sla-badge {
-      display: inline-block;
-      padding: 1.5px 7px;
-      border-radius: 3px;
-      font-size: 7.5pt;
+    .sla-status-text {
+      font-size: 8pt;
       font-weight: 700;
-      letter-spacing: 0.2px;
-      line-height: 1.25;
-    }
-    .sla-badge-met {
-      background: #ecfdf5;
-      color: #065f46;
-      border: 1px solid #a7f3d0;
-    }
-    .sla-badge-breach {
-      background: #fef2f2;
-      color: #991b1b;
-      border: 1px solid #fecaca;
     }
 
     /* MRTG Graph Styles */
@@ -702,10 +683,10 @@ export function generateReportHtml(data: ReportData): string {
           <div class="sla-progress-header">
             <div class="sla-progress-title">
               <span class="sla-progress-dot" style="background-color: #10b981;"></span>
-              <span>Service Availability (Actual)</span>
+              <span>Service Availability</span>
             </div>
             <div class="sla-progress-values">
-              <span style="color: #047857; font-weight: 700;">Online ${slaCalc.onlinePercent.toFixed(2)}%</span>
+              <span style="color: #047857; font-weight: 700;">Availability ${slaCalc.onlinePercent.toFixed(2)}%</span>
               <span style="color: #94a3b8; margin: 0 5px;">|</span>
               <span style="color: #dc2626; font-weight: 700;">Downtime ${slaCalc.downtimePercent.toFixed(2)}%</span>
             </div>
@@ -716,7 +697,7 @@ export function generateReportHtml(data: ReportData): string {
           </div>
         </div>
 
-        <!-- Bar 2: Target SLA & Status Badge -->
+        <!-- Bar 2: Target SLA & Status Text -->
         <div class="sla-progress-row">
           <div class="sla-progress-header">
             <div class="sla-progress-title">
@@ -726,12 +707,12 @@ export function generateReportHtml(data: ReportData): string {
             <div>
               ${data.targetSla > 0 ? (
                 slaCalc.onlinePercent >= data.targetSla ? `
-                  <span class="sla-badge sla-badge-met">✓ SLA MET (+${(slaCalc.onlinePercent - data.targetSla).toFixed(2)}%)</span>
+                  <span class="sla-status-text" style="color: #047857;">SLA Met (+${(slaCalc.onlinePercent - data.targetSla).toFixed(2)}%)</span>
                 ` : `
-                  <span class="sla-badge sla-badge-breach">✕ SLA BREACHED (-${(data.targetSla - slaCalc.onlinePercent).toFixed(2)}%)</span>
+                  <span class="sla-status-text" style="color: #dc2626;">SLA Breached (-${(data.targetSla - slaCalc.onlinePercent).toFixed(2)}%)</span>
                 `
               ) : `
-                <span class="sla-badge" style="background: #f1f5f9; color: #64748b; border: 1px solid #cbd5e1;">N/A</span>
+                <span class="sla-status-text" style="color: #64748b;">-</span>
               `}
             </div>
           </div>
@@ -952,10 +933,10 @@ export function generateReportHtml(data: ReportData): string {
           <div class="sla-progress-header">
             <div class="sla-progress-title">
               <span class="sla-progress-dot" style="background-color: #10b981;"></span>
-              <span>Service Availability (Actual)</span>
+              <span>Service Availability</span>
             </div>
             <div class="sla-progress-values">
-              <span style="color: #047857; font-weight: 700;">Online ${slaCalc.onlinePercent.toFixed(2)}%</span>
+              <span style="color: #047857; font-weight: 700;">Availability ${slaCalc.onlinePercent.toFixed(2)}%</span>
               <span style="color: #94a3b8; margin: 0 5px;">|</span>
               <span style="color: #dc2626; font-weight: 700;">Downtime ${slaCalc.downtimePercent.toFixed(2)}%</span>
             </div>
@@ -966,7 +947,7 @@ export function generateReportHtml(data: ReportData): string {
           </div>
         </div>
 
-        <!-- Bar 2: Target SLA & Status Badge -->
+        <!-- Bar 2: Target SLA & Status Text -->
         <div class="sla-progress-row">
           <div class="sla-progress-header">
             <div class="sla-progress-title">
@@ -976,12 +957,12 @@ export function generateReportHtml(data: ReportData): string {
             <div>
               ${data.targetSla > 0 ? (
                 slaCalc.onlinePercent >= data.targetSla ? `
-                  <span class="sla-badge sla-badge-met">✓ SLA MET (+${(slaCalc.onlinePercent - data.targetSla).toFixed(2)}%)</span>
+                  <span class="sla-status-text" style="color: #047857;">SLA Met (+${(slaCalc.onlinePercent - data.targetSla).toFixed(2)}%)</span>
                 ` : `
-                  <span class="sla-badge sla-badge-breach">✕ SLA BREACHED (-${(data.targetSla - slaCalc.onlinePercent).toFixed(2)}%)</span>
+                  <span class="sla-status-text" style="color: #dc2626;">SLA Breached (-${(data.targetSla - slaCalc.onlinePercent).toFixed(2)}%)</span>
                 `
               ) : `
-                <span class="sla-badge" style="background: #f1f5f9; color: #64748b; border: 1px solid #cbd5e1;">N/A</span>
+                <span class="sla-status-text" style="color: #64748b;">-</span>
               `}
             </div>
           </div>
