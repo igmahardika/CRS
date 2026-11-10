@@ -3,14 +3,33 @@ import { prisma } from '@/lib/prisma';
 import { getSlaByServiceName } from '@/lib/service-sla';
 import { requireAuth, requireOperatorOrAdmin } from '@/lib/auth';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const auth = await requireAuth();
   if (!auth.authorized) {
     return NextResponse.json({ error: auth.error }, { status: auth.status });
   }
 
   try {
+    const { searchParams } = new URL(req.url);
+    const search = searchParams.get('search')?.trim();
+    const serviceId = searchParams.get('serviceId')?.trim();
+    const customerId = searchParams.get('customerId')?.trim();
+
+    const where: Record<string, unknown> = {};
+    if (serviceId) {
+      where.serviceId = serviceId;
+    } else if (customerId) {
+      where.customerId = customerId;
+    } else if (search) {
+      where.OR = [
+        { customerName: { contains: search } },
+        { serviceId: { contains: search } },
+        { customerId: { contains: search } },
+      ];
+    }
+
     const customers = await prisma.customer.findMany({
+      where,
       orderBy: { customerName: 'asc' },
     });
     return NextResponse.json({ customers });

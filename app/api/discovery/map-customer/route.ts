@@ -38,7 +38,8 @@ export async function POST(req: NextRequest) {
         : await prisma.customer.findFirst({ where: { customerId } }));
 
     if (!customer) {
-      return NextResponse.json({ error: `Customer with CID "${customerId}" not found.` }, { status: 404 });
+      const identifier = serviceId ? `Service ID (SID) "${serviceId}"` : `Customer ID "${customerId}"`;
+      return NextResponse.json({ error: `Customer with ${identifier} not found in directory.` }, { status: 404 });
     }
 
     // Update the appropriate graph ID field
@@ -60,11 +61,12 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: `${engine} ID "${targetId}" mapped successfully to customer "${updated.customerName}".`,
+      message: `${engine} ID "${targetId}" mapped successfully to "${updated.customerName}" (SID: ${updated.serviceId}).`,
       customer: {
         id: updated.id,
         customerName: updated.customerName,
         customerId: updated.customerId,
+        serviceId: updated.serviceId,
         cactiGraphId: updated.cactiGraphId,
         prtgSensorId: updated.prtgSensorId,
       },

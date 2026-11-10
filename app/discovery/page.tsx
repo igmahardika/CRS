@@ -74,7 +74,7 @@ interface MappingState {
   engine: 'MRTG' | 'PRTG';
   fullTitle: string;
   detectedSid: string | null;
-  customerId: string;
+  serviceId: string;
   searching: boolean;
   matched: { id: string; customerName: string; customerId: string; serviceId: string } | null;
 }
@@ -228,33 +228,57 @@ export default function DiscoveryPage() {
   // ---- Mapping Dialog ----
   const openMapping = async (item: InterfaceItem, engine: 'MRTG' | 'PRTG') => {
     setMappingStatus(null);
+    const sid = item.detectedSid || '';
     const initial: MappingState = {
       targetId: item.targetId,
       engine,
       fullTitle: item.fullTitle,
       detectedSid: item.detectedSid,
-      customerId: item.detectedSid || '',
-      searching: false,
+      serviceId: sid,
+      searching: Boolean(sid),
       matched: null,
     };
     setMapping(initial);
 
-    if (item.detectedSid) {
-      setMapping({ ...initial, searching: true });
-      try {
-        const res = await fetch(`/api/discovery/map-customer?targetId=${item.targetId}&engine=${engine}`);
-        const data = await res.json();
-        if (data.customers?.length > 0) {
-          setMapping({ ...initial, matched: data.customers[0], customerId: data.customers[0].customerId });
-        } else {
-          const cusRes = await fetch(`/api/customers?search=${encodeURIComponent(item.detectedSid || '')}`);
-          const cusData = await cusRes.json();
-          const found = cusData.customers?.[0];
-          setMapping({ ...initial, matched: found || null, customerId: found?.customerId || item.detectedSid || '' });
+    try {
+      // 1. Cek apakah monitoring targetId ini sudah ter-map ke customer tertentu
+      const res = await fetch(`/api/discovery/map-customer?targetId=${item.targetId}&engine=${engine}`);
+      const data = await res.json();
+      if (data.customers?.length > 0) {
+        const found = data.customers[0];
+        setMapping({
+          ...initial,
+          matched: found,
+          serviceId: found.serviceId || sid,
+          searching: false,
+        });
+        return;
+      }
+
+      // 2. Jika belum ter-map, cari customer berdasarkan Service ID (SID)
+      if (sid) {
+        const cusRes = await fetch(`/api/customers?serviceId=${encodeURIComponent(sid)}`);
+        const cusData = await cusRes.json();
+        let found = cusData.customers?.find((c: { serviceId: string }) => c.serviceId.toLowerCase() === sid.toLowerCase());
+
+        // Jika tidak ketemu exact SID, cari dengan search general
+        if (!found) {
+          const searchRes = await fetch(`/api/customers?search=${encodeURIComponent(sid)}`);
+          const searchData = await searchRes.json();
+          found = searchData.customers?.find((c: { serviceId: string }) => c.serviceId.toLowerCase() === sid.toLowerCase()) || searchData.customers?.[0];
         }
-      } catch {
+
+        setMapping({
+          ...initial,
+          matched: found || null,
+          serviceId: found?.serviceId || sid,
+          searching: false,
+        });
+      } else {
         setMapping({ ...initial, searching: false });
       }
+    } catch {
+      setMapping({ ...initial, searching: false });
     }
   };
 
@@ -265,7 +289,7 @@ export default function DiscoveryPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          customerId: mapping.customerId,
+          serviceId: mapping.serviceId,
           engine: mapping.engine,
           targetId: mapping.targetId,
         }),
@@ -274,6 +298,7 @@ export default function DiscoveryPage() {
       if (data.success) {
         setMappingStatus({ success: true, msg: data.message });
         setMapping(null);
+        await fetchTree(activeEngine, search);
       } else {
         setMappingStatus({ success: false, msg: data.error });
       }
@@ -643,13 +668,13 @@ export default function DiscoveryPage() {
       <Dialog open={Boolean(mapping)} onOpenChange={(open) => !open && setMapping(null)}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Map to Customer Record</DialogTitle>
+            <DialogTitle>Map to Customer Service (SID)</DialogTitle>
           </DialogHeader>
 
           {mapping && (
             <div className="space-y-4 text-xs font-sans py-2">
               <p className="text-slate-500">
-                Associate {mapping.engine} monitoring ID with a customer directory record.
+                Associate {mapping.engine} monitoring ID ({mapping.targetId}) with a customer service record in directory.
               </p>
 
               <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-2">
@@ -663,30 +688,55 @@ export default function DiscoveryPage() {
                   </Badge>
                   {mapping.detectedSid && (
                     <Badge variant="success" className="text-[11px]">
-                      SID: {mapping.detectedSid}
+                      Detected SID: {mapping.detectedSid}
                     </Badge>
                   )}
                 </div>
               </div>
 
-              {mapping.matched && (
+              {mapping.searching ? (
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg text-slate-500 text-center animate-pulse">
+                  Searching customer directory for Service ID...
+                </div>
+              ) : mapping.matched ? (
                 <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg space-y-1">
                   <div className="flex items-center gap-1.5 font-semibold text-emerald-800">
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                    Customer auto-detected
+                    Customer Service Matched
                   </div>
                   <div className="text-emerald-700">
-                    <strong>{mapping.matched.customerName}</strong> — CID: {mapping.matched.customerId} | SID:{' '}
-                    {mapping.matched.serviceId}
+                    <strong>{mapping.matched.customerName}</strong>
+                    <div className="text-[11px] text-emerald-600 mt-0.5">
+                      SID: <span className="font-semibold">{mapping.matched.serviceId}</span> | CID: {mapping.matched.customerId}
+                    </div>
                   </div>
+                </div>
+              ) : (
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-[11px]">
+                  <span>Customer dengan Service ID ini belum terdaftar di direktori. Masukkan Service ID (SID) yang sesuai dari direktori pelanggan.</span>
                 </div>
               )}
 
-              <FormField label="Customer ID" required hint="Enter an existing Customer ID from directory">
+              <FormField label="Service ID (SID)" required hint="Enter an existing Service ID (SID) from directory">
                 <Input
-                  value={mapping.customerId}
-                  onChange={(e) => setMapping({ ...mapping, customerId: e.target.value, matched: null })}
-                  placeholder="e.g. 01.2180.1124"
+                  value={mapping.serviceId}
+                  onChange={async (e) => {
+                    const sid = e.target.value;
+                    setMapping((prev) => (prev ? { ...prev, serviceId: sid, matched: null } : null));
+                    if (sid.trim().length >= 3) {
+                      try {
+                        const cusRes = await fetch(`/api/customers?serviceId=${encodeURIComponent(sid.trim())}`);
+                        const cusData = await cusRes.json();
+                        const found = cusData.customers?.find((c: { serviceId: string }) => c.serviceId.toLowerCase() === sid.trim().toLowerCase());
+                        if (found) {
+                          setMapping((prev) => (prev ? { ...prev, matched: found } : null));
+                        }
+                      } catch {
+                        // ignore
+                      }
+                    }
+                  }}
+                  placeholder="e.g. 01.0007.1"
                   className="text-xs"
                 />
               </FormField>
@@ -698,7 +748,7 @@ export default function DiscoveryPage() {
                 <Button
                   variant="primary"
                   onClick={confirmMapping}
-                  disabled={!mapping.customerId.trim()}
+                  disabled={!mapping.serviceId.trim()}
                 >
                   <Link2 className="w-4 h-4 mr-1.5" />
                   <span>Save Mapping</span>
