@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { Download, ZoomIn, ZoomOut, Layers, RefreshCw } from 'lucide-react';
 import { ReportData } from '@/lib/pdf-template';
-import { calculateSla } from '@/lib/sla-calculator';
+import { calculateSla, formatPeriodDisplay } from '@/lib/sla-calculator';
 import { Button, Badge } from '@/components/ui';
 
 interface LivePreviewProps {
@@ -362,20 +362,20 @@ export default function LivePreview({
                   className="a4-preview-page bg-white pt-[36mm] pb-[30mm] px-[15mm] flex flex-col text-black"
                   style={{ backgroundImage: `url(${pageBgUrl})` }}
                 >
-                  <div className="text-left text-[11pt] font-bold text-black mb-3.5">
+                  <div className="text-left text-[11pt] font-bold text-black mb-3">
                     {`Document Number : ${data.documentNumber}`}
                   </div>
 
                   {/* Section 1 */}
                   <div>
-                    <div className="font-heading text-[11.5pt] font-bold text-black inline-block">
+                    <div className="font-heading text-[11.5pt] font-bold text-black inline-block mt-0.5">
                       Summary Report
                     </div>
                   </div>
-                  <div className="text-[8.5pt] text-slate-700 mb-1">
+                  <div className="text-[8.5pt] text-slate-700 mb-1 leading-tight">
                     {`Summary Report for ${data.customerName} ${data.reportPeriod}`}
                   </div>
-                  <table className="w-full border-collapse border border-black text-[8.5pt] mb-1 text-center">
+                  <table className="w-full border-collapse border border-black text-[8.5pt] leading-[1.25] mb-1 text-center">
                     <thead>
                       <tr className="bg-white text-black font-bold">
                         <th className="border border-black py-1 px-1.5 w-[35px]">No</th>
@@ -399,15 +399,15 @@ export default function LivePreview({
                   </table>
 
                   {/* Section 2 */}
-                  <div className="mt-2">
+                  <div className="mt-1.5">
                     <div className="font-heading text-[11.5pt] font-bold text-black inline-block">
                       Service Availability
                     </div>
                   </div>
-                  <div className="text-[8.5pt] text-slate-700 mb-1">
+                  <div className="text-[8.5pt] text-slate-700 mb-1 leading-tight">
                     {`Detailed service availability for ${data.customerName} ${data.reportPeriod}`}
                   </div>
-                  <table className="w-full border-collapse border border-black text-[8.5pt] mb-1 text-center">
+                  <table className="w-full border-collapse border border-black text-[8.5pt] leading-[1.25] mb-1 text-center">
                     <thead>
                       <tr className="bg-white text-black font-bold">
                         <th className="border border-black py-1 px-1.5 w-[35px]">No</th>
@@ -431,24 +431,24 @@ export default function LivePreview({
                   </table>
 
                   {/* Section 3 */}
-                  <div className="mt-2">
+                  <div className="mt-1.5">
                     <div className="font-heading text-[11.5pt] font-bold text-black inline-block">
                       Ticket & Case Report
                     </div>
                   </div>
-                  <div className="text-[8.5pt] text-slate-700 mb-1">
+                  <div className="text-[8.5pt] text-slate-700 mb-1 leading-tight">
                     {`Detailed ticket & case report for ${data.customerName} ${data.reportPeriod}`}
                   </div>
 
                   {/* Ticket Table */}
-                  <table className="w-full border-collapse border border-black text-[8.5pt] mb-1 text-center">
+                  <table className="w-full border-collapse border border-black text-[8.5pt] leading-[1.25] mb-1 text-center">
                     <thead>
                       <tr className="bg-white text-black font-bold">
-                        <th className="border border-black py-1 px-1 w-[90px]">No. Ticket</th>
-                        <th className="border border-black py-1 px-1 w-[85px]">Date</th>
+                        <th className="border border-black py-1 px-1 w-[85px]">No. Ticket</th>
+                        <th className="border border-black py-1 px-1 w-[105px]">Date & Time</th>
                         <th className="border border-black py-1 px-1 text-left pl-2">Description</th>
-                        <th className="border border-black py-1 px-1 text-left pl-2 w-[140px]">Action</th>
-                        <th className="border border-black py-1 px-1 w-[70px]">Status</th>
+                        <th className="border border-black py-1 px-1 text-left pl-2 w-[135px]">Action</th>
+                        <th className="border border-black py-1 px-1 w-[65px]">Status</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -461,31 +461,41 @@ export default function LivePreview({
                           <td className="border border-black py-1">-</td>
                         </tr>
                       ) : (
-                        tickets.map((t, idx) => (
-                          <tr key={idx}>
-                            <td className="border border-black py-1">{t.noTicket}</td>
-                            <td className="border border-black py-1 whitespace-nowrap">{t.date}</td>
-                            <td className="border border-black py-1 text-left px-2">{t.description}</td>
-                            <td className="border border-black py-1 text-left px-2">{t.action}</td>
-                            <td className="border border-black py-1">{t.status}</td>
-                          </tr>
-                        ))
+                        tickets.map((t, idx) => {
+                          const period = formatPeriodDisplay(t);
+                          return (
+                            <tr key={idx}>
+                              <td className="border border-black py-1">{t.noTicket}</td>
+                              <td className="border border-black py-1 whitespace-nowrap text-[7.5pt] leading-[1.25]">
+                                <div className="font-semibold">{period.start}</div>
+                                {period.end && (
+                                  <div className="text-[7pt] text-slate-600 mt-0.5">
+                                    {`s/d ${period.end}`}
+                                  </div>
+                                )}
+                              </td>
+                              <td className="border border-black py-1 text-left px-2 leading-[1.25]">{t.description}</td>
+                              <td className="border border-black py-1 text-left px-2 leading-[1.25]">{t.action}</td>
+                              <td className="border border-black py-1">{t.status}</td>
+                            </tr>
+                          );
+                        })
                       )}
                     </tbody>
                   </table>
                   {/* Ticket Summary */}
-                  <div className="text-[8.5pt] font-bold text-black mt-1 mb-2">
+                  <div className="text-[8.5pt] font-bold text-black my-1">
                     <span>{`Number Of Ticket : ${tickets.length === 0 ? '-' : tickets.length}`}</span>
                   </div>
 
                   {/* Case Table */}
-                  <table className="w-full border-collapse border border-black text-[8.5pt] mb-1 text-center">
+                  <table className="w-full border-collapse border border-black text-[8.5pt] leading-[1.25] mb-1 text-center">
                     <thead>
                       <tr className="bg-white text-black font-bold">
-                        <th className="border border-black py-1 px-1 w-[90px]">No. Case</th>
-                        <th className="border border-black py-1 px-1 w-[85px]">Date</th>
+                        <th className="border border-black py-1 px-1 w-[85px]">No. Case</th>
+                        <th className="border border-black py-1 px-1 w-[105px]">Date & Time</th>
                         <th className="border border-black py-1 px-1 text-left pl-2">Description</th>
-                        <th className="border border-black py-1 px-1 text-left pl-2 w-[140px]">Action</th>
+                        <th className="border border-black py-1 px-1 text-left pl-2 w-[135px]">Action</th>
                         <th className="border border-black py-1 px-1 w-[75px]">Downtime</th>
                       </tr>
                     </thead>
@@ -499,45 +509,55 @@ export default function LivePreview({
                           <td className="border border-black py-1">-</td>
                         </tr>
                       ) : (
-                        cases.map((c, idx) => (
-                          <tr key={idx}>
-                            <td className="border border-black py-1">{c.noCase}</td>
-                            <td className="border border-black py-1 whitespace-nowrap">{c.date}</td>
-                            <td className="border border-black py-1 text-left px-2">{c.description}</td>
-                            <td className="border border-black py-1 text-left px-2">{c.action}</td>
-                            <td className="border border-black py-1">{`${c.downtimeMinutes} Mins`}</td>
-                          </tr>
-                        ))
+                        cases.map((c, idx) => {
+                          const period = formatPeriodDisplay(c);
+                          return (
+                            <tr key={idx}>
+                              <td className="border border-black py-1">{c.noCase}</td>
+                              <td className="border border-black py-1 whitespace-nowrap text-[7.5pt] leading-[1.25]">
+                                <div className="font-semibold">{period.start}</div>
+                                {period.end && (
+                                  <div className="text-[7pt] text-slate-600 mt-0.5">
+                                    {`s/d ${period.end}`}
+                                  </div>
+                                )}
+                              </td>
+                              <td className="border border-black py-1 text-left px-2 leading-[1.25]">{c.description}</td>
+                              <td className="border border-black py-1 text-left px-2 leading-[1.25]">{c.action}</td>
+                              <td className="border border-black py-1">{`${c.downtimeMinutes} Mins`}</td>
+                            </tr>
+                          );
+                        })
                       )}
                     </tbody>
                   </table>
                   {/* Case Summary & Duration */}
-                  <div className="flex justify-between items-center text-[8.5pt] font-bold text-black mt-1 mb-2">
+                  <div className="flex justify-between items-center text-[8.5pt] font-bold text-black my-1">
                     <span>{`Number Of Case : ${cases.length === 0 ? '-' : cases.length}`}</span>
                     <span>{`Downtime Duration : ${slaCalc.downtimeDurationStr}`}</span>
                   </div>
 
                   {/* Section 4: SLA Service */}
-                  <div className="mt-2">
+                  <div className="mt-1.5">
                     <div className="font-heading text-[11.5pt] font-bold text-black inline-block">
                       SLA Service
                     </div>
                   </div>
-                  <div className="text-[8.5pt] text-slate-700 mb-1.5">
+                  <div className="text-[8.5pt] text-slate-700 mb-1 leading-tight">
                     {`Detailed SLA Service for ${data.customerName} ${data.reportPeriod} :`}
                   </div>
-                  <div className="flex gap-2.5 my-1">
-                    <div className="flex-1 border-[1.5px] border-[#FF9900] rounded-[3px] p-2 text-center bg-white shadow-2xs">
-                      <div className="text-[8.5pt] font-semibold text-slate-600 uppercase tracking-wider">Online</div>
-                      <div className="text-[15pt] font-bold text-black mt-0.5">{`${slaCalc.onlinePercent.toFixed(2)}%`}</div>
+                  <div className="flex gap-2.5 mt-1.5 mb-1">
+                    <div className="flex-1 border-[1.5px] border-[#FF9900] rounded-[3px] py-1.5 px-2.5 text-center bg-white shadow-2xs">
+                      <div className="text-[8.5pt] font-bold text-slate-600 uppercase tracking-wider">Online</div>
+                      <div className="text-[15pt] font-extrabold text-black mt-0.5">{`${slaCalc.onlinePercent.toFixed(2)}%`}</div>
                     </div>
-                    <div className="flex-1 border-[1.5px] border-[#FF9900] rounded-[3px] p-2 text-center bg-white shadow-2xs">
-                      <div className="text-[8.5pt] font-semibold text-slate-600 uppercase tracking-wider">Downtime</div>
-                      <div className="text-[15pt] font-bold text-black mt-0.5">{`${slaCalc.downtimePercent.toFixed(2)}%`}</div>
+                    <div className="flex-1 border-[1.5px] border-[#FF9900] rounded-[3px] py-1.5 px-2.5 text-center bg-white shadow-2xs">
+                      <div className="text-[8.5pt] font-bold text-slate-600 uppercase tracking-wider">Downtime</div>
+                      <div className="text-[15pt] font-extrabold text-black mt-0.5">{`${slaCalc.downtimePercent.toFixed(2)}%`}</div>
                     </div>
-                    <div className="flex-1 border-[1.5px] border-[#FF9900] rounded-[3px] p-2 text-center bg-white shadow-2xs">
-                      <div className="text-[8.5pt] font-semibold text-slate-600 uppercase tracking-wider">SLA</div>
-                      <div className="text-[15pt] font-bold text-black mt-0.5">{data.targetSla > 0 ? `${data.targetSla.toFixed(2)}%` : '-'}</div>
+                    <div className="flex-1 border-[1.5px] border-[#FF9900] rounded-[3px] py-1.5 px-2.5 text-center bg-white shadow-2xs">
+                      <div className="text-[8.5pt] font-bold text-slate-600 uppercase tracking-wider">SLA</div>
+                      <div className="text-[15pt] font-extrabold text-black mt-0.5">{data.targetSla > 0 ? `${data.targetSla.toFixed(2)}%` : '-'}</div>
                     </div>
                   </div>
                 </div>
@@ -698,14 +718,14 @@ export default function LivePreview({
                   </div>
 
                   {/* Ticket Table */}
-                  <table className="w-full border-collapse border border-black text-[8.5pt] mb-1 text-center">
+                  <table className="w-full border-collapse border border-black text-[8.5pt] leading-[1.25] mb-1 text-center">
                     <thead>
                       <tr className="bg-white text-black font-bold">
-                        <th className="border border-black py-1 px-1 w-[90px]">No. Ticket</th>
-                        <th className="border border-black py-1 px-1 w-[85px]">Date</th>
+                        <th className="border border-black py-1 px-1 w-[85px]">No. Ticket</th>
+                        <th className="border border-black py-1 px-1 w-[105px]">Date & Time</th>
                         <th className="border border-black py-1 px-1 text-left pl-2">Description</th>
-                        <th className="border border-black py-1 px-1 text-left pl-2 w-[140px]">Action</th>
-                        <th className="border border-black py-1 px-1 w-[70px]">Status</th>
+                        <th className="border border-black py-1 px-1 text-left pl-2 w-[135px]">Action</th>
+                        <th className="border border-black py-1 px-1 w-[65px]">Status</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -718,20 +738,30 @@ export default function LivePreview({
                           <td className="border border-black py-1">-</td>
                         </tr>
                       ) : (
-                        tickets.map((t, idx) => (
-                          <tr key={idx}>
-                            <td className="border border-black py-1">{t.noTicket}</td>
-                            <td className="border border-black py-1 whitespace-nowrap">{t.date}</td>
-                            <td className="border border-black py-1 text-left px-2">{t.description}</td>
-                            <td className="border border-black py-1 text-left px-2">{t.action}</td>
-                            <td className="border border-black py-1">{t.status}</td>
-                          </tr>
-                        ))
+                        tickets.map((t, idx) => {
+                          const period = formatPeriodDisplay(t);
+                          return (
+                            <tr key={idx}>
+                              <td className="border border-black py-1">{t.noTicket}</td>
+                              <td className="border border-black py-1 whitespace-nowrap text-[7.5pt] leading-[1.25]">
+                                <div className="font-semibold">{period.start}</div>
+                                {period.end && (
+                                  <div className="text-[7pt] text-slate-600 mt-0.5">
+                                    {`s/d ${period.end}`}
+                                  </div>
+                                )}
+                              </td>
+                              <td className="border border-black py-1 text-left px-2 leading-[1.25]">{t.description}</td>
+                              <td className="border border-black py-1 text-left px-2 leading-[1.25]">{t.action}</td>
+                              <td className="border border-black py-1">{t.status}</td>
+                            </tr>
+                          );
+                        })
                       )}
                     </tbody>
                   </table>
                   {/* Ticket Summary */}
-                  <div className="text-[8.5pt] font-bold text-black mt-1 mb-2">
+                  <div className="text-[8.5pt] font-bold text-black my-1">
                     <span>{`Number Of Ticket : ${tickets.length === 0 ? '-' : tickets.length}`}</span>
                   </div>
                 </div>
@@ -743,28 +773,28 @@ export default function LivePreview({
                   className="a4-preview-page bg-white pt-[36mm] pb-[30mm] px-[15mm] flex flex-col text-black"
                   style={{ backgroundImage: `url(${pageBgUrl})` }}
                 >
-                  <div className="text-left text-[11pt] font-bold text-black mb-3.5">
+                  <div className="text-left text-[11pt] font-bold text-black mb-3">
                     {`Document Number : ${data.documentNumber} (Continued)`}
                   </div>
 
                   {/* Section: Case Report */}
                   <div>
-                    <div className="font-heading text-[11.5pt] font-bold text-black inline-block">
+                    <div className="font-heading text-[11.5pt] font-bold text-black inline-block mt-0.5">
                       Case Report
                     </div>
                   </div>
-                  <div className="text-[8.5pt] text-slate-700 mb-1">
+                  <div className="text-[8.5pt] text-slate-700 mb-1 leading-tight">
                     {`Detailed case report for ${data.customerName} ${data.reportPeriod}`}
                   </div>
 
                   {/* Case Table */}
-                  <table className="w-full border-collapse border border-black text-[8.5pt] mb-1 text-center">
+                  <table className="w-full border-collapse border border-black text-[8.5pt] leading-[1.25] mb-1 text-center">
                     <thead>
                       <tr className="bg-white text-black font-bold">
-                        <th className="border border-black py-1 px-1 w-[90px]">No. Case</th>
-                        <th className="border border-black py-1 px-1 w-[85px]">Date</th>
+                        <th className="border border-black py-1 px-1 w-[85px]">No. Case</th>
+                        <th className="border border-black py-1 px-1 w-[105px]">Date & Time</th>
                         <th className="border border-black py-1 px-1 text-left pl-2">Description</th>
-                        <th className="border border-black py-1 px-1 text-left pl-2 w-[140px]">Action</th>
+                        <th className="border border-black py-1 px-1 text-left pl-2 w-[135px]">Action</th>
                         <th className="border border-black py-1 px-1 w-[75px]">Downtime</th>
                       </tr>
                     </thead>
@@ -778,45 +808,55 @@ export default function LivePreview({
                           <td className="border border-black py-1">-</td>
                         </tr>
                       ) : (
-                        cases.map((c, idx) => (
-                          <tr key={idx}>
-                            <td className="border border-black py-1">{c.noCase}</td>
-                            <td className="border border-black py-1 whitespace-nowrap">{c.date}</td>
-                            <td className="border border-black py-1 text-left px-2">{c.description}</td>
-                            <td className="border border-black py-1 text-left px-2">{c.action}</td>
-                            <td className="border border-black py-1">{`${c.downtimeMinutes} Mins`}</td>
-                          </tr>
-                        ))
+                        cases.map((c, idx) => {
+                          const period = formatPeriodDisplay(c);
+                          return (
+                            <tr key={idx}>
+                              <td className="border border-black py-1">{c.noCase}</td>
+                              <td className="border border-black py-1 whitespace-nowrap text-[7.5pt] leading-[1.25]">
+                                <div className="font-semibold">{period.start}</div>
+                                {period.end && (
+                                  <div className="text-[7pt] text-slate-600 mt-0.5">
+                                    {`s/d ${period.end}`}
+                                  </div>
+                                )}
+                              </td>
+                              <td className="border border-black py-1 text-left px-2 leading-[1.25]">{c.description}</td>
+                              <td className="border border-black py-1 text-left px-2 leading-[1.25]">{c.action}</td>
+                              <td className="border border-black py-1">{`${c.downtimeMinutes} Mins`}</td>
+                            </tr>
+                          );
+                        })
                       )}
                     </tbody>
                   </table>
                   {/* Case Summary & Duration */}
-                  <div className="flex justify-between items-center text-[8.5pt] font-bold text-black mt-1 mb-2">
+                  <div className="flex justify-between items-center text-[8.5pt] font-bold text-black my-1">
                     <span>{`Number Of Case : ${cases.length === 0 ? '-' : cases.length}`}</span>
                     <span>{`Downtime Duration : ${slaCalc.downtimeDurationStr}`}</span>
                   </div>
 
                   {/* Section: SLA Service */}
-                  <div className="mt-3.5">
+                  <div className="mt-2">
                     <div className="font-heading text-[11.5pt] font-bold text-black inline-block">
                       SLA Service
                     </div>
                   </div>
-                  <div className="text-[8.5pt] text-slate-700 mb-1.5">
+                  <div className="text-[8.5pt] text-slate-700 mb-1 leading-tight">
                     {`Detailed SLA Service for ${data.customerName} ${data.reportPeriod} :`}
                   </div>
-                  <div className="flex gap-2.5 my-1">
-                    <div className="flex-1 border-[1.5px] border-[#FF9900] rounded-[3px] p-2 text-center bg-white shadow-2xs">
-                      <div className="text-[8.5pt] font-semibold text-slate-600 uppercase tracking-wider">Online</div>
-                      <div className="text-[15pt] font-bold text-black mt-0.5">{`${slaCalc.onlinePercent.toFixed(2)}%`}</div>
+                  <div className="flex gap-2.5 mt-1.5 mb-1">
+                    <div className="flex-1 border-[1.5px] border-[#FF9900] rounded-[3px] py-1.5 px-2.5 text-center bg-white shadow-2xs">
+                      <div className="text-[8.5pt] font-bold text-slate-600 uppercase tracking-wider">Online</div>
+                      <div className="text-[15pt] font-extrabold text-black mt-0.5">{`${slaCalc.onlinePercent.toFixed(2)}%`}</div>
                     </div>
-                    <div className="flex-1 border-[1.5px] border-[#FF9900] rounded-[3px] p-2 text-center bg-white shadow-2xs">
-                      <div className="text-[8.5pt] font-semibold text-slate-600 uppercase tracking-wider">Downtime</div>
-                      <div className="text-[15pt] font-bold text-black mt-0.5">{`${slaCalc.downtimePercent.toFixed(2)}%`}</div>
+                    <div className="flex-1 border-[1.5px] border-[#FF9900] rounded-[3px] py-1.5 px-2.5 text-center bg-white shadow-2xs">
+                      <div className="text-[8.5pt] font-bold text-slate-600 uppercase tracking-wider">Downtime</div>
+                      <div className="text-[15pt] font-extrabold text-black mt-0.5">{`${slaCalc.downtimePercent.toFixed(2)}%`}</div>
                     </div>
-                    <div className="flex-1 border-[1.5px] border-[#FF9900] rounded-[3px] p-2 text-center bg-white shadow-2xs">
-                      <div className="text-[8.5pt] font-semibold text-slate-600 uppercase tracking-wider">SLA</div>
-                      <div className="text-[15pt] font-bold text-black mt-0.5">{data.targetSla > 0 ? `${data.targetSla.toFixed(2)}%` : '-'}</div>
+                    <div className="flex-1 border-[1.5px] border-[#FF9900] rounded-[3px] py-1.5 px-2.5 text-center bg-white shadow-2xs">
+                      <div className="text-[8.5pt] font-bold text-slate-600 uppercase tracking-wider">SLA</div>
+                      <div className="text-[15pt] font-extrabold text-black mt-0.5">{data.targetSla > 0 ? `${data.targetSla.toFixed(2)}%` : '-'}</div>
                     </div>
                   </div>
                 </div>

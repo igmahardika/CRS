@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { TicketItem, CaseItem, calculateSla } from './sla-calculator';
+import { TicketItem, CaseItem, calculateSla, formatPeriodDisplay } from './sla-calculator';
 
 export interface ReportData {
   reportType: 'MRTG' | 'SLA';
@@ -523,11 +523,11 @@ export function generateReportHtml(data: ReportData): string {
       <table class="data-table">
         <thead>
           <tr>
-            <th style="width: 90px;">No. Ticket</th>
-            <th style="width: 85px;">Date</th>
+            <th style="width: 85px;">No. Ticket</th>
+            <th style="width: 105px;">Date & Time</th>
             <th>Description</th>
-            <th style="width: 140px;">Action</th>
-            <th style="width: 70px;">Status</th>
+            <th style="width: 135px;">Action</th>
+            <th style="width: 65px;">Status</th>
           </tr>
         </thead>
         <tbody>
@@ -539,15 +539,20 @@ export function generateReportHtml(data: ReportData): string {
               <td>-</td>
               <td>-</td>
             </tr>
-          ` : tickets.map(t => `
+          ` : tickets.map(t => {
+            const period = formatPeriodDisplay(t);
+            return `
             <tr>
               <td>${t.noTicket}</td>
-              <td style="white-space: nowrap;">${t.date}</td>
+              <td style="white-space: nowrap; font-size: 7.5pt; line-height: 1.25;">
+                <div style="font-weight: 600;">${period.start}</div>
+                ${period.end ? `<div style="font-size: 7pt; color: #475569; margin-top: 1px;">s/d ${period.end}</div>` : ''}
+              </td>
               <td style="text-align: left; padding-left: 8px;">${t.description}</td>
               <td style="text-align: left; padding-left: 8px;">${t.action}</td>
               <td>${t.status}</td>
             </tr>
-          `).join('')}
+          `;}).join('')}
         </tbody>
       </table>
 
@@ -560,10 +565,10 @@ export function generateReportHtml(data: ReportData): string {
       <table class="data-table">
         <thead>
           <tr>
-            <th style="width: 90px;">No. Case</th>
-            <th style="width: 85px;">Date</th>
+            <th style="width: 85px;">No. Case</th>
+            <th style="width: 105px;">Date & Time</th>
             <th>Description</th>
-            <th style="width: 140px;">Action</th>
+            <th style="width: 135px;">Action</th>
             <th style="width: 75px;">Downtime</th>
           </tr>
         </thead>
@@ -576,15 +581,20 @@ export function generateReportHtml(data: ReportData): string {
               <td>-</td>
               <td>-</td>
             </tr>
-          ` : cases.map(c => `
+          ` : cases.map(c => {
+            const period = formatPeriodDisplay(c);
+            return `
             <tr>
               <td>${c.noCase}</td>
-              <td style="white-space: nowrap;">${c.date}</td>
+              <td style="white-space: nowrap; font-size: 7.5pt; line-height: 1.25;">
+                <div style="font-weight: 600;">${period.start}</div>
+                ${period.end ? `<div style="font-size: 7pt; color: #475569; margin-top: 1px;">s/d ${period.end}</div>` : ''}
+              </td>
               <td style="text-align: left; padding-left: 8px;">${c.description}</td>
               <td style="text-align: left; padding-left: 8px;">${c.action}</td>
               <td>${c.downtimeMinutes} Mins</td>
             </tr>
-          `).join('')}
+          `;}).join('')}
         </tbody>
       </table>
 
@@ -720,11 +730,11 @@ export function generateReportHtml(data: ReportData): string {
       <table class="data-table">
         <thead>
           <tr>
-            <th style="width: 90px;">No. Ticket</th>
-            <th style="width: 85px;">Date</th>
+            <th style="width: 85px;">No. Ticket</th>
+            <th style="width: 105px;">Date & Time</th>
             <th>Description</th>
-            <th style="width: 140px;">Action</th>
-            <th style="width: 70px;">Status</th>
+            <th style="width: 135px;">Action</th>
+            <th style="width: 65px;">Status</th>
           </tr>
         </thead>
         <tbody>
@@ -736,15 +746,20 @@ export function generateReportHtml(data: ReportData): string {
               <td>-</td>
               <td>-</td>
             </tr>
-          ` : tickets.map(t => `
+          ` : tickets.map(t => {
+            const period = formatPeriodDisplay(t);
+            return `
             <tr>
               <td>${t.noTicket}</td>
-              <td style="white-space: nowrap;">${t.date}</td>
+              <td style="white-space: nowrap; font-size: 7.5pt; line-height: 1.25;">
+                <div style="font-weight: 600;">${period.start}</div>
+                ${period.end ? `<div style="font-size: 7pt; color: #475569; margin-top: 1px;">s/d ${period.end}</div>` : ''}
+              </td>
               <td style="text-align: left; padding-left: 8px;">${t.description}</td>
               <td style="text-align: left; padding-left: 8px;">${t.action}</td>
               <td>${t.status}</td>
             </tr>
-          `).join('')}
+          `;}).join('')}
         </tbody>
       </table>
 
@@ -770,10 +785,10 @@ export function generateReportHtml(data: ReportData): string {
       <table class="data-table">
         <thead>
           <tr>
-            <th style="width: 90px;">No. Case</th>
-            <th style="width: 85px;">Date</th>
+            <th style="width: 85px;">No. Case</th>
+            <th style="width: 105px;">Date & Time</th>
             <th>Description</th>
-            <th style="width: 140px;">Action</th>
+            <th style="width: 135px;">Action</th>
             <th style="width: 75px;">Downtime</th>
           </tr>
         </thead>
@@ -786,15 +801,20 @@ export function generateReportHtml(data: ReportData): string {
               <td>-</td>
               <td>-</td>
             </tr>
-          ` : cases.map(c => `
+          ` : cases.map(c => {
+            const period = formatPeriodDisplay(c);
+            return `
             <tr>
               <td>${c.noCase}</td>
-              <td style="white-space: nowrap;">${c.date}</td>
+              <td style="white-space: nowrap; font-size: 7.5pt; line-height: 1.25;">
+                <div style="font-weight: 600;">${period.start}</div>
+                ${period.end ? `<div style="font-size: 7pt; color: #475569; margin-top: 1px;">s/d ${period.end}</div>` : ''}
+              </td>
               <td style="text-align: left; padding-left: 8px;">${c.description}</td>
               <td style="text-align: left; padding-left: 8px;">${c.action}</td>
               <td>${c.downtimeMinutes} Mins</td>
             </tr>
-          `).join('')}
+          `;}).join('')}
         </tbody>
       </table>
 

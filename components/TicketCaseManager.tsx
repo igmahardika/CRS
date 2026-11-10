@@ -17,7 +17,7 @@ import {
   ArrowRightLeft,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { TicketItem, CaseItem, calculateSla } from '@/lib/sla-calculator';
+import { TicketItem, CaseItem, calculateSla, calculateMinutesBetween } from '@/lib/sla-calculator';
 import {
   Button,
   Input,
@@ -100,6 +100,39 @@ function parseDateString(str: string, defaultYear: number, defaultMonth: number)
   }
 
   return `${defaultYear}-${String(defaultMonth).padStart(2, '0')}-01`;
+}
+
+// ----------------------------------------------------
+// Helper: Robust Date & Time Parser
+// Returns: { date: "YYYY-MM-DD", dateTime: "YYYY-MM-DD HH:mm" | undefined }
+// ----------------------------------------------------
+function parseDateTimeString(
+  str: string,
+  defaultYear: number,
+  defaultMonth: number
+): { date: string; dateTime?: string } {
+  if (!str) {
+    const d = `${defaultYear}-${String(defaultMonth).padStart(2, '0')}-01`;
+    return { date: d, dateTime: undefined };
+  }
+
+  const dateOnly = parseDateString(str, defaultYear, defaultMonth);
+
+  // Check for time: HH:mm or HH:mm:ss
+  const timeMatch = str.match(/(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+  if (timeMatch) {
+    const hh = String(timeMatch[1]).padStart(2, '0');
+    const mm = timeMatch[2];
+    return {
+      date: dateOnly,
+      dateTime: `${dateOnly} ${hh}:${mm}`,
+    };
+  }
+
+  return {
+    date: dateOnly,
+    dateTime: undefined,
+  };
 }
 
 // ----------------------------------------------------
@@ -206,6 +239,8 @@ export default function TicketCaseManager({
       newItems.push({
         noTicket: `TKT-${year}${padMonth}-${seq}`,
         date: `${year}-${padMonth}-01`,
+        startDate: `${year}-${padMonth}-01 08:00`,
+        endDate: `${year}-${padMonth}-01 17:00`,
         description: '',
         action: '',
         status: 'Closed',
@@ -244,6 +279,8 @@ export default function TicketCaseManager({
       newItems.push({
         noCase: `CASE-${year}${padMonth}-${seq}`,
         date: `${year}-${padMonth}-01`,
+        startDate: `${year}-${padMonth}-01 09:00`,
+        endDate: `${year}-${padMonth}-01 09:30`,
         description: '',
         action: '',
         downtimeMinutes: 30,
@@ -329,22 +366,30 @@ export default function TicketCaseManager({
         // Helpdesk table format:
         // Col 1: No Tiket (e.g. "case", "N268608", "N268803")
         // Col 2: Kategori (e.g. "Problem", "Komplain")
-        // Find Date column (contains day, month text, or YYYY-MM-DD)
-        let dateColIdx = -1;
-        let dateStr = '';
+        // Find Date columns (Open and Close Datetimes)
+        const dateCandidates: { idx: number; val: string }[] = [];
         for (let c = 3; c < cols.length; c++) {
           const val = cols[c];
           if (
             /\d{1,2}\s+[a-zA-Z]+\s+\d{4}/.test(val) ||
             /\d{4}[-/]\d{1,2}[-/]\d{1,2}/.test(val)
           ) {
-            dateColIdx = c;
-            dateStr = val;
-            break;
+            dateCandidates.push({ idx: c, val });
           }
         }
 
-        const date = parseDateString(dateStr, year, month);
+        const dateColIdx = dateCandidates.length > 0 ? dateCandidates[0].idx : -1;
+        const openParsed = dateCandidates.length > 0
+          ? parseDateTimeString(dateCandidates[0].val, year, month)
+          : { date: `${year}-${padMonth}-01`, dateTime: undefined };
+
+        const closeParsed = dateCandidates.length > 1
+          ? parseDateTimeString(dateCandidates[1].val, year, month)
+          : undefined;
+
+        const date = openParsed.date;
+        const startDate = openParsed.dateTime || openParsed.date;
+        const endDate = closeParsed ? (closeParsed.dateTime || closeParsed.date) : undefined;
 
         // Action taken is the column immediately before dateColIdx (Penanganan)
         const action = dateColIdx > 3 ? cols[dateColIdx - 1] : '';
@@ -383,6 +428,9 @@ export default function TicketCaseManager({
           const dtCandidate = cols[statusColIdx - 1];
           downtimeMinutes = parseDurationToMinutes(dtCandidate);
         }
+        if (!downtimeMinutes && startDate && endDate) {
+          downtimeMinutes = calculateMinutesBetween(startDate, endDate);
+        }
 
         const rawNo = cols[1] || '';
         const kategori = cols[2] || '';
@@ -403,6 +451,8 @@ export default function TicketCaseManager({
           detectedCases.push({
             noCase,
             date,
+            startDate,
+            endDate,
             description: fullDesc,
             action: action || 'Perbaikan dan normalisasi link',
             downtimeMinutes: downtimeMinutes || 30,
@@ -415,6 +465,8 @@ export default function TicketCaseManager({
           detectedTickets.push({
             noTicket,
             date,
+            startDate,
+            endDate,
             description: fullDesc,
             action: action || 'Penanganan oleh tim teknis',
             status,
@@ -423,21 +475,44 @@ export default function TicketCaseManager({
       } else {
         // Standard Simple 5-column format: [No, Date, Desc, Action, StatusOrDowntime]
         const col0 = cols[0] || '';
-        const date = parseDateString(cols[1], year, month);
+        const rawDateCol = cols[1] || '';
+        let sDate: string | undefined = undefined;
+        let eDate: string | undefined = undefined;
+        let baseDate = `${year}-${padMonth}-01`;
+
+        if (rawDateCol.includes('s/d') || rawDateCol.includes(' - ')) {
+          const parts = rawDateCol.split(/s\/d|\s+-\s+/);
+          const p1 = parseDateTimeString(parts[0].trim(), year, month);
+          const p2 = parseDateTimeString(parts[1].trim(), year, month);
+          baseDate = p1.date;
+          sDate = p1.dateTime || p1.date;
+          eDate = p2.dateTime || p2.date;
+        } else {
+          const p = parseDateTimeString(rawDateCol, year, month);
+          baseDate = p.date;
+          sDate = p.dateTime;
+        }
+
         const desc = cols[2] || '';
         const action = cols[3] || '';
         const col4 = cols[4] || '';
 
         const isDowntimeVal = /^\d+$/.test(col4.replace(/[^0-9]/g, '')) && !/[a-zA-Z]/.test(col4);
         if (col0.toLowerCase().includes('case') || isDowntimeVal) {
+          let dtMins = parseDurationToMinutes(col4);
+          if (!dtMins && sDate && eDate) {
+            dtMins = calculateMinutesBetween(sDate, eDate);
+          }
           detectedCases.push({
             noCase:
               col0 ||
               `CASE-${year}${padMonth}-${String(cases.length + detectedCases.length + 1).padStart(2, '0')}`,
-            date,
+            date: baseDate,
+            startDate: sDate,
+            endDate: eDate,
             description: desc,
             action,
-            downtimeMinutes: parseDurationToMinutes(col4) || 30,
+            downtimeMinutes: dtMins || 30,
           });
         } else {
           let status = 'Closed';
@@ -449,7 +524,9 @@ export default function TicketCaseManager({
             noTicket:
               col0 ||
               `TKT-${year}${padMonth}-${String(tickets.length + detectedTickets.length + 1).padStart(2, '0')}`,
-            date,
+            date: baseDate,
+            startDate: sDate,
+            endDate: eDate,
             description: desc,
             action,
             status,
@@ -749,15 +826,34 @@ export default function TicketCaseManager({
 
                   <div className="w-36 shrink-0">
                     <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider block mb-1">
-                      Tanggal
+                      Start (Tgl & Jam)
                     </span>
                     <Input
                       inputSize="sm"
                       type="text"
-                      value={t.date}
-                      onChange={(e) => handleUpdateTicket(idx, 'date', e.target.value)}
+                      value={t.startDate || t.date}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        handleUpdateTicket(idx, 'startDate', val);
+                        const dateOnly = val.split(' ')[0] || val;
+                        handleUpdateTicket(idx, 'date', dateOnly);
+                      }}
                       className="text-xs tabular-nums"
-                      placeholder="YYYY-MM-DD"
+                      placeholder="YYYY-MM-DD HH:mm"
+                    />
+                  </div>
+
+                  <div className="w-36 shrink-0">
+                    <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider block mb-1">
+                      End (Tgl & Jam)
+                    </span>
+                    <Input
+                      inputSize="sm"
+                      type="text"
+                      value={t.endDate || ''}
+                      onChange={(e) => handleUpdateTicket(idx, 'endDate', e.target.value)}
+                      className="text-xs tabular-nums"
+                      placeholder="YYYY-MM-DD HH:mm"
                     />
                   </div>
 
@@ -1009,15 +1105,46 @@ export default function TicketCaseManager({
 
                   <div className="w-36 shrink-0">
                     <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider block mb-1">
-                      Tanggal
+                      Start (Tgl & Jam)
                     </span>
                     <Input
                       inputSize="sm"
                       type="text"
-                      value={c.date}
-                      onChange={(e) => handleUpdateCase(idx, 'date', e.target.value)}
+                      value={c.startDate || c.date}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        handleUpdateCase(idx, 'startDate', val);
+                        const dateOnly = val.split(' ')[0] || val;
+                        handleUpdateCase(idx, 'date', dateOnly);
+                        if (c.endDate) {
+                          const autoM = calculateMinutesBetween(val, c.endDate);
+                          if (autoM > 0) handleUpdateCase(idx, 'downtimeMinutes', autoM);
+                        }
+                      }}
                       className="text-xs tabular-nums"
-                      placeholder="YYYY-MM-DD"
+                      placeholder="YYYY-MM-DD HH:mm"
+                    />
+                  </div>
+
+                  <div className="w-36 shrink-0">
+                    <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider block mb-1">
+                      End (Tgl & Jam)
+                    </span>
+                    <Input
+                      inputSize="sm"
+                      type="text"
+                      value={c.endDate || ''}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        handleUpdateCase(idx, 'endDate', val);
+                        const start = c.startDate || c.date;
+                        if (start) {
+                          const autoM = calculateMinutesBetween(start, val);
+                          if (autoM > 0) handleUpdateCase(idx, 'downtimeMinutes', autoM);
+                        }
+                      }}
+                      className="text-xs tabular-nums"
+                      placeholder="YYYY-MM-DD HH:mm"
                     />
                   </div>
 

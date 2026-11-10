@@ -2,6 +2,8 @@ export interface TicketItem {
   id?: string;
   noTicket: string;
   date: string;
+  startDate?: string; // Format: "YYYY-MM-DD HH:mm" or "YYYY-MM-DDTHH:mm"
+  endDate?: string;   // Format: "YYYY-MM-DD HH:mm" or "YYYY-MM-DDTHH:mm"
   description: string;
   action: string;
   status: string;
@@ -11,6 +13,8 @@ export interface CaseItem {
   id?: string;
   noCase: string;
   date: string;
+  startDate?: string; // Format: "YYYY-MM-DD HH:mm" or "YYYY-MM-DDTHH:mm"
+  endDate?: string;   // Format: "YYYY-MM-DD HH:mm" or "YYYY-MM-DDTHH:mm"
   description: string;
   action: string;
   downtimeMinutes: number;
@@ -93,5 +97,36 @@ export function calculateSla(
     caseCount,
     isTicketEmpty: ticketCount === 0,
     isCaseEmpty: caseCount === 0,
+  };
+}
+
+/**
+ * Calculates minutes elapsed between start and end datetimes.
+ * Returns 0 if either datetime is invalid or start > end.
+ */
+export function calculateMinutesBetween(startStr?: string, endStr?: string): number {
+  if (!startStr || !endStr) return 0;
+  const cleanStart = startStr.trim().replace(' ', 'T');
+  const cleanEnd = endStr.trim().replace(' ', 'T');
+  const s = new Date(cleanStart);
+  const e = new Date(cleanEnd);
+  if (isNaN(s.getTime()) || isNaN(e.getTime())) return 0;
+  const diffMs = e.getTime() - s.getTime();
+  if (diffMs <= 0) return 0;
+  return Math.round(diffMs / 60000);
+}
+
+/**
+ * Formats start and optional end date/time for Option B (compact 2-line period display).
+ */
+export function formatPeriodDisplay(item: { date?: string; startDate?: string; endDate?: string }): {
+  start: string;
+  end?: string;
+} {
+  const startRaw = item.startDate ? item.startDate.replace('T', ' ') : (item.date || '-');
+  const endRaw = item.endDate ? item.endDate.replace('T', ' ') : undefined;
+  return {
+    start: startRaw,
+    end: endRaw && endRaw !== startRaw ? endRaw : undefined,
   };
 }
