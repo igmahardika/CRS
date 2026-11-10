@@ -21,6 +21,7 @@ import {
   ExternalLink,
   History,
   FileCheck,
+  Inbox,
 } from 'lucide-react';
 import Link from 'next/link';
 import LivePreview from '@/components/LivePreview';
@@ -50,6 +51,15 @@ function GeneratorPageContent() {
   const searchParams = useSearchParams();
   const customerIdParam = searchParams.get('customerId');
   const serviceIdParam = searchParams.get('serviceId');
+  const customerNameParam = searchParams.get('customerName');
+  const typeParam = searchParams.get('type');
+  const monthParam = searchParams.get('month');
+  const yearParam = searchParams.get('year');
+  const requestIdParam = searchParams.get('requestId');
+  const ticketParam = searchParams.get('ticket');
+
+  const [activeRequestId, setActiveRequestId] = useState<string | null>(requestIdParam);
+  const [activeRequestTicket, setActiveRequestTicket] = useState<string | null>(ticketParam);
 
   // Report mode: MRTG or SLA
   const [reportType, setReportType] = useState<'MRTG' | 'SLA'>('SLA');
@@ -144,8 +154,23 @@ function GeneratorPageContent() {
     }
   }, [month, year, reportType, isManualDocNumber, fetchNextDocNumber]);
 
-  // 2. Load customer from URL search param if present
+  // 2. Load parameters from URL search param if present (e.g. from Request Queue or Customer list)
   useEffect(() => {
+    if (customerNameParam) setCustomerName(customerNameParam);
+    if (serviceIdParam) setServiceId(serviceIdParam);
+    if (customerIdParam) setCustomerId(customerIdParam);
+    if (typeParam === 'SLA' || typeParam === 'MRTG') setReportType(typeParam);
+    if (monthParam) {
+      const m = parseInt(monthParam, 10);
+      if (m >= 1 && m <= 12) setMonth(m);
+    }
+    if (yearParam) {
+      const y = parseInt(yearParam, 10);
+      if (y >= 2020 && y <= 2035) setYear(y);
+    }
+    if (requestIdParam) setActiveRequestId(requestIdParam);
+    if (ticketParam) setActiveRequestTicket(ticketParam);
+
     if (serviceIdParam || customerIdParam) {
       fetch('/api/customers')
         .then((res) => res.json())
@@ -161,7 +186,7 @@ function GeneratorPageContent() {
         })
         .catch(console.error);
     }
-  }, [serviceIdParam, customerIdParam]);
+  }, [serviceIdParam, customerIdParam, customerNameParam, typeParam, monthParam, yearParam, requestIdParam, ticketParam]);
 
   // Handle selecting customer from Master Modal
   const handleSelectCustomer = (customer: CustomerData) => {
@@ -458,6 +483,19 @@ function GeneratorPageContent() {
       // Auto update next doc number after save
       fetchNextDocNumber(month, year, reportType);
 
+      // If generated from an active request ticket, mark request as completed
+      if (activeRequestId && data.report?.id) {
+        fetch('/api/requests', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: activeRequestId,
+            status: 'COMPLETED',
+            processedReportId: data.report.id,
+          }),
+        }).catch((e) => console.error('[Update Request Status Error]', e));
+      }
+
       if (reportStatus === 'APPROVED') {
         toast.success('Laporan berhasil di-generate dan langsung disetujui (Approved)!');
       } else {
@@ -534,6 +572,35 @@ function GeneratorPageContent() {
           </div>
         }
       />
+
+      {/* Active Request Ticket Banner */}
+      {activeRequestTicket && (
+        <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-900 text-xs flex items-center justify-between shadow-xs">
+          <div className="flex items-center gap-2">
+            <Inbox className="w-4 h-4 text-amber-600 shrink-0" />
+            <div>
+              <span className="font-semibold">Sedang Memproses Tiket Permintaan: </span>
+              <code className="bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-mono font-bold text-[11px] border border-amber-200">
+                {activeRequestTicket}
+              </code>
+              <span className="ml-2 text-amber-700 font-medium">({customerName})</span>
+            </div>
+          </div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            onClick={() => {
+              setActiveRequestTicket(null);
+              setActiveRequestId(null);
+            }}
+            className="h-6 w-6 text-amber-600 hover:text-amber-800 hover:bg-amber-100/50"
+            title="Tutup banner permintaan"
+          >
+            ✕
+          </Button>
+        </div>
+      )}
 
       {/* Main 2-Column Split: Left = Input Form, Right = Live Preview */}
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">

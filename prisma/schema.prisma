@@ -129,3 +129,31 @@ model AppConfig {
   telegramNotificationsEnabled Boolean  @default(false)
   updatedAt                    DateTime @updatedAt
 }
+
+model ReportRequest {
+  id                String    @id @default(cuid())
+  ticketNumber      String    @unique // e.g. REQ-202611-0001
+  requesterName     String
+  requesterEmail    String?
+  requesterDept     String    // "Account Management", "Sales", "NOC", "Customer Care", "Technical Support", etc.
+  reportType        String    // "SLA", "MRTG", "BOTH"
+  customerName      String
+  customerId        String?
+  serviceId         String?
+  periodMonth       Int
+  periodYear        Int
+  urgency           String    @default("NORMAL") // "NORMAL" or "URGENT"
+  notes             String?
+  status            String    @default("PENDING") // "PENDING", "IN_PROGRESS", "COMPLETED", "CANCELLED"
+  processedById     String?
+  processedByName   String?
+  processedReportId String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([status])
+  @@index([ticketNumber])
+  @@index([customerName])
+  @@index([requesterDept])
+  @@index([createdAt])
+}
