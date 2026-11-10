@@ -22,6 +22,7 @@ import {
   History,
   FileCheck,
   Inbox,
+  Clock,
 } from 'lucide-react';
 import Link from 'next/link';
 import LivePreview from '@/components/LivePreview';
@@ -57,9 +58,11 @@ function GeneratorPageContent() {
   const yearParam = searchParams.get('year');
   const requestIdParam = searchParams.get('requestId');
   const ticketParam = searchParams.get('ticket');
+  const scheduleTaskIdParam = searchParams.get('scheduleTaskId');
 
   const [activeRequestId, setActiveRequestId] = useState<string | null>(requestIdParam);
   const [activeRequestTicket, setActiveRequestTicket] = useState<string | null>(ticketParam);
+  const [activeScheduleTaskId, setActiveScheduleTaskId] = useState<string | null>(scheduleTaskIdParam);
 
   // Report mode: MRTG or SLA
   const [reportType, setReportType] = useState<'MRTG' | 'SLA'>('SLA');
@@ -170,6 +173,7 @@ function GeneratorPageContent() {
     }
     if (requestIdParam) setActiveRequestId(requestIdParam);
     if (ticketParam) setActiveRequestTicket(ticketParam);
+    if (scheduleTaskIdParam) setActiveScheduleTaskId(scheduleTaskIdParam);
 
     if (serviceIdParam || customerIdParam) {
       fetch('/api/customers')
@@ -186,7 +190,7 @@ function GeneratorPageContent() {
         })
         .catch(console.error);
     }
-  }, [serviceIdParam, customerIdParam, customerNameParam, typeParam, monthParam, yearParam, requestIdParam, ticketParam]);
+  }, [serviceIdParam, customerIdParam, customerNameParam, typeParam, monthParam, yearParam, requestIdParam, ticketParam, scheduleTaskIdParam]);
 
   // Handle selecting customer from Master Modal
   const handleSelectCustomer = (customer: CustomerData) => {
@@ -496,6 +500,19 @@ function GeneratorPageContent() {
         }).catch((e) => console.error('[Update Request Status Error]', e));
       }
 
+      // If generated from an active routine schedule task, mark schedule task as completed
+      if (activeScheduleTaskId && data.report?.id) {
+        fetch('/api/schedule', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: activeScheduleTaskId,
+            status: 'COMPLETED',
+            completedReportId: data.report.id,
+          }),
+        }).catch((e) => console.error('[Update Schedule Task Status Error]', e));
+      }
+
       if (reportStatus === 'APPROVED') {
         toast.success('Laporan berhasil di-generate dan langsung disetujui (Approved)!');
       } else {
@@ -596,6 +613,32 @@ function GeneratorPageContent() {
             }}
             className="h-6 w-6 text-amber-600 hover:text-amber-800 hover:bg-amber-100/50"
             title="Tutup banner permintaan"
+          >
+            ✕
+          </Button>
+        </div>
+      )}
+
+      {/* Active Monthly Schedule Task Banner */}
+      {activeScheduleTaskId && (
+        <div className="p-3 bg-orange-50 border border-orange-200 rounded-lg text-orange-950 text-xs flex items-center justify-between shadow-xs">
+          <div className="flex items-center gap-2">
+            <Clock className="w-4 h-4 text-orange-600 shrink-0" />
+            <div>
+              <span className="font-semibold">Sedang Memproses Tugas Rutin Bulanan (SLA 24 Jam): </span>
+              <span className="font-medium text-orange-800">{customerName}</span>
+              <span className="ml-2 px-1.5 py-0.5 rounded bg-orange-200/70 text-orange-900 font-bold text-[11px]">
+                Periode {reportPeriod}
+              </span>
+            </div>
+          </div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            onClick={() => setActiveScheduleTaskId(null)}
+            className="h-6 w-6 text-orange-600 hover:text-orange-800 hover:bg-orange-100/50"
+            title="Tutup banner jadwal rutin"
           >
             ✕
           </Button>

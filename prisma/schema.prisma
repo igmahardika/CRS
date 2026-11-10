@@ -8,20 +8,22 @@ datasource db {
 }
 
 model Customer {
-  id               String   @id @default(cuid())
-  customerName     String
-  customerId       String
-  serviceId        String
-  serviceName      String   @default("Prime 300 Mbps")
-  nodeCount        Int      @default(1)
-  targetSla        Float    @default(99.5)
-  graphType        String   @default("MRTG") // Preferred engine: "MRTG" or "PRTG"
-  graphId          String?  // Legacy/fallback graph ID
-  cactiGraphId     String?  // Cacti Graph ID
-  prtgSensorId     String?  // PRTG Sensor ID
-  trafficDirection String   @default("NORMAL") // "NORMAL" or "REVERSED"
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  id                String   @id @default(cuid())
+  customerName      String
+  customerId        String
+  serviceId         String
+  serviceName       String   @default("Prime 300 Mbps")
+  nodeCount         Int      @default(1)
+  targetSla         Float    @default(99.5)
+  graphType         String   @default("MRTG") // Preferred engine: "MRTG" or "PRTG"
+  graphId           String?  // Legacy/fallback graph ID
+  cactiGraphId      String?  // Cacti Graph ID
+  prtgSensorId      String?  // PRTG Sensor ID
+  trafficDirection  String   @default("NORMAL") // "NORMAL" or "REVERSED"
+  isMonthlyRoutine  Boolean  @default(false)    // Wajib Laporan Rutin Setiap Tanggal 1
+  routineReportType String   @default("SLA")    // "SLA", "MRTG", or "BOTH"
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 }
 
 model Report {
@@ -156,4 +158,28 @@ model ReportRequest {
   @@index([customerName])
   @@index([requesterDept])
   @@index([createdAt])
+}
+
+model MonthlyScheduleTask {
+  id                String    @id @default(cuid())
+  customerId        String
+  customerName      String
+  serviceId         String?
+  serviceName       String?
+  periodMonth       Int
+  periodYear        Int
+  reportType        String    @default("SLA") // "SLA", "MRTG", "BOTH"
+  kickoffTime       DateTime  @default(now())
+  deadlineTime      DateTime  // 24 hours from kickoff
+  status            String    @default("PENDING") // "PENDING", "COMPLETED", "BREACHED"
+  completedAt       DateTime?
+  completedReportId String?
+  processedByName   String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([periodMonth, periodYear])
+  @@index([status])
+  @@index([customerName])
+  @@index([deadlineTime])
 }

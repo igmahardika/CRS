@@ -1,41 +1,784 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
-import { CalendarCheck, ArrowLeft, Clock, ShieldAlert } from 'lucide-react';
-import { PageHeader, Button, EmptyState } from '@/components/ui';
+import {
+  CalendarCheck,
+  ArrowLeft,
+  Clock,
+  Play,
+  CheckCircle2,
+  AlertTriangle,
+  Flame,
+  Search,
+  ExternalLink,
+  RotateCcw,
+  RefreshCw,
+  Users,
+  ShieldCheck,
+  Check,
+  FileText,
+  AlertCircle,
+  TrendingUp,
+} from 'lucide-react';
+import {
+  PageHeader,
+  Button,
+  Input,
+  Badge,
+  EmptyState,
+  Spinner,
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+  StatCard,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  FormField,
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+  Checkbox,
+} from '@/components/ui';
+import { toast } from 'sonner';
+
+interface ScheduleTask {
+  id: string;
+  customerId: string;
+  customerName: string;
+  serviceId: string;
+  serviceName: string;
+  periodMonth: number;
+  periodYear: number;
+  reportType: string;
+  kickoffTime: string;
+  deadlineTime: string;
+  status: 'PENDING' | 'COMPLETED' | 'BREACHED';
+  completedAt?: string | null;
+  completedReportId?: string | null;
+  processedByName?: string | null;
+  createdAt: string;
+}
+
+interface ScheduleStats {
+  total: number;
+  completed: number;
+  pending: number;
+  breached: number;
+  completionRate: number;
+}
+
+const monthNames = [
+  'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+  'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+];
 
 export default function SchedulePage() {
+  const now = new Date();
+  // Default to previous month
+  const defaultPrevMonth = now.getMonth() === 0 ? 12 : now.getMonth();
+  const defaultPrevYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+
+  const [selectedMonth, setSelectedMonth] = useState<number>(defaultPrevMonth);
+  const [selectedYear, setSelectedYear] = useState<number>(defaultPrevYear);
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'PENDING' | 'COMPLETED' | 'BREACHED'>('ALL');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const [tasks, setTasks] = useState<ScheduleTask[]>([]);
+  const [stats, setStats] = useState<ScheduleStats>({
+    total: 0,
+    completed: 0,
+    pending: 0,
+    breached: 0,
+    completionRate: 0,
+  });
+  const [loading, setLoading] = useState(true);
+
+  // Kickoff Modal
+  const [isKickoffModalOpen, setIsKickoffModalOpen] = useState(false);
+  const [kickoffMonth, setKickoffMonth] = useState<number>(defaultPrevMonth);
+  const [kickoffYear, setKickoffYear] = useState<number>(defaultPrevYear);
+  const [includeAllCustomers, setIncludeAllCustomers] = useState(false);
+  const [isSubmittingKickoff, setIsSubmittingKickoff] = useState(false);
+
+  // SLA 24H Countdown Timer state
+  const [timeRemainingStr, setTimeRemainingStr] = useState<string>('--:--:--');
+  const [slaUrgency, setSlaUrgency] = useState<'SAFE' | 'WARNING' | 'CRITICAL' | 'EXPIRED' | 'COMPLETED' | 'IDLE'>('IDLE');
+  const [slaProgressPercent, setSlaProgressPercent] = useState<number>(0);
+
+  // Fetch tasks
+  const fetchTasks = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/schedule?month=${selectedMonth}&year=${selectedYear}`);
+      const data = await res.json();
+      if (res.ok) {
+        setTasks(data.tasks || []);
+        if (data.stats) {
+          setStats(data.stats);
+        }
+      } else {
+        toast.error(data.error || 'Gagal memuat daftar jadwal rutin.');
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Gagal menghubungi server jadwal.');
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedMonth, selectedYear]);
+
+  useEffect(() => {
+    fetchTasks();
+  }, [fetchTasks]);
+
+  // SLA 24-Hour Countdown ticker
+  useEffect(() => {
+    // Find active kickoff deadline (the earliest deadline among pending tasks)
+    const pendingTasks = tasks.filter((t) => t.status === 'PENDING');
+
+    if (tasks.length === 0) {
+      setSlaUrgency('IDLE');
+      setTimeRemainingStr('Belum Dimulai');
+      setSlaProgressPercent(0);
+      return;
+    }
+
+    if (pendingTasks.length === 0 && tasks.length > 0) {
+      setSlaUrgency('COMPLETED');
+      setTimeRemainingStr('Semua Tugas Selesai 🎉');
+      setSlaProgressPercent(100);
+      return;
+    }
+
+    const updateCountdown = () => {
+      const targetDeadline = new Date(pendingTasks[0].deadlineTime).getTime();
+      const kickoffTime = new Date(pendingTasks[0].kickoffTime).getTime();
+      const current = Date.now();
+      const diffMs = targetDeadline - current;
+      const totalDuration = targetDeadline - kickoffTime || 24 * 60 * 60 * 1000;
+
+      // Elapsed percentage (0 to 100%)
+      const elapsed = current - kickoffTime;
+      const pct = Math.min(100, Math.max(0, Math.round((elapsed / totalDuration) * 100)));
+      setSlaProgressPercent(pct);
+
+      if (diffMs <= 0) {
+        setSlaUrgency('EXPIRED');
+        const overdueHours = Math.floor(Math.abs(diffMs) / (1000 * 60 * 60));
+        const overdueMins = Math.floor((Math.abs(diffMs) % (1000 * 60 * 60)) / (1000 * 60));
+        setTimeRemainingStr(`Melewati SLA (${overdueHours}j ${overdueMins}m lalu)`);
+        return;
+      }
+
+      const hours = Math.floor(diffMs / (1000 * 60 * 60));
+      const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
+
+      const formatted = `${String(hours).padStart(2, '0')} Jam ${String(minutes).padStart(2, '0')} Menit ${String(seconds).padStart(2, '0')} Detik`;
+      setTimeRemainingStr(formatted);
+
+      if (hours >= 12) {
+        setSlaUrgency('SAFE');
+      } else if (hours >= 6) {
+        setSlaUrgency('WARNING');
+      } else {
+        setSlaUrgency('CRITICAL');
+      }
+    };
+
+    updateCountdown();
+    const interval = setInterval(updateCountdown, 1000);
+    return () => clearInterval(interval);
+  }, [tasks]);
+
+  // Handle Trigger Kickoff
+  const handleKickoffSubmit = async () => {
+    setIsSubmittingKickoff(true);
+    try {
+      const res = await fetch('/api/schedule/kickoff', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          periodMonth: kickoffMonth,
+          periodYear: kickoffYear,
+          includeAll: includeAllCustomers,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success(data.message || 'Kickoff berhasil dimulai!');
+        setIsKickoffModalOpen(false);
+        setSelectedMonth(kickoffMonth);
+        setSelectedYear(kickoffYear);
+        fetchTasks();
+      } else {
+        toast.error(data.error || 'Gagal memulai kickoff.');
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Terjadi kesalahan saat memulai kickoff.');
+    } finally {
+      setIsSubmittingKickoff(false);
+    }
+  };
+
+  // Quick toggle status for task
+  const handleToggleTaskStatus = async (task: ScheduleTask, newStatus: 'PENDING' | 'COMPLETED') => {
+    try {
+      const res = await fetch('/api/schedule', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: task.id,
+          status: newStatus,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success(`Status ${task.customerName} diubah ke ${newStatus}.`);
+        fetchTasks();
+      } else {
+        toast.error(data.error || 'Gagal mengubah status tugas.');
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Gagal memperbarui status.');
+    }
+  };
+
+  // Filtered tasks
+  const filteredTasks = useMemo(() => {
+    return tasks.filter((t) => {
+      if (statusFilter !== 'ALL' && t.status !== statusFilter) return false;
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const matches =
+          t.customerName.toLowerCase().includes(q) ||
+          t.customerId.toLowerCase().includes(q) ||
+          t.serviceId.toLowerCase().includes(q) ||
+          t.serviceName.toLowerCase().includes(q);
+        if (!matches) return false;
+      }
+      return true;
+    });
+  }, [tasks, statusFilter, searchQuery]);
+
   return (
     <div className="space-y-6">
       <PageHeader
         title="Jadwal Pelanggan Rutin & SLA 24 Jam"
-        description="Monitoring dan pengawalan pembuatan laporan bulanan pelanggan kontrak rutin setiap tanggal 1."
+        description="Monitoring pengawalan pembuatan laporan bulanan pelanggan kontrak rutin setiap tanggal 1 (SLA 24 Jam)."
         breadcrumb={
           <Link href="/" className="hover:text-slate-800 flex items-center gap-1 font-medium text-slate-500">
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>Kembali ke Generator</span>
           </Link>
         }
+        actions={
+          <div className="flex items-center gap-2">
+            <Link href="/customers">
+              <Button variant="secondary" size="sm">
+                <Users className="w-3.5 h-3.5 mr-1.5" />
+                <span>Kelola Pelanggan Rutin</span>
+              </Button>
+            </Link>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => setIsKickoffModalOpen(true)}
+              className="bg-[#EA580C] hover:bg-[#C2410C]"
+            >
+              <Play className="w-3.5 h-3.5 mr-1.5 fill-current" />
+              <span>Trigger Kickoff Rutin</span>
+            </Button>
+          </div>
+        }
       />
 
-      <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg text-amber-900 text-xs flex items-center gap-2.5 shadow-xs">
-        <Clock className="w-4 h-4 text-amber-600 shrink-0" />
-        <div>
-          <span className="font-semibold">Fase Pengerjaan Selanjutnya (Fase 5): </span>
-          <span>Engine jadwal otomatis tanggal 1 dan sistem pengawalan batas waktu 24 jam dengan notifikasi Telegram akan diaktifkan di Fase 5.</span>
+      {/* SLA 24 Jam Countdown Countdown Widget Banner */}
+      <div
+        className={`p-5 rounded-xl border transition-all ${
+          slaUrgency === 'COMPLETED'
+            ? 'bg-emerald-50/80 border-emerald-200 text-emerald-950'
+            : slaUrgency === 'EXPIRED'
+            ? 'bg-rose-50/80 border-rose-200 text-rose-950'
+            : slaUrgency === 'CRITICAL'
+            ? 'bg-rose-50/90 border-rose-300 text-rose-950 animate-pulse'
+            : slaUrgency === 'WARNING'
+            ? 'bg-amber-50/80 border-amber-200 text-amber-950'
+            : slaUrgency === 'SAFE'
+            ? 'bg-emerald-50/60 border-emerald-200 text-emerald-950'
+            : 'bg-slate-50 border-slate-200 text-slate-800'
+        }`}
+      >
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <Clock
+                className={`w-5 h-5 ${
+                  slaUrgency === 'EXPIRED' || slaUrgency === 'CRITICAL'
+                    ? 'text-rose-600'
+                    : slaUrgency === 'WARNING'
+                    ? 'text-amber-600'
+                    : slaUrgency === 'COMPLETED'
+                    ? 'text-emerald-600'
+                    : 'text-[#EA580C]'
+                }`}
+              />
+              <span className="font-bold text-sm tracking-tight">
+                PENGHITUNG WAKTU SLA 24 JAM
+              </span>
+              <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-white/80 border border-current/20">
+                Periode {monthNames[selectedMonth - 1]} {selectedYear}
+              </span>
+            </div>
+            <p className="text-xs text-slate-600 leading-relaxed">
+              {slaUrgency === 'COMPLETED'
+                ? 'Semua laporan kontrak rutin untuk periode ini telah rampung dibuat dan siap disetujui.'
+                : slaUrgency === 'EXPIRED'
+                ? 'Batas waktu SLA 24 Jam telah terlampaui. Segera selesaikan sisa laporan yang belum dibuat.'
+                : slaUrgency === 'IDLE'
+                ? 'Belum ada kickoff jadwal rutin yang diinisiasi untuk periode ini. Klik tombol "Trigger Kickoff Rutin" untuk memulai.'
+                : 'Laporan wajib diselesaikan dalam 24 jam sejak kickoff tanggal 1. Notifikasi telah diteruskan ke Telegram tim.'}
+            </p>
+          </div>
+
+          <div className="flex flex-col items-start md:items-end shrink-0">
+            <span className="text-[11px] uppercase tracking-wider font-semibold text-slate-500">
+              {slaUrgency === 'EXPIRED' ? 'Status Batas Waktu' : 'Sisa Waktu Pengerjaan'}
+            </span>
+            <div
+              className={`font-mono font-bold text-lg md:text-xl tracking-tight flex items-center gap-2 ${
+                slaUrgency === 'EXPIRED' || slaUrgency === 'CRITICAL'
+                  ? 'text-rose-700'
+                  : slaUrgency === 'WARNING'
+                  ? 'text-amber-700'
+                  : slaUrgency === 'COMPLETED'
+                  ? 'text-emerald-700'
+                  : 'text-[#EA580C]'
+              }`}
+            >
+              {slaUrgency === 'CRITICAL' && <Flame className="w-5 h-5 text-rose-600 animate-bounce" />}
+              {slaUrgency === 'COMPLETED' && <CheckCircle2 className="w-5 h-5 text-emerald-600" />}
+              <span>{timeRemainingStr}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* SLA Progress Bar */}
+        {slaUrgency !== 'IDLE' && (
+          <div className="mt-4 pt-3 border-t border-current/10">
+            <div className="flex justify-between text-[11px] font-medium mb-1.5">
+              <span>Progress Waktu 24 Jam ({slaProgressPercent}% terpakai)</span>
+              <span>
+                {stats.completed} dari {stats.total} Laporan Selesai ({stats.completionRate}%)
+              </span>
+            </div>
+            <div className="w-full bg-black/10 rounded-full h-2 overflow-hidden">
+              <div
+                className={`h-full transition-all duration-500 ${
+                  slaUrgency === 'COMPLETED'
+                    ? 'bg-emerald-600'
+                    : slaUrgency === 'EXPIRED' || slaUrgency === 'CRITICAL'
+                    ? 'bg-rose-600'
+                    : slaUrgency === 'WARNING'
+                    ? 'bg-amber-500'
+                    : 'bg-[#EA580C]'
+                }`}
+                style={{ width: `${stats.completionRate}%` }}
+              />
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <StatCard
+          label="Total Pelanggan Rutin"
+          value={stats.total}
+          icon={Users}
+          subtext={`Periode ${monthNames[selectedMonth - 1]} ${selectedYear}`}
+        />
+        <StatCard
+          label="Laporan Selesai"
+          value={stats.completed}
+          icon={CheckCircle2}
+          subtext={`${stats.completionRate}% penyelesaian SLA`}
+          badge={<Badge variant="success">{stats.completionRate}%</Badge>}
+        />
+        <StatCard
+          label="Menunggu Dikerjakan"
+          value={stats.pending}
+          icon={Clock}
+          subtext="Harus selesai < 24 jam"
+          badge={stats.pending > 0 ? <Badge variant="warning">{stats.pending}</Badge> : undefined}
+        />
+        <StatCard
+          label="Melewati Batas SLA"
+          value={stats.breached}
+          icon={AlertTriangle}
+          subtext="SLA 24 jam terlampaui"
+          badge={stats.breached > 0 ? <Badge variant="destructive">{stats.breached}</Badge> : undefined}
+        />
+      </div>
+
+      {/* Filter and Search Bar */}
+      <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-xs space-y-3">
+        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+          {/* Period selector */}
+          <div className="flex items-center gap-2">
+            <div className="w-36">
+              <Select
+                value={String(selectedMonth)}
+                onValueChange={(val) => setSelectedMonth(parseInt(val, 10))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Pilih Bulan" />
+                </SelectTrigger>
+                <SelectContent>
+                  {monthNames.map((m, idx) => (
+                    <SelectItem key={idx + 1} value={String(idx + 1)}>
+                      {m}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="w-28">
+              <Select
+                value={String(selectedYear)}
+                onValueChange={(val) => setSelectedYear(parseInt(val, 10))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Pilih Tahun" />
+                </SelectTrigger>
+                <SelectContent>
+                  {[2024, 2025, 2026, 2027].map((y) => (
+                    <SelectItem key={y} value={String(y)}>
+                      {y}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Button variant="secondary" size="icon-sm" onClick={fetchTasks} title="Refresh Data">
+              <RefreshCw className="w-3.5 h-3.5" />
+            </Button>
+          </div>
+
+          {/* Search box */}
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+            <Input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Cari pelanggan atau Service ID..."
+              className="pl-9 text-xs"
+            />
+          </div>
+        </div>
+
+        {/* Status filter tabs */}
+        <div className="flex items-center gap-1.5 pt-2 border-t border-slate-100 flex-wrap">
+          <Button
+            variant={statusFilter === 'ALL' ? 'secondary' : 'ghost'}
+            size="sm"
+            onClick={() => setStatusFilter('ALL')}
+            className={statusFilter === 'ALL' ? 'bg-slate-900 text-white hover:bg-slate-800 hover:text-white h-7 px-2.5 text-xs' : 'text-slate-600 h-7 px-2.5 text-xs'}
+          >
+            Semua ({stats.total})
+          </Button>
+          <Button
+            variant={statusFilter === 'PENDING' ? 'secondary' : 'ghost'}
+            size="sm"
+            onClick={() => setStatusFilter('PENDING')}
+            className={statusFilter === 'PENDING' ? 'bg-amber-600 text-white hover:bg-amber-700 hover:text-white h-7 px-2.5 text-xs' : 'text-slate-600 h-7 px-2.5 text-xs'}
+          >
+            Pending / Belum Selesai ({stats.pending})
+          </Button>
+          <Button
+            variant={statusFilter === 'COMPLETED' ? 'secondary' : 'ghost'}
+            size="sm"
+            onClick={() => setStatusFilter('COMPLETED')}
+            className={statusFilter === 'COMPLETED' ? 'bg-emerald-600 text-white hover:bg-emerald-700 hover:text-white h-7 px-2.5 text-xs' : 'text-slate-600 h-7 px-2.5 text-xs'}
+          >
+            Selesai ({stats.completed})
+          </Button>
+          <Button
+            variant={statusFilter === 'BREACHED' ? 'secondary' : 'ghost'}
+            size="sm"
+            onClick={() => setStatusFilter('BREACHED')}
+            className={statusFilter === 'BREACHED' ? 'bg-rose-600 text-white hover:bg-rose-700 hover:text-white h-7 px-2.5 text-xs' : 'text-slate-600 h-7 px-2.5 text-xs'}
+          >
+            Melewati SLA ({stats.breached})
+          </Button>
         </div>
       </div>
 
-      <div className="bg-white rounded-lg border border-slate-200 shadow-xs p-8 text-center">
-        <EmptyState
-          icon={CalendarCheck}
-          title="Jadwal Rutin SLA 24 Jam"
-          description="Sistem akan otomatis mengompilasi daftar seluruh pelanggan yang memiliki klausul wajib report bulanan pada setiap tanggal 1 pukul 08:00 WIB dan mengawal penyelesaiannya selama 24 jam."
-          actionLabel="Buka Direktori Pelanggan"
-          onAction={() => window.location.href = '/customers'}
-        />
+      {/* Task List Table */}
+      <div className="bg-white rounded-lg border border-slate-200 shadow-xs overflow-hidden">
+        {loading ? (
+          <div className="py-16 text-center text-xs text-slate-500">
+            <Spinner size="md" className="mx-auto text-[#EA580C] mb-2" />
+            <span>Memuat jadwal tugas rutin...</span>
+          </div>
+        ) : tasks.length === 0 ? (
+          <div className="p-8">
+            <EmptyState
+              icon={CalendarCheck}
+              title={`Belum Ada Kickoff untuk ${monthNames[selectedMonth - 1]} ${selectedYear}`}
+              description="Klik tombol 'Trigger Kickoff Rutin' untuk menghasilkan daftar tugas pembuatan laporan bulanan bagi seluruh pelanggan rutin dengan batas waktu SLA 24 Jam."
+              actionLabel="Trigger Kickoff Sekarang"
+              onAction={() => {
+                setKickoffMonth(selectedMonth);
+                setKickoffYear(selectedYear);
+                setIsKickoffModalOpen(true);
+              }}
+            />
+          </div>
+        ) : filteredTasks.length === 0 ? (
+          <div className="p-8">
+            <EmptyState
+              icon={Search}
+              title="Tidak Ada Tugas yang Sesuai Filter"
+              description="Coba ubah kata kunci pencarian atau tab status filter."
+              actionLabel="Reset Filter"
+              onAction={() => {
+                setStatusFilter('ALL');
+                setSearchQuery('');
+              }}
+            />
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-12 text-center">No</TableHead>
+                  <TableHead>Pelanggan</TableHead>
+                  <TableHead>Service ID & Paket</TableHead>
+                  <TableHead>Tipe Laporan</TableHead>
+                  <TableHead>Waktu Kickoff & Batas SLA</TableHead>
+                  <TableHead className="text-center">Status</TableHead>
+                  <TableHead className="text-right">Aksi</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredTasks.map((t, idx) => {
+                  const kickoffDate = new Date(t.kickoffTime);
+                  const deadlineDate = new Date(t.deadlineTime);
+
+                  return (
+                    <TableRow key={t.id} className="hover:bg-slate-50/70">
+                      <TableCell className="text-center text-slate-400 text-xs tabular-nums">
+                        {idx + 1}
+                      </TableCell>
+
+                      {/* Pelanggan */}
+                      <TableCell>
+                        <div className="font-semibold text-slate-900 text-xs">{t.customerName}</div>
+                        <div className="text-[11px] text-slate-500 font-mono">{t.customerId}</div>
+                      </TableCell>
+
+                      {/* Service ID & Plan */}
+                      <TableCell>
+                        <div className="text-xs font-mono font-medium text-slate-800">{t.serviceId}</div>
+                        <div className="text-[11px] text-slate-500">{t.serviceName}</div>
+                      </TableCell>
+
+                      {/* Tipe Laporan */}
+                      <TableCell>
+                        <Badge
+                          variant={t.reportType === 'SLA' ? 'info' : t.reportType === 'MRTG' ? 'warning' : 'neutral'}
+                        >
+                          {t.reportType === 'BOTH' ? 'SLA & MRTG' : t.reportType}
+                        </Badge>
+                      </TableCell>
+
+                      {/* Kickoff & SLA */}
+                      <TableCell>
+                        <div className="text-xs text-slate-700">
+                          {kickoffDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}{' '}
+                          {kickoffDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB
+                        </div>
+                        <div className="text-[11px] text-slate-500 flex items-center gap-1">
+                          <span>Batas:</span>
+                          <span className="font-semibold text-rose-700">
+                            {deadlineDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}{' '}
+                            {deadlineDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB
+                          </span>
+                        </div>
+                      </TableCell>
+
+                      {/* Status */}
+                      <TableCell className="text-center">
+                        {t.status === 'COMPLETED' ? (
+                          <div className="inline-flex flex-col items-center">
+                            <Badge variant="success">✓ Selesai</Badge>
+                            {t.processedByName && (
+                              <span className="text-[10px] text-slate-500 mt-0.5">
+                                oleh {t.processedByName}
+                              </span>
+                            )}
+                          </div>
+                        ) : t.status === 'BREACHED' ? (
+                          <div className="inline-flex flex-col items-center">
+                            <Badge variant="destructive">⚠️ Melewati SLA</Badge>
+                            <span className="text-[10px] text-rose-600 mt-0.5">Belum Selesai</span>
+                          </div>
+                        ) : (
+                          <div className="inline-flex flex-col items-center">
+                            <Badge variant="warning">⏳ Menunggu</Badge>
+                            <span className="text-[10px] text-amber-700 mt-0.5">Dalam 24 Jam</span>
+                          </div>
+                        )}
+                      </TableCell>
+
+                      {/* Action */}
+                      <TableCell className="text-right whitespace-nowrap">
+                        <div className="flex items-center justify-end gap-1.5">
+                          {t.status !== 'COMPLETED' ? (
+                            <Link
+                              href={`/?customerId=${encodeURIComponent(t.customerId)}&customerName=${encodeURIComponent(
+                                t.customerName
+                              )}&serviceId=${encodeURIComponent(t.serviceId)}&month=${t.periodMonth}&year=${
+                                t.periodYear
+                              }&type=${t.reportType === 'MRTG' ? 'MRTG' : 'SLA'}&scheduleTaskId=${t.id}`}
+                              className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-[#EA580C] hover:bg-[#C2410C] text-white rounded-md text-xs font-semibold shadow-xs transition-colors"
+                              title="Buka di Report Generator"
+                            >
+                              <span>Kerjakan Tugas</span>
+                              <ExternalLink className="w-3 h-3" />
+                            </Link>
+                          ) : (
+                            <div className="flex items-center gap-1">
+                              <span className="text-xs text-emerald-600 font-medium px-2 py-1">
+                                Tuntas
+                              </span>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleToggleTaskStatus(t, 'PENDING')}
+                                className="text-[11px] h-7 px-2 text-slate-500 hover:text-slate-800"
+                                title="Buka kembali tugas"
+                              >
+                                Reopen
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        )}
       </div>
+
+      {/* Kickoff Confirmation Modal */}
+      <Dialog open={isKickoffModalOpen} onOpenChange={setIsKickoffModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Play className="w-4 h-4 text-[#EA580C] fill-current" />
+              <span>Inisiasi Kickoff Laporan Rutin</span>
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <p className="text-xs text-slate-600 leading-relaxed">
+              Memulai proses kickoff akan mengompilasi seluruh pelanggan dengan tanda <b>Wajib Laporan Rutin Bulanan</b>, menghitung batas SLA 24 Jam, dan mengirimkan siaran otomatis ke grup Telegram Tim.
+            </p>
+
+            <div className="grid grid-cols-2 gap-3">
+              <FormField label="Periode Bulan">
+                <Select
+                  value={String(kickoffMonth)}
+                  onValueChange={(val) => setKickoffMonth(parseInt(val, 10))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Bulan" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {monthNames.map((m, idx) => (
+                      <SelectItem key={idx + 1} value={String(idx + 1)}>
+                        {m}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </FormField>
+
+              <FormField label="Periode Tahun">
+                <Select
+                  value={String(kickoffYear)}
+                  onValueChange={(val) => setKickoffYear(parseInt(val, 10))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Tahun" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[2024, 2025, 2026, 2027].map((y) => (
+                      <SelectItem key={y} value={String(y)}>
+                        {y}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </FormField>
+            </div>
+
+            <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-2">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="includeAll"
+                  checked={includeAllCustomers}
+                  onCheckedChange={(checked) => setIncludeAllCustomers(Boolean(checked))}
+                />
+                <label
+                  htmlFor="includeAll"
+                  className="text-xs font-medium text-slate-700 cursor-pointer select-none"
+                >
+                  Sertakan semua pelanggan jika belum ada yang ditandai rutin
+                </label>
+              </div>
+              <p className="text-[11px] text-slate-500 pl-6">
+                Centang ini jika Anda belum sempat menandai pelanggan rutin satu per satu di Direktori Pelanggan.
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter className="pt-3 border-t border-slate-100">
+            <Button
+              variant="secondary"
+              onClick={() => setIsKickoffModalOpen(false)}
+              disabled={isSubmittingKickoff}
+            >
+              Batal
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleKickoffSubmit}
+              loading={isSubmittingKickoff}
+              className="bg-[#EA580C] hover:bg-[#C2410C]"
+            >
+              Mulai Kickoff Sekarang
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -62,7 +62,7 @@ export default function CustomersPage() {
   const [customers, setCustomers] = useState<CustomerData[]>([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
-  const [filterTab, setFilterTab] = useState<'ALL' | 'HAS_CACTI' | 'HAS_PRTG' | 'HAS_BOTH' | 'NO_GRAPH'>('ALL');
+  const [filterTab, setFilterTab] = useState<'ALL' | 'ROUTINE' | 'HAS_CACTI' | 'HAS_PRTG' | 'HAS_BOTH' | 'NO_GRAPH'>('ALL');
   const [serviceFilter, setServiceFilter] = useState<string>('ALL');
   const [slaFilter, setSlaFilter] = useState<'ALL' | '99.5' | '98' | '95' | 'NO_SLA'>('ALL');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -298,6 +298,7 @@ export default function CustomersPage() {
         (c.graphId && c.graphId.toLowerCase().includes(q));
 
       if (!matchesSearch) return false;
+      if (filterTab === 'ROUTINE' && !c.isMonthlyRoutine) return false;
       if (filterTab === 'HAS_CACTI' && !hasCacti) return false;
       if (filterTab === 'HAS_PRTG' && !hasPrtg) return false;
       if (filterTab === 'HAS_BOTH' && (!hasCacti || !hasPrtg)) return false;
@@ -315,6 +316,7 @@ export default function CustomersPage() {
   }, [customers, search, filterTab, serviceFilter, slaFilter]);
 
   // Counters
+  const countRoutine = customers.filter((c) => Boolean(c.isMonthlyRoutine)).length;
   const countWithCacti = customers.filter(
     (c) => Boolean(c.cactiGraphId || (c.graphType === 'MRTG' && c.graphId))
   ).length;
@@ -438,6 +440,7 @@ export default function CustomersPage() {
 
   const filterOptions: { id: typeof filterTab; label: string; count: number }[] = [
     { id: 'ALL', label: 'All', count: customers.length },
+    { id: 'ROUTINE', label: 'Wajib Bulanan', count: countRoutine },
     { id: 'HAS_CACTI', label: 'Has Cacti', count: countWithCacti },
     { id: 'HAS_PRTG', label: 'Has PRTG', count: countWithPrtg },
     { id: 'HAS_BOTH', label: 'Dual Engine', count: countWithBoth },
@@ -878,7 +881,19 @@ export default function CustomersPage() {
                       <TableCell className="text-center text-slate-400 text-[11px] tabular-nums">
                         {startIndex + idx + 1}
                       </TableCell>
-                      <TableCell className="font-semibold text-slate-900">{c.customerName}</TableCell>
+                      <TableCell className="font-semibold text-slate-900">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span>{c.customerName}</span>
+                          {c.isMonthlyRoutine && (
+                            <span
+                              className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-orange-100 text-[#EA580C] border border-orange-200"
+                              title={`Wajib Laporan Bulanan (${c.routineReportType || 'SLA'})`}
+                            >
+                              📅 {c.routineReportType || 'SLA'}
+                            </span>
+                          )}
+                        </div>
+                      </TableCell>
                       <TableCell className="text-slate-600 text-xs tabular-nums">{c.customerId}</TableCell>
                       <TableCell className="text-slate-600 text-xs tabular-nums">{c.serviceId}</TableCell>
                       <TableCell className="text-slate-700">

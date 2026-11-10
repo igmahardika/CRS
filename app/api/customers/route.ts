@@ -89,6 +89,8 @@ export async function POST(req: NextRequest) {
         cactiGraphId: effectiveCactiId || null,
         prtgSensorId: effectivePrtgId || null,
         trafficDirection: trafficDirection || 'NORMAL',
+        isMonthlyRoutine: Boolean(body.isMonthlyRoutine),
+        routineReportType: body.routineReportType || 'SLA',
       },
     });
 
@@ -124,6 +126,8 @@ export async function PUT(req: NextRequest) {
         targetSla: (data.targetSla !== undefined && data.targetSla !== '' && !isNaN(parseFloat(data.targetSla)))
           ? parseFloat(data.targetSla)
           : (data.serviceName ? getSlaByServiceName(data.serviceName).targetSla : undefined),
+        isMonthlyRoutine: data.isMonthlyRoutine !== undefined ? Boolean(data.isMonthlyRoutine) : undefined,
+        routineReportType: data.routineReportType !== undefined ? String(data.routineReportType) : undefined,
       },
     });
 

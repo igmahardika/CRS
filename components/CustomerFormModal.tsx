@@ -17,6 +17,7 @@ import {
   SelectItem,
   SegmentedControl,
   Badge,
+  Checkbox,
 } from '@/components/ui';
 import { extractNodeFromServiceId, getSlaByServiceName } from '@/lib/customer-utils';
 
@@ -33,6 +34,8 @@ export interface CustomerData {
   cactiGraphId?: string | null;
   prtgSensorId?: string | null;
   trafficDirection?: string;
+  isMonthlyRoutine?: boolean;
+  routineReportType?: 'SLA' | 'MRTG' | 'BOTH';
 }
 
 export interface CustomerFormModalProps {
@@ -60,6 +63,8 @@ export default function CustomerFormModal({
     cactiGraphId: '',
     prtgSensorId: '',
     trafficDirection: 'NORMAL',
+    isMonthlyRoutine: false,
+    routineReportType: 'SLA',
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -72,6 +77,8 @@ export default function CustomerFormModal({
         cactiGraphId: initialData.cactiGraphId || '',
         prtgSensorId: initialData.prtgSensorId || '',
         trafficDirection: initialData.trafficDirection || 'NORMAL',
+        isMonthlyRoutine: initialData.isMonthlyRoutine ?? false,
+        routineReportType: initialData.routineReportType || 'SLA',
       });
     } else {
       setFormData({
@@ -86,6 +93,8 @@ export default function CustomerFormModal({
         cactiGraphId: '',
         prtgSensorId: '',
         trafficDirection: 'NORMAL',
+        isMonthlyRoutine: false,
+        routineReportType: 'SLA',
       });
     }
     setErrorMsg(null);
@@ -275,6 +284,54 @@ export default function CustomerFormModal({
                 </SelectContent>
               </Select>
             </FormField>
+          </div>
+
+          <div className="p-3.5 bg-orange-50/60 rounded-xl border border-orange-200/80 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2.5">
+                <Checkbox
+                  id="isMonthlyRoutine"
+                  checked={formData.isMonthlyRoutine || false}
+                  onCheckedChange={(checked) =>
+                    setFormData({ ...formData, isMonthlyRoutine: Boolean(checked) })
+                  }
+                />
+                <label
+                  htmlFor="isMonthlyRoutine"
+                  className="text-[13px] font-medium text-slate-800 cursor-pointer select-none"
+                >
+                  Wajib Laporan Rutin Bulanan
+                </label>
+              </div>
+              <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-orange-100 text-orange-700">
+                Kickoff Tgl 1
+              </span>
+            </div>
+            <p className="text-[12px] text-slate-500 leading-relaxed pl-6">
+              Pelanggan ini otomatis masuk antrean tugas SLA 24 Jam setiap tanggal 1 bulan baru untuk periode bulan sebelumnya.
+            </p>
+
+            {formData.isMonthlyRoutine && (
+              <div className="pt-2 border-t border-orange-200/50 pl-6">
+                <FormField label="Tipe Laporan Rutin">
+                  <Select
+                    value={formData.routineReportType || 'SLA'}
+                    onValueChange={(val) =>
+                      setFormData({ ...formData, routineReportType: val as 'SLA' | 'MRTG' | 'BOTH' })
+                    }
+                  >
+                    <SelectTrigger className="bg-white">
+                      <SelectValue placeholder="Pilih Tipe Laporan" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="SLA">Laporan SLA Saja</SelectItem>
+                      <SelectItem value="MRTG">Laporan MRTG/Traffic Saja</SelectItem>
+                      <SelectItem value="BOTH">Keduanya (SLA & MRTG)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </FormField>
+              </div>
+            )}
           </div>
 
           <DialogFooter className="pt-4 border-t border-slate-100">
