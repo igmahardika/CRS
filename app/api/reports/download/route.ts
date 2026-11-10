@@ -28,6 +28,14 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Report not found' }, { status: 404 });
     }
 
+    // Role-based download gate: Only APPROVED reports can be downloaded publicly.
+    // PENDING_APPROVAL or REVISION_NEEDED can only be previewed by SUPERVISOR or ADMIN.
+    if (report.status !== 'APPROVED' && auth.session.role !== 'ADMIN' && auth.session.role !== 'SUPERVISOR') {
+      return NextResponse.json({
+        error: `Laporan ini belum disetujui oleh Supervisor (Status saat ini: ${report.status}). Hubungi Supervisor untuk proses approval sebelum mengunduh.`,
+      }, { status: 403 });
+    }
+
     const storageDir = path.resolve(process.cwd(), 'storage', 'reports');
     if (!fs.existsSync(storageDir)) {
       fs.mkdirSync(storageDir, { recursive: true });

@@ -6,6 +6,7 @@ import { generatePdfBuffer } from '@/lib/pdf-generator';
 import { ReportData } from '@/lib/pdf-template';
 import { requireAuth, requireOperatorOrAdmin } from '@/lib/auth';
 import { calculateSla, CaseItem, TicketItem } from '@/lib/sla-calculator';
+import { sendTelegramNotification } from '@/lib/telegram';
 
 export async function GET() {
   const auth = await requireAuth();
@@ -71,6 +72,10 @@ export async function POST(req: NextRequest) {
       : computedSla.totalDowntimeMinutes;
     const downtimeDurationStr = body.downtimeDurationStr || computedSla.downtimeDurationStr;
 
+    // Determine approval status
+    const isDirectApprove = Boolean(body.directApprove) && (auth.session.role === 'ADMIN' || auth.session.role === 'SUPERVISOR');
+    const initialStatus = isDirectApprove ? 'APPROVED' : 'PENDING_APPROVAL';
+
     // 1. Create database record
     const created = await prisma.report.create({
       data: {
@@ -104,8 +109,45 @@ export async function POST(req: NextRequest) {
         downtimeDurationStr,
         tickets: body.tickets ? (typeof body.tickets === 'string' ? body.tickets : JSON.stringify(body.tickets)) : null,
         cases: body.cases ? (typeof body.cases === 'string' ? body.cases : JSON.stringify(body.cases)) : null,
+        status: initialStatus,
+        generatedById: auth.session.id,
+        generatedByName: auth.session.name,
+        approvedById: isDirectApprove ? auth.session.id : null,
+        approvedByName: isDirectApprove ? auth.session.name : null,
+        approvedAt: isDirectApprove ? new Date() : null,
       },
     });
+
+    // Notify Telegram topic about new report
+    const nowStr = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
+    if (initialStatus === 'PENDING_APPROVAL') {
+      sendTelegramNotification({
+        text:
+          `📋 <b>[LAPORAN MASUK ANTRIAN APPROVAL]</b>\n\n` +
+          `• <b>Pelanggan:</b> ${body.customerName}\n` +
+          `• <b>Service ID:</b> <code>${body.serviceId}</code>\n` +
+          `• <b>Tipe:</b> ${body.reportType} (${body.graphType || 'MRTG'})\n` +
+          `• <b>Periode:</b> ${body.reportPeriod}\n` +
+          `• <b>No. Dokumen:</b> <code>${body.documentNumber}</code>\n` +
+          `• <b>Dibuat oleh:</b> ${auth.session.name} (${auth.session.role})\n` +
+          `• <b>Waktu:</b> ${nowStr} WIB\n` +
+          `• <b>Status:</b> ⏳ <b>Menunggu Approval Supervisor</b>\n\n` +
+          `<i>Silakan tinjau dan setujui laporan melalui menu Riwayat & Approval Laporan.</i>`,
+      }).catch((e) => console.error('[Telegram Notify Report Created Error]', e));
+    } else {
+      sendTelegramNotification({
+        text:
+          `✅ <b>[LAPORAN SELESAI & DISETUJUI LANGSUNG]</b>\n\n` +
+          `• <b>Pelanggan:</b> ${body.customerName}\n` +
+          `• <b>Service ID:</b> <code>${body.serviceId}</code>\n` +
+          `• <b>Tipe:</b> ${body.reportType} (${body.graphType || 'MRTG'})\n` +
+          `• <b>Periode:</b> ${body.reportPeriod}\n` +
+          `• <b>No. Dokumen:</b> <code>${body.documentNumber}</code>\n` +
+          `• <b>Dibuat & Disetujui:</b> ${auth.session.name} (${auth.session.role})\n` +
+          `• <b>Waktu:</b> ${nowStr} WIB\n` +
+          `• <b>Status:</b> ✅ <b>Approved (Siap Kirim)</b>`,
+      }).catch((e) => console.error('[Telegram Notify Report Approved Error]', e));
+    }
 
     // 2. Generate and save physical PDF to disk
     try {

@@ -57,6 +57,13 @@ model Report {
   tickets              String?  // JSON string
   cases                String?  // JSON string
   pdfPath              String?
+  status               String   @default("PENDING_APPROVAL") // PENDING_APPROVAL, APPROVED, REVISION_NEEDED
+  generatedById        String?
+  generatedByName      String?
+  approvedById         String?
+  approvedByName       String?
+  approvedAt           DateTime?
+  rejectionNotes       String?
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 }

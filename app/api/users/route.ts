@@ -83,8 +83,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const validRoles = ['ADMIN', 'OPERATOR', 'VIEWER'];
-    const assignedRole = validRoles.includes(role) ? role : 'OPERATOR';
+    const validRoles = ['ADMIN', 'SUPERVISOR', 'STAFF', 'OPERATOR', 'VIEWER', 'REQUESTER'];
+    const assignedRole = validRoles.includes(role) ? role : 'STAFF';
 
     const { hash, salt } = hashPassword(password);
 
@@ -160,7 +160,7 @@ export async function PUT(req: NextRequest) {
     const updateData: Record<string, unknown> = {};
     if (name) updateData.name = String(name).trim();
     if (email !== undefined) updateData.email = email ? String(email).trim().toLowerCase() : null;
-    if (role && ['ADMIN', 'OPERATOR', 'VIEWER'].includes(role)) updateData.role = role;
+    if (role && ['ADMIN', 'SUPERVISOR', 'STAFF', 'OPERATOR', 'VIEWER', 'REQUESTER'].includes(role)) updateData.role = role;
     if (isActive !== undefined) updateData.isActive = Boolean(isActive);
 
     if (newPassword && String(newPassword).trim()) {

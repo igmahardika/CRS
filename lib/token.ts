@@ -5,7 +5,7 @@ export interface UserSession {
   username: string;
   name: string;
   email?: string | null;
-  role: 'ADMIN' | 'OPERATOR' | 'VIEWER';
+  role: 'ADMIN' | 'SUPERVISOR' | 'STAFF' | 'OPERATOR' | 'VIEWER' | 'REQUESTER';
 }
 
 export const AUTH_COOKIE_NAME = 'genre_auth_token';

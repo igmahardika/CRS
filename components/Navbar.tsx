@@ -31,7 +31,7 @@ interface CurrentUser {
   username: string;
   name: string;
   email: string | null;
-  role: 'ADMIN' | 'OPERATOR' | 'VIEWER';
+  role: 'ADMIN' | 'SUPERVISOR' | 'STAFF' | 'REQUESTER' | 'OPERATOR' | 'VIEWER';
 }
 
 export default function Navbar() {
@@ -76,11 +76,11 @@ export default function Navbar() {
   };
 
   const baseNavItems = [
-    { href: '/', label: 'Generator', icon: FileText, roles: ['ADMIN', 'OPERATOR', 'VIEWER'] },
-    { href: '/customers', label: 'Customers', icon: Users, roles: ['ADMIN', 'OPERATOR'] },
-    { href: '/history', label: 'History', icon: History, roles: ['ADMIN', 'OPERATOR', 'VIEWER'] },
-    { href: '/discovery', label: 'Discovery', icon: Radio, roles: ['ADMIN', 'OPERATOR'] },
-    { href: '/users', label: 'Users', icon: UserCheck, roles: ['ADMIN'] },
+    { href: '/', label: 'Generator', icon: FileText, roles: ['ADMIN', 'SUPERVISOR', 'STAFF', 'OPERATOR', 'VIEWER'] },
+    { href: '/customers', label: 'Customers', icon: Users, roles: ['ADMIN', 'SUPERVISOR', 'STAFF', 'OPERATOR'] },
+    { href: '/history', label: 'History & Approval', icon: History, roles: ['ADMIN', 'SUPERVISOR', 'STAFF', 'OPERATOR', 'VIEWER'] },
+    { href: '/discovery', label: 'Discovery', icon: Radio, roles: ['ADMIN', 'SUPERVISOR', 'STAFF', 'OPERATOR'] },
+    { href: '/users', label: 'Users', icon: UserCheck, roles: ['ADMIN', 'SUPERVISOR'] },
     { href: '/settings', label: 'Settings', icon: Settings, roles: ['ADMIN'] },
   ];
 

@@ -53,7 +53,7 @@ interface UserData {
   username: string;
   name: string;
   email: string | null;
-  role: 'ADMIN' | 'OPERATOR' | 'VIEWER';
+  role: 'ADMIN' | 'SUPERVISOR' | 'STAFF' | 'REQUESTER' | 'OPERATOR' | 'VIEWER';
   isActive: boolean;
   lastLogin: string | null;
   createdAt: string;
@@ -63,7 +63,7 @@ export default function UsersManagementPage() {
   const [users, setUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
-  const [roleFilter, setRoleFilter] = useState<'ALL' | 'ADMIN' | 'OPERATOR' | 'VIEWER'>('ALL');
+  const [roleFilter, setRoleFilter] = useState<'ALL' | 'ADMIN' | 'SUPERVISOR' | 'STAFF' | 'REQUESTER' | 'VIEWER' | 'OPERATOR'>('ALL');
 
   // Modal States
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -80,7 +80,7 @@ export default function UsersManagementPage() {
     name: '',
     email: '',
     password: '',
-    role: 'OPERATOR' as 'ADMIN' | 'OPERATOR' | 'VIEWER',
+    role: 'STAFF' as 'ADMIN' | 'SUPERVISOR' | 'STAFF' | 'REQUESTER' | 'OPERATOR' | 'VIEWER',
     isActive: true,
   });
   const [newPassword, setNewPassword] = useState('');
@@ -126,6 +126,9 @@ export default function UsersManagementPage() {
 
   // Role counters
   const adminCount = users.filter((u) => u.role === 'ADMIN').length;
+  const supervisorCount = users.filter((u) => u.role === 'SUPERVISOR').length;
+  const staffCount = users.filter((u) => u.role === 'STAFF').length;
+  const requesterCount = users.filter((u) => u.role === 'REQUESTER').length;
   const operatorCount = users.filter((u) => u.role === 'OPERATOR').length;
   const viewerCount = users.filter((u) => u.role === 'VIEWER').length;
 
@@ -262,8 +265,14 @@ export default function UsersManagementPage() {
     switch (role) {
       case 'ADMIN':
         return <Badge variant="neutral">Administrator</Badge>;
+      case 'SUPERVISOR':
+        return <Badge variant="info">Supervisor</Badge>;
+      case 'STAFF':
+        return <Badge variant="warning">Staff</Badge>;
+      case 'REQUESTER':
+        return <Badge variant="soft">Requester</Badge>;
       case 'OPERATOR':
-        return <Badge variant="neutral">Operator</Badge>;
+        return <Badge variant="soft">Operator</Badge>;
       case 'VIEWER':
       default:
         return <Badge variant="neutral">Viewer</Badge>;
@@ -275,11 +284,11 @@ export default function UsersManagementPage() {
       {/* Standard Page Header with single primary button */}
       <PageHeader
         title="User Management"
-        description="Configure system accounts, credentials, and role-based access permissions."
+        description="Kelola akun pengguna, hak akses jabatan (Staff, Supervisor, Admin), dan kredensial."
         breadcrumb={
           <Link href="/" className="hover:text-slate-800 flex items-center gap-1 font-medium text-slate-500">
             <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Back to Generator</span>
+            <span>Kembali ke Generator</span>
           </Link>
         }
         actions={
@@ -289,17 +298,17 @@ export default function UsersManagementPage() {
             onClick={() => setIsCreateModalOpen(true)}
           >
             <UserPlus className="w-3.5 h-3.5 mr-1.5" />
-            <span>Add User</span>
+            <span>Tambah User</span>
           </Button>
         }
       />
 
       {/* Role Stat Cards (Consistent single slate chip style) */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-        <StatCard label="Total Accounts" value={users.length} icon={Users} subtext="Registered users" />
-        <StatCard label="Administrators" value={adminCount} icon={Shield} subtext="Full permissions" />
-        <StatCard label="Operators" value={operatorCount} icon={Sliders} subtext="Report & master access" />
-        <StatCard label="Viewers" value={viewerCount} icon={Eye} subtext="Read-only access" />
+        <StatCard label="Total Akun" value={users.length} icon={Users} subtext="Pengguna terdaftar" />
+        <StatCard label="Staff" value={staffCount} icon={Sliders} subtext="Generator & pembuat" />
+        <StatCard label="Supervisor" value={supervisorCount} icon={Shield} subtext="Verifikasi & approval" />
+        <StatCard label="Administrator" value={adminCount} icon={Shield} subtext="Akses penuh sistem" />
       </div>
 
       {/* Feedback Banner */}
@@ -355,7 +364,7 @@ export default function UsersManagementPage() {
         </div>
 
         {/* Role Tabs */}
-        <div className="flex items-center gap-1 self-start md:self-auto">
+        <div className="flex flex-wrap items-center gap-1 self-start md:self-auto">
           {(search || roleFilter !== 'ALL') && (
             <Button
               variant="ghost"
@@ -377,11 +386,35 @@ export default function UsersManagementPage() {
             onClick={() => setRoleFilter('ALL')}
             className={
               roleFilter === 'ALL'
-                ? 'bg-slate-900 text-white hover:bg-slate-800 hover:text-white border-slate-900 h-8 px-3 text-xs font-semibold'
-                : 'text-slate-600 hover:bg-slate-100 h-8 px-3 text-xs'
+                ? 'bg-slate-900 text-white hover:bg-slate-800 hover:text-white border-slate-900 h-8 px-2.5 text-xs font-semibold'
+                : 'text-slate-600 hover:bg-slate-100 h-8 px-2.5 text-xs'
             }
           >
-            <span>All ({users.length})</span>
+            <span>Semua ({users.length})</span>
+          </Button>
+          <Button
+            variant={roleFilter === 'STAFF' ? 'secondary' : 'ghost'}
+            size="sm"
+            onClick={() => setRoleFilter('STAFF')}
+            className={
+              roleFilter === 'STAFF'
+                ? 'bg-slate-900 text-white hover:bg-slate-800 hover:text-white border-slate-900 h-8 px-2.5 text-xs font-semibold'
+                : 'text-slate-600 hover:bg-slate-100 h-8 px-2.5 text-xs'
+            }
+          >
+            <span>Staff ({staffCount})</span>
+          </Button>
+          <Button
+            variant={roleFilter === 'SUPERVISOR' ? 'secondary' : 'ghost'}
+            size="sm"
+            onClick={() => setRoleFilter('SUPERVISOR')}
+            className={
+              roleFilter === 'SUPERVISOR'
+                ? 'bg-slate-900 text-white hover:bg-slate-800 hover:text-white border-slate-900 h-8 px-2.5 text-xs font-semibold'
+                : 'text-slate-600 hover:bg-slate-100 h-8 px-2.5 text-xs'
+            }
+          >
+            <span>Supervisor ({supervisorCount})</span>
           </Button>
           <Button
             variant={roleFilter === 'ADMIN' ? 'secondary' : 'ghost'}
@@ -389,35 +422,23 @@ export default function UsersManagementPage() {
             onClick={() => setRoleFilter('ADMIN')}
             className={
               roleFilter === 'ADMIN'
-                ? 'bg-slate-900 text-white hover:bg-slate-800 hover:text-white border-slate-900 h-8 px-3 text-xs font-semibold'
-                : 'text-slate-600 hover:bg-slate-100 h-8 px-3 text-xs'
+                ? 'bg-slate-900 text-white hover:bg-slate-800 hover:text-white border-slate-900 h-8 px-2.5 text-xs font-semibold'
+                : 'text-slate-600 hover:bg-slate-100 h-8 px-2.5 text-xs'
             }
           >
             <span>Admin ({adminCount})</span>
           </Button>
           <Button
-            variant={roleFilter === 'OPERATOR' ? 'secondary' : 'ghost'}
+            variant={roleFilter === 'REQUESTER' ? 'secondary' : 'ghost'}
             size="sm"
-            onClick={() => setRoleFilter('OPERATOR')}
+            onClick={() => setRoleFilter('REQUESTER')}
             className={
-              roleFilter === 'OPERATOR'
-                ? 'bg-slate-900 text-white hover:bg-slate-800 hover:text-white border-slate-900 h-8 px-3 text-xs font-semibold'
-                : 'text-slate-600 hover:bg-slate-100 h-8 px-3 text-xs'
+              roleFilter === 'REQUESTER'
+                ? 'bg-slate-900 text-white hover:bg-slate-800 hover:text-white border-slate-900 h-8 px-2.5 text-xs font-semibold'
+                : 'text-slate-600 hover:bg-slate-100 h-8 px-2.5 text-xs'
             }
           >
-            <span>Operator ({operatorCount})</span>
-          </Button>
-          <Button
-            variant={roleFilter === 'VIEWER' ? 'secondary' : 'ghost'}
-            size="sm"
-            onClick={() => setRoleFilter('VIEWER')}
-            className={
-              roleFilter === 'VIEWER'
-                ? 'bg-slate-900 text-white hover:bg-slate-800 hover:text-white border-slate-900 h-8 px-3 text-xs font-semibold'
-                : 'text-slate-600 hover:bg-slate-100 h-8 px-3 text-xs'
-            }
-          >
-            <span>Viewer ({viewerCount})</span>
+            <span>Requester ({requesterCount})</span>
           </Button>
         </div>
       </div>
@@ -603,19 +624,22 @@ export default function UsersManagementPage() {
               />
             </FormField>
 
-            <FormField label="Role Permission">
+            <FormField label="Role / Jabatan Pengguna">
               <Select
                 value={formData.role}
                 onValueChange={(val) =>
-                  setFormData({ ...formData, role: val as 'ADMIN' | 'OPERATOR' | 'VIEWER' })
+                  setFormData({ ...formData, role: val as 'ADMIN' | 'SUPERVISOR' | 'STAFF' | 'REQUESTER' | 'OPERATOR' | 'VIEWER' })
                 }
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select role" />
+                  <SelectValue placeholder="Pilih jabatan/role" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="OPERATOR">Operator (Report Generator & Master)</SelectItem>
-                  <SelectItem value="ADMIN">Administrator (Full Access)</SelectItem>
+                  <SelectItem value="STAFF">Staff (Report Generator & Input Data)</SelectItem>
+                  <SelectItem value="SUPERVISOR">Supervisor (Verifikasi & Approval Laporan)</SelectItem>
+                  <SelectItem value="ADMIN">Administrator (Akses Penuh Sistem)</SelectItem>
+                  <SelectItem value="REQUESTER">Requester (Form Request Laporan SLA/MRTG)</SelectItem>
+                  <SelectItem value="OPERATOR">Operator (Legacy Access)</SelectItem>
                   <SelectItem value="VIEWER">Viewer (Read-Only)</SelectItem>
                 </SelectContent>
               </Select>
@@ -657,23 +681,26 @@ export default function UsersManagementPage() {
                 />
               </FormField>
 
-              <FormField label="Role Permission">
+              <FormField label="Role / Jabatan Pengguna">
                 <Select
                   value={editingUser.role}
                   onValueChange={(val) =>
                     setEditingUser({
                       ...editingUser,
-                      role: val as 'ADMIN' | 'OPERATOR' | 'VIEWER',
+                      role: val as 'ADMIN' | 'SUPERVISOR' | 'STAFF' | 'REQUESTER' | 'OPERATOR' | 'VIEWER',
                     })
                   }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select role" />
+                    <SelectValue placeholder="Pilih jabatan/role" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="OPERATOR">Operator (Report Generator & Master)</SelectItem>
-                    <SelectItem value="ADMIN">Administrator (Full Access)</SelectItem>
-                    <SelectItem value="VIEWER">Viewer (Read-Only History)</SelectItem>
+                    <SelectItem value="STAFF">Staff (Report Generator & Input Data)</SelectItem>
+                    <SelectItem value="SUPERVISOR">Supervisor (Verifikasi & Approval Laporan)</SelectItem>
+                    <SelectItem value="ADMIN">Administrator (Akses Penuh Sistem)</SelectItem>
+                    <SelectItem value="REQUESTER">Requester (Form Request Laporan SLA/MRTG)</SelectItem>
+                    <SelectItem value="OPERATOR">Operator (Legacy Access)</SelectItem>
+                    <SelectItem value="VIEWER">Viewer (Read-Only)</SelectItem>
                   </SelectContent>
                 </Select>
               </FormField>

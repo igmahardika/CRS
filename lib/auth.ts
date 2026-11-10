@@ -62,7 +62,7 @@ export async function getSession(): Promise<UserSession | null> {
       username: user.username,
       name: user.name,
       email: user.email,
-      role: user.role as 'ADMIN' | 'OPERATOR' | 'VIEWER',
+      role: user.role as 'ADMIN' | 'SUPERVISOR' | 'STAFF' | 'OPERATOR' | 'VIEWER' | 'REQUESTER',
     };
   } catch {
     return null;
@@ -125,17 +125,35 @@ export async function requireAdmin(): Promise<AuthCheckResult> {
   return check;
 }
 
-export async function requireOperatorOrAdmin(): Promise<AuthCheckResult> {
+export async function requireSupervisorOrAdmin(): Promise<AuthCheckResult> {
   const check = await requireAuth();
   if (!check.authorized) return check;
-  if (check.session.role !== 'ADMIN' && check.session.role !== 'OPERATOR') {
+  if (check.session.role !== 'ADMIN' && check.session.role !== 'SUPERVISOR') {
     return {
       authorized: false,
-      error: 'Access denied: Read-only viewer accounts cannot modify records.',
+      error: 'Akses ditolak: Wewenang Supervisor atau Administrator diperlukan untuk tindakan ini.',
       status: 403,
     };
   }
   return check;
+}
+
+export async function requireOperatorOrAdmin(): Promise<AuthCheckResult> {
+  const check = await requireAuth();
+  if (!check.authorized) return check;
+  const role = check.session.role;
+  if (role !== 'ADMIN' && role !== 'SUPERVISOR' && role !== 'STAFF' && role !== 'OPERATOR') {
+    return {
+      authorized: false,
+      error: 'Access denied: Read-only accounts cannot modify records.',
+      status: 403,
+    };
+  }
+  return check;
+}
+
+export async function requireStaffOrAbove(): Promise<AuthCheckResult> {
+  return requireOperatorOrAdmin();
 }
 
 // ============================================================

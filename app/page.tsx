@@ -20,6 +20,7 @@ import {
   CheckCircle2,
   ExternalLink,
   History,
+  FileCheck,
 } from 'lucide-react';
 import Link from 'next/link';
 import LivePreview from '@/components/LivePreview';
@@ -98,8 +99,19 @@ function GeneratorPageContent() {
   } | null>(null);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [isSavingReport, setIsSavingReport] = useState(false);
-  const [savedDocInfo, setSavedDocInfo] = useState<{ docNum: string; id: string } | null>(null);
+  const [savedDocInfo, setSavedDocInfo] = useState<{ docNum: string; id: string; status?: string } | null>(null);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [currentUser, setCurrentUser] = useState<{ id: string; name: string; role: string } | null>(null);
+  const [directApprove, setDirectApprove] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/auth/me')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.user) setCurrentUser(data.user);
+      })
+      .catch(() => {});
+  }, []);
 
   const monthNames = [
     'January', 'February', 'March', 'April', 'May', 'June',
@@ -401,66 +413,10 @@ function GeneratorPageContent() {
     cases,
   };
 
-  // 5. Export PDF Handler (Instant Download)
-  const handleExportPdf = async () => {
-    setIsGeneratingPdf(true);
-    try {
-      const res = await fetch('/api/generate-pdf', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(currentReportData),
-      });
+  const isSupervisorOrAdmin = currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPERVISOR';
 
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || 'Failed to generate PDF');
-      }
-
-      const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `REPORT ${reportType} - ${customerName} - ${reportPeriod}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-
-      // Also ensure Graph ID is synced
-      autoSaveGraphIdToMaster(customerId, graphId, trafficDirection, graphEngine);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      toast.error(`Failed to export PDF: ${msg}`);
-    } finally {
-      setIsGeneratingPdf(false);
-    }
-  };
-
-  // Keyboard shortcut listener
-  const handleExportPdfRef = useRef(handleExportPdf);
-  handleExportPdfRef.current = handleExportPdf;
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Ctrl + Enter or Cmd + Enter: Trigger PDF export
-      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-        e.preventDefault();
-        handleExportPdfRef.current();
-      }
-
-      // Ctrl + Shift + K: Open Customer Modal
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'K' || e.key === 'k')) {
-        e.preventDefault();
-        setIsCustomerModalOpen(true);
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
-
-  // 6. Save report to history & Physical PDF Storage
-  const handleSaveReport = async () => {
+  // 5. Generate Report Handler (Saves to History & Dispatches Approval Workflow)
+  const handleGenerateReport = async () => {
     setIsSavingReport(true);
     setSavedDocInfo(null);
     try {
@@ -478,18 +434,22 @@ function GeneratorPageContent() {
           availabilityPercent: slaCalc.availabilityPercent,
           totalDowntimeMinutes: slaCalc.totalDowntimeMinutes,
           downtimeDurationStr: slaCalc.downtimeDurationStr,
+          directApprove: isSupervisorOrAdmin && directApprove,
         }),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || 'Failed to save report');
+        throw new Error(data.error || 'Failed to generate report');
       }
+
+      const reportStatus = data.report?.status || (isSupervisorOrAdmin && directApprove ? 'APPROVED' : 'PENDING_APPROVAL');
 
       setSavedDocInfo({
         docNum: currentReportData.documentNumber,
         id: data.report?.id || '',
+        status: reportStatus,
       });
 
       // Also ensure Graph ID is synced
@@ -497,14 +457,42 @@ function GeneratorPageContent() {
 
       // Auto update next doc number after save
       fetchNextDocNumber(month, year, reportType);
-      toast.success('Report saved and archived successfully');
+
+      if (reportStatus === 'APPROVED') {
+        toast.success('Laporan berhasil di-generate dan langsung disetujui (Approved)!');
+      } else {
+        toast.success('Laporan berhasil di-generate dan masuk antrean persetujuan Supervisor.');
+      }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      toast.error(`Failed to save report: ${msg}`);
+      toast.error(`Gagal membuat laporan: ${msg}`);
     } finally {
       setIsSavingReport(false);
     }
   };
+
+  // Keyboard shortcut listener
+  const handleGenerateReportRef = useRef(handleGenerateReport);
+  handleGenerateReportRef.current = handleGenerateReport;
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl + Enter or Cmd + Enter: Trigger Report Generation
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        handleGenerateReportRef.current();
+      }
+
+      // Ctrl + Shift + K: Open Customer Modal
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'K' || e.key === 'k')) {
+        e.preventDefault();
+        setIsCustomerModalOpen(true);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const dlDirectionLabel = trafficDirection === 'NORMAL' ? 'Inbound' : 'Outbound';
   const ulDirectionLabel = trafficDirection === 'NORMAL' ? 'Outbound' : 'Inbound';
@@ -1029,34 +1017,37 @@ function GeneratorPageContent() {
               <span>Reset</span>
             </Button>
 
-            <div className="flex items-center space-x-2">
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={handleSaveReport}
-                disabled={isSavingReport}
-              >
-                <Save className="w-3.5 h-3.5 mr-1.5" />
-                <span>{isSavingReport ? 'Archiving...' : 'Save & Archive PDF'}</span>
-              </Button>
+            <div className="flex items-center space-x-3">
+              {isSupervisorOrAdmin && (
+                <label className="flex items-center space-x-2 text-xs font-medium text-slate-700 cursor-pointer select-none bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={directApprove}
+                    onChange={(e) => setDirectApprove(e.target.checked)}
+                    className="w-3.5 h-3.5 text-[#EA580C] rounded border-slate-300 focus:ring-[#EA580C]"
+                  />
+                  <span>Langsung Setujui (Auto-Approve)</span>
+                </label>
+              )}
 
               <Button
                 type="button"
                 variant="primary"
-                onClick={handleExportPdf}
-                disabled={isGeneratingPdf}
-                title="Export Official A4 PDF Document (Ctrl+Enter)"
+                onClick={handleGenerateReport}
+                disabled={isSavingReport}
+                title="Generate Report (Ctrl+Enter)"
+                className="bg-[#EA580C] hover:bg-[#C2410C] text-white px-5 py-2 font-semibold shadow-xs"
               >
-                {isGeneratingPdf ? (
+                {isSavingReport ? (
                   <>
-                    <RefreshCw className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-                    <span>Exporting PDF...</span>
+                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                    <span>Generating Report...</span>
                   </>
                 ) : (
                   <>
-                    <Download className="w-3.5 h-3.5 mr-1.5" />
-                    <span>Export PDF</span>
-                    <kbd className="hidden sm:inline-block ml-1.5 text-[10px] bg-white/20 text-white px-1.5 py-0.5 rounded font-medium">
+                    <FileCheck className="w-4 h-4 mr-2" />
+                    <span>Generate Report</span>
+                    <kbd className="hidden sm:inline-block ml-2 text-[10px] bg-white/20 text-white px-1.5 py-0.5 rounded font-medium">
                       Ctrl+↵
                     </kbd>
                   </>
@@ -1071,7 +1062,11 @@ function GeneratorPageContent() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2 font-semibold">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                  <span>Report successfully saved to history and physical storage!</span>
+                  <span>
+                    {savedDocInfo.status === 'APPROVED'
+                      ? 'Laporan berhasil di-generate dan langsung disetujui (Approved)!'
+                      : 'Laporan berhasil di-generate dan masuk antrean persetujuan Supervisor!'}
+                  </span>
                 </div>
                 <Button
                   type="button"
@@ -1079,29 +1074,34 @@ function GeneratorPageContent() {
                   size="icon-sm"
                   onClick={() => setSavedDocInfo(null)}
                   className="h-6 w-6 text-emerald-600 hover:text-emerald-800 hover:bg-emerald-100/50"
-                  title="Dismiss notification"
+                  title="Tutup pemberitahuan"
                 >
                   ✕
                 </Button>
               </div>
               <p className="text-[11px] text-emerald-700">
-                Document <strong>{savedDocInfo.docNum}</strong> is permanently archived and available for instant download.
+                Dokumen <strong>{savedDocInfo.docNum}</strong> tersimpan di riwayat arsip.
+                {savedDocInfo.status === 'APPROVED'
+                  ? ' Dokumen resmi telah disetujui dan siap didistribusikan.'
+                  : ' Dokumen membutuhkan verifikasi Supervisor sebelum PDF resmi dapat didistribusikan.'}
               </p>
               <div className="pt-1 flex items-center space-x-3 text-[11px]">
                 <Link
                   href="/history"
                   className="font-semibold text-emerald-800 underline hover:text-emerald-950 flex items-center gap-1"
                 >
-                  <span>Open Report History</span>
+                  <span>Buka Riwayat & Approval Laporan</span>
                   <ExternalLink className="w-3 h-3" />
                 </Link>
-                <a
-                  href={`/api/reports/download?id=${savedDocInfo.id}`}
-                  className="font-semibold text-[#C2410C] underline hover:text-[#EA580C] flex items-center gap-1"
-                >
-                  <span>Download PDF</span>
-                  <Download className="w-3 h-3" />
-                </a>
+                {savedDocInfo.status === 'APPROVED' && (
+                  <a
+                    href={`/api/reports/download?id=${savedDocInfo.id}`}
+                    className="font-semibold text-[#C2410C] underline hover:text-[#EA580C] flex items-center gap-1"
+                  >
+                    <span>Download PDF</span>
+                    <Download className="w-3 h-3" />
+                  </a>
+                )}
               </div>
             </div>
           )}
@@ -1111,8 +1111,7 @@ function GeneratorPageContent() {
         <div className="xl:col-span-6 2xl:col-span-7 sticky top-20 h-[calc(100vh-6rem)]">
           <LivePreview
             data={currentReportData}
-            isGeneratingPdf={isGeneratingPdf}
-            onDownloadPdf={handleExportPdf}
+            isGeneratingPdf={isSavingReport}
           />
         </div>
       </div>
