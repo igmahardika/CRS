@@ -525,57 +525,35 @@ export function generateReportHtml(data: ReportData): string {
         Document Number : ${data.documentNumber}
       </div>
 
-      <!-- Section 1: Summary Report -->
+      <!-- Section 1: Summary Report & Service Availability -->
       <div>
-        <div class="section-title">Summary Report</div>
+        <div class="section-title">Summary Report & Service Availability</div>
       </div>
-      <div class="section-desc">Summary Report for ${data.customerName} ${data.reportPeriod}</div>
+      <div class="section-desc">Summary report & detailed service availability for ${data.customerName} ${data.reportPeriod}</div>
       <table class="data-table">
         <thead>
           <tr>
             <th style="width: 35px;">No</th>
-            <th style="text-align: left; padding-left: 10px;">Service Total</th>
+            <th style="width: 110px; text-align: left; padding-left: 8px;">Service ID</th>
+            <th style="text-align: left; padding-left: 8px;">Service Name</th>
             <th style="width: 50px;">Node</th>
-            <th style="width: 90px;">SLA Service</th>
+            <th style="width: 85px;">Target SLA</th>
+            <th style="width: 85px;">Availability</th>
           </tr>
         </thead>
         <tbody>
           <tr>
             <td>1</td>
-            <td style="text-align: left; padding-left: 10px;">${data.serviceName}</td>
+            <td style="text-align: left; padding-left: 8px;">${data.serviceId}</td>
+            <td style="text-align: left; padding-left: 8px;">${data.serviceName}</td>
             <td>${data.nodeCount}</td>
             <td>${data.targetSla > 0 ? `${data.targetSla}%` : '-'}</td>
-          </tr>
-          <tr class="total-row">
-            <td colspan="3" style="text-align: right; padding-right: 14px;">Total</td>
-            <td>${data.targetSla > 0 ? `${data.targetSla}%` : '-'}</td>
-          </tr>
-        </tbody>
-      </table>
-
-      <!-- Section 2: Service Availability -->
-      <div>
-        <div class="section-title">Service Availability</div>
-      </div>
-      <div class="section-desc">Detailed service availability for ${data.customerName} ${data.reportPeriod}</div>
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th style="width: 35px;">No</th>
-            <th style="text-align: left; padding-left: 10px;">Service ID</th>
-            <th style="width: 50px;">Node</th>
-            <th style="width: 90px;">Availability</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>1</td>
-            <td style="text-align: left; padding-left: 10px;">${data.serviceId}</td>
-            <td>${data.nodeCount}</td>
             <td>${slaCalc.availabilityPercent}%</td>
           </tr>
           <tr class="total-row">
             <td colspan="3" style="text-align: right; padding-right: 14px;">Total</td>
+            <td>${data.nodeCount}</td>
+            <td>${data.targetSla > 0 ? `${data.targetSla}%` : '-'}</td>
             <td>${slaCalc.availabilityPercent}%</td>
           </tr>
         </tbody>
@@ -762,57 +740,35 @@ export function generateReportHtml(data: ReportData): string {
         Document Number : ${data.documentNumber}
       </div>
 
-      <!-- Section 1: Summary Report -->
+      <!-- Section 1: Summary Report & Service Availability -->
       <div>
-        <div class="section-title">Summary Report</div>
+        <div class="section-title">Summary Report & Service Availability</div>
       </div>
-      <div class="section-desc">Summary Report for ${data.customerName} ${data.reportPeriod}</div>
+      <div class="section-desc">Summary report & detailed service availability for ${data.customerName} ${data.reportPeriod}</div>
       <table class="data-table">
         <thead>
           <tr>
             <th style="width: 35px;">No</th>
-            <th style="text-align: left; padding-left: 10px;">Service Total</th>
+            <th style="width: 110px; text-align: left; padding-left: 8px;">Service ID</th>
+            <th style="text-align: left; padding-left: 8px;">Service Name</th>
             <th style="width: 50px;">Node</th>
-            <th style="width: 90px;">SLA Service</th>
+            <th style="width: 85px;">Target SLA</th>
+            <th style="width: 85px;">Availability</th>
           </tr>
         </thead>
         <tbody>
           <tr>
             <td>1</td>
-            <td style="text-align: left; padding-left: 10px;">${data.serviceName}</td>
+            <td style="text-align: left; padding-left: 8px;">${data.serviceId}</td>
+            <td style="text-align: left; padding-left: 8px;">${data.serviceName}</td>
             <td>${data.nodeCount}</td>
             <td>${data.targetSla > 0 ? `${data.targetSla}%` : '-'}</td>
-          </tr>
-          <tr class="total-row">
-            <td colspan="3" style="text-align: right; padding-right: 14px;">Total</td>
-            <td>${data.targetSla > 0 ? `${data.targetSla}%` : '-'}</td>
-          </tr>
-        </tbody>
-      </table>
-
-      <!-- Section 2: Service Availability -->
-      <div>
-        <div class="section-title">Service Availability</div>
-      </div>
-      <div class="section-desc">Detailed service availability for ${data.customerName} ${data.reportPeriod}</div>
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th style="width: 35px;">No</th>
-            <th style="text-align: left; padding-left: 10px;">Service ID</th>
-            <th style="width: 50px;">Node</th>
-            <th style="width: 90px;">Availability</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>1</td>
-            <td style="text-align: left; padding-left: 10px;">${data.serviceId}</td>
-            <td>${data.nodeCount}</td>
             <td>${slaCalc.availabilityPercent}%</td>
           </tr>
           <tr class="total-row">
             <td colspan="3" style="text-align: right; padding-right: 14px;">Total</td>
+            <td>${data.nodeCount}</td>
+            <td>${data.targetSla > 0 ? `${data.targetSla}%` : '-'}</td>
             <td>${slaCalc.availabilityPercent}%</td>
           </tr>
         </tbody>

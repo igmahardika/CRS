@@ -366,65 +366,39 @@ export default function LivePreview({
                     {`Document Number : ${data.documentNumber}`}
                   </div>
 
-                  {/* Section 1 */}
+                  {/* Section 1: Summary Report & Service Availability */}
                   <div>
                     <div className="font-heading text-[11.5pt] font-bold text-black inline-block mt-0.5">
-                      Summary Report
+                      Summary Report &amp; Service Availability
                     </div>
                   </div>
                   <div className="text-[8.5pt] text-slate-700 mb-1 leading-tight">
-                    {`Summary Report for ${data.customerName} ${data.reportPeriod}`}
+                    {`Summary report & detailed service availability for ${data.customerName} ${data.reportPeriod}`}
                   </div>
                   <table className="w-full border-collapse border border-black text-[8.5pt] leading-[1.25] mb-1 text-center">
                     <thead>
                       <tr className="bg-white text-black font-bold">
                         <th className="border border-black py-1 px-1.5 w-[35px]">No</th>
-                        <th className="border border-black py-1 px-1.5 text-left pl-3">Service Total</th>
+                        <th className="border border-black py-1 px-1.5 text-left pl-2 w-[110px]">Service ID</th>
+                        <th className="border border-black py-1 px-1.5 text-left pl-2">Service Name</th>
                         <th className="border border-black py-1 px-1.5 w-[50px]">Node</th>
-                        <th className="border border-black py-1 px-1.5 w-[90px]">SLA Service</th>
+                        <th className="border border-black py-1 px-1.5 w-[85px]">Target SLA</th>
+                        <th className="border border-black py-1 px-1.5 w-[85px]">Availability</th>
                       </tr>
                     </thead>
                     <tbody>
                       <tr>
                         <td className="border border-black py-1">1</td>
-                        <td className="border border-black py-1 text-left pl-3">{data.serviceName}</td>
+                        <td className="border border-black py-1 text-left pl-2">{data.serviceId}</td>
+                        <td className="border border-black py-1 text-left pl-2">{data.serviceName}</td>
                         <td className="border border-black py-1">{data.nodeCount}</td>
                         <td className="border border-black py-1">{data.targetSla > 0 ? `${data.targetSla}%` : '-'}</td>
-                      </tr>
-                      <tr className="bg-white font-bold">
-                        <td colSpan={3} className="border border-black py-1 text-right pr-3.5">Total</td>
-                        <td className="border border-black py-1">{data.targetSla > 0 ? `${data.targetSla}%` : '-'}</td>
-                      </tr>
-                    </tbody>
-                  </table>
-
-                  {/* Section 2 */}
-                  <div className="mt-1.5">
-                    <div className="font-heading text-[11.5pt] font-bold text-black inline-block">
-                      Service Availability
-                    </div>
-                  </div>
-                  <div className="text-[8.5pt] text-slate-700 mb-1 leading-tight">
-                    {`Detailed service availability for ${data.customerName} ${data.reportPeriod}`}
-                  </div>
-                  <table className="w-full border-collapse border border-black text-[8.5pt] leading-[1.25] mb-1 text-center">
-                    <thead>
-                      <tr className="bg-white text-black font-bold">
-                        <th className="border border-black py-1 px-1.5 w-[35px]">No</th>
-                        <th className="border border-black py-1 px-1.5 text-left pl-3">Service ID</th>
-                        <th className="border border-black py-1 px-1.5 w-[50px]">Node</th>
-                        <th className="border border-black py-1 px-1.5 w-[90px]">Availability</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr>
-                        <td className="border border-black py-1">1</td>
-                        <td className="border border-black py-1 text-left pl-3">{data.serviceId}</td>
-                        <td className="border border-black py-1">{data.nodeCount}</td>
                         <td className="border border-black py-1">{`${slaCalc.availabilityPercent}%`}</td>
                       </tr>
                       <tr className="bg-white font-bold">
                         <td colSpan={3} className="border border-black py-1 text-right pr-3.5">Total</td>
+                        <td className="border border-black py-1">{data.nodeCount}</td>
+                        <td className="border border-black py-1">{data.targetSla > 0 ? `${data.targetSla}%` : '-'}</td>
                         <td className="border border-black py-1">{`${slaCalc.availabilityPercent}%`}</td>
                       </tr>
                     </tbody>
@@ -693,65 +667,39 @@ export default function LivePreview({
                     {`Document Number : ${data.documentNumber}`}
                   </div>
 
-                  {/* Section 1 */}
+                  {/* Section 1: Summary Report & Service Availability */}
                   <div>
                     <div className="font-heading text-[11.5pt] font-bold text-black inline-block">
-                      Summary Report
+                      Summary Report &amp; Service Availability
                     </div>
                   </div>
                   <div className="text-[8.5pt] text-slate-700 mb-1">
-                    {`Summary Report for ${data.customerName} ${data.reportPeriod}`}
+                    {`Summary report & detailed service availability for ${data.customerName} ${data.reportPeriod}`}
                   </div>
                   <table className="w-full border-collapse border border-black text-[8.5pt] mb-1 text-center">
                     <thead>
                       <tr className="bg-white text-black font-bold">
                         <th className="border border-black py-1 px-1.5 w-[35px]">No</th>
-                        <th className="border border-black py-1 px-1.5 text-left pl-3">Service Total</th>
+                        <th className="border border-black py-1 px-1.5 text-left pl-2 w-[110px]">Service ID</th>
+                        <th className="border border-black py-1 px-1.5 text-left pl-2">Service Name</th>
                         <th className="border border-black py-1 px-1.5 w-[50px]">Node</th>
-                        <th className="border border-black py-1 px-1.5 w-[90px]">SLA Service</th>
+                        <th className="border border-black py-1 px-1.5 w-[85px]">Target SLA</th>
+                        <th className="border border-black py-1 px-1.5 w-[85px]">Availability</th>
                       </tr>
                     </thead>
                     <tbody>
                       <tr>
                         <td className="border border-black py-1">1</td>
-                        <td className="border border-black py-1 text-left pl-3">{data.serviceName}</td>
+                        <td className="border border-black py-1 text-left pl-2">{data.serviceId}</td>
+                        <td className="border border-black py-1 text-left pl-2">{data.serviceName}</td>
                         <td className="border border-black py-1">{data.nodeCount}</td>
                         <td className="border border-black py-1">{data.targetSla > 0 ? `${data.targetSla}%` : '-'}</td>
-                      </tr>
-                      <tr className="bg-white font-bold">
-                        <td colSpan={3} className="border border-black py-1 text-right pr-3.5">Total</td>
-                        <td className="border border-black py-1">{data.targetSla > 0 ? `${data.targetSla}%` : '-'}</td>
-                      </tr>
-                    </tbody>
-                  </table>
-
-                  {/* Section 2 */}
-                  <div className="mt-2">
-                    <div className="font-heading text-[11.5pt] font-bold text-black inline-block">
-                      Service Availability
-                    </div>
-                  </div>
-                  <div className="text-[8.5pt] text-slate-700 mb-1">
-                    {`Detailed service availability for ${data.customerName} ${data.reportPeriod}`}
-                  </div>
-                  <table className="w-full border-collapse border border-black text-[8.5pt] mb-1 text-center">
-                    <thead>
-                      <tr className="bg-white text-black font-bold">
-                        <th className="border border-black py-1 px-1.5 w-[35px]">No</th>
-                        <th className="border border-black py-1 px-1.5 text-left pl-3">Service ID</th>
-                        <th className="border border-black py-1 px-1.5 w-[50px]">Node</th>
-                        <th className="border border-black py-1 px-1.5 w-[90px]">Availability</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr>
-                        <td className="border border-black py-1">1</td>
-                        <td className="border border-black py-1 text-left pl-3">{data.serviceId}</td>
-                        <td className="border border-black py-1">{data.nodeCount}</td>
                         <td className="border border-black py-1">{`${slaCalc.availabilityPercent}%`}</td>
                       </tr>
                       <tr className="bg-white font-bold">
                         <td colSpan={3} className="border border-black py-1 text-right pr-3.5">Total</td>
+                        <td className="border border-black py-1">{data.nodeCount}</td>
+                        <td className="border border-black py-1">{data.targetSla > 0 ? `${data.targetSla}%` : '-'}</td>
                         <td className="border border-black py-1">{`${slaCalc.availabilityPercent}%`}</td>
                       </tr>
                     </tbody>
