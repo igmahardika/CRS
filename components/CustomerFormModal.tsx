@@ -150,7 +150,6 @@ export default function CustomerFormModal({
             <Input
               value={formData.customerName}
               onChange={(e) => setFormData({ ...formData, customerName: e.target.value })}
-              placeholder="e.g. RSJ. Dr. Soeharto Heerdjan"
               required
             />
           </FormField>
@@ -160,7 +159,6 @@ export default function CustomerFormModal({
               <Input
                 value={formData.customerId}
                 onChange={(e) => setFormData({ ...formData, customerId: e.target.value })}
-                placeholder="e.g. 01.2180.1124"
                 className="text-[12px]"
                 required
               />
@@ -176,23 +174,13 @@ export default function CustomerFormModal({
                     nodeCount: extractNodeFromServiceId(newSid),
                   });
                 }}
-                placeholder="e.g. 01.2180.1"
                 className="text-[12px]"
                 required
               />
             </FormField>
           </div>
 
-          <FormField
-            label="Service Plan"
-            hint={
-              formData.serviceName
-                ? slaMatch.hasSla
-                  ? `Auto SLA: ${slaMatch.targetSla}% (${slaMatch.label})`
-                  : 'No contractual SLA defined'
-                : undefined
-            }
-          >
+          <FormField label="Service Plan">
             <Input
               value={formData.serviceName}
               onChange={(e) => {
@@ -204,12 +192,11 @@ export default function CustomerFormModal({
                   targetSla: match.targetSla,
                 });
               }}
-              placeholder="e.g. Prime 300 Mbps"
             />
           </FormField>
 
           <div className="grid grid-cols-2 gap-3">
-            <FormField label="Node Count" hint="Auto-extracted from SID">
+            <FormField label="Node Count">
               <Input
                 type="number"
                 min="1"
@@ -239,7 +226,6 @@ export default function CustomerFormModal({
               <Input
                 value={formData.cactiGraphId || ''}
                 onChange={(e) => setFormData({ ...formData, cactiGraphId: e.target.value })}
-                placeholder="e.g. 2180"
                 className="text-[12px]"
               />
             </FormField>
@@ -247,7 +233,6 @@ export default function CustomerFormModal({
               <Input
                 value={formData.prtgSensorId || ''}
                 onChange={(e) => setFormData({ ...formData, prtgSensorId: e.target.value })}
-                placeholder="e.g. 10542"
                 className="text-[12px]"
               />
             </FormField>
@@ -260,7 +245,7 @@ export default function CustomerFormModal({
                 onValueChange={(val) => setFormData({ ...formData, graphType: val })}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Engine" />
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="MRTG">MRTG (Cacti)</SelectItem>
@@ -276,7 +261,7 @@ export default function CustomerFormModal({
                 }
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Direction" />
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="NORMAL">Normal (In: DL, Out: UL)</SelectItem>
@@ -286,34 +271,26 @@ export default function CustomerFormModal({
             </FormField>
           </div>
 
-          <div className="p-3.5 bg-orange-50/60 rounded-xl border border-orange-200/80 space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2.5">
-                <Checkbox
-                  id="isMonthlyRoutine"
-                  checked={formData.isMonthlyRoutine || false}
-                  onCheckedChange={(checked) =>
-                    setFormData({ ...formData, isMonthlyRoutine: Boolean(checked) })
-                  }
-                />
-                <label
-                  htmlFor="isMonthlyRoutine"
-                  className="text-[13px] font-medium text-slate-800 cursor-pointer select-none"
-                >
-                  Wajib Laporan Rutin Bulanan
-                </label>
-              </div>
-              <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-orange-100 text-orange-700">
-                Kickoff Tgl 1
-              </span>
+          <div className="p-3.5 bg-orange-50/50 rounded-xl border border-orange-200/60 space-y-3">
+            <div className="flex items-center space-x-2.5">
+              <Checkbox
+                id="isMonthlyRoutine"
+                checked={formData.isMonthlyRoutine || false}
+                onCheckedChange={(checked) =>
+                  setFormData({ ...formData, isMonthlyRoutine: Boolean(checked) })
+                }
+              />
+              <label
+                htmlFor="isMonthlyRoutine"
+                className="text-[13px] font-medium text-slate-800 cursor-pointer select-none"
+              >
+                Monthly Routine Report
+              </label>
             </div>
-            <p className="text-[12px] text-slate-500 leading-relaxed pl-6">
-              Pelanggan ini otomatis masuk antrean tugas SLA 24 Jam setiap tanggal 1 bulan baru untuk periode bulan sebelumnya.
-            </p>
 
             {formData.isMonthlyRoutine && (
-              <div className="pt-2 border-t border-orange-200/50 pl-6">
-                <FormField label="Tipe Laporan Rutin">
+              <div className="pt-2 border-t border-orange-200/50">
+                <FormField label="Routine Report Type">
                   <Select
                     value={formData.routineReportType || 'SLA'}
                     onValueChange={(val) =>
@@ -321,12 +298,12 @@ export default function CustomerFormModal({
                     }
                   >
                     <SelectTrigger className="bg-white">
-                      <SelectValue placeholder="Pilih Tipe Laporan" />
+                      <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="SLA">Laporan SLA Saja</SelectItem>
-                      <SelectItem value="MRTG">Laporan MRTG/Traffic Saja</SelectItem>
-                      <SelectItem value="BOTH">Keduanya (SLA & MRTG)</SelectItem>
+                      <SelectItem value="SLA">SLA Only</SelectItem>
+                      <SelectItem value="MRTG">MRTG Only</SelectItem>
+                      <SelectItem value="BOTH">Both (SLA &amp; MRTG)</SelectItem>
                     </SelectContent>
                   </Select>
                 </FormField>

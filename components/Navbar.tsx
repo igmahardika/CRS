@@ -180,7 +180,7 @@ export default function Navbar() {
 
             {/* Desktop Navigation Groups (Hierarchical Menu with Dropdowns) */}
             <nav className="hidden lg:flex items-center space-x-1">
-              {/* 1. Menu: Laporan */}
+              {/* 1. Menu: Reports */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button
@@ -192,7 +192,7 @@ export default function Navbar() {
                     }`}
                   >
                     <FileText className={`w-4 h-4 stroke-[1.75] ${isReportsActive ? 'text-[#C2410C]' : 'text-slate-500'}`} />
-                    <span>Laporan</span>
+                    <span>Reports</span>
                     {isSupervisorOrAdmin && pendingApprovalsCount > 0 && (
                       <span className="w-4 h-4 rounded-full bg-amber-500 text-white text-[10px] font-bold flex items-center justify-center shadow-xs">
                         {pendingApprovalsCount}
@@ -201,38 +201,28 @@ export default function Navbar() {
                     <ChevronDown className="w-3.5 h-3.5 text-slate-400 opacity-70" />
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-64 p-1.5">
+                <DropdownMenuContent align="start" className="w-52 p-1">
                   <DropdownMenuItem asChild>
                     <Link
                       href="/"
-                      className={`flex items-start gap-2.5 p-2 rounded-lg cursor-pointer ${
-                        pathname === '/' ? 'bg-orange-50 text-[#C2410C]' : 'text-slate-700 hover:bg-slate-50'
+                      className={`flex items-center gap-2.5 px-2.5 py-2 rounded-md cursor-pointer text-xs font-medium ${
+                        pathname === '/' ? 'bg-orange-50 text-[#C2410C] font-semibold' : 'text-slate-700 hover:bg-slate-50'
                       }`}
                     >
-                      <div className="p-1 rounded-md bg-orange-100 text-[#EA580C] mt-0.5">
-                        <FilePlus className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <div className="text-xs font-semibold">Buat Laporan Baru</div>
-                        <div className="text-[11px] text-slate-500">Generator MRTG & SLA compliance report</div>
-                      </div>
+                      <FilePlus className="w-4 h-4 text-[#EA580C]" />
+                      <span>Create Report</span>
                     </Link>
                   </DropdownMenuItem>
 
                   <DropdownMenuItem asChild>
                     <Link
                       href="/history"
-                      className={`flex items-start gap-2.5 p-2 rounded-lg cursor-pointer ${
-                        pathname === '/history' ? 'bg-orange-50 text-[#C2410C]' : 'text-slate-700 hover:bg-slate-50'
+                      className={`flex items-center gap-2.5 px-2.5 py-2 rounded-md cursor-pointer text-xs font-medium ${
+                        pathname === '/history' ? 'bg-orange-50 text-[#C2410C] font-semibold' : 'text-slate-700 hover:bg-slate-50'
                       }`}
                     >
-                      <div className="p-1 rounded-md bg-slate-100 text-slate-700 mt-0.5">
-                        <History className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <div className="text-xs font-semibold">Riwayat & Arsip Dokumen</div>
-                        <div className="text-[11px] text-slate-500">Daftar arsip laporan PDF & status publik</div>
-                      </div>
+                      <History className="w-4 h-4 text-slate-500" />
+                      <span>Report History</span>
                     </Link>
                   </DropdownMenuItem>
 
@@ -240,29 +230,24 @@ export default function Navbar() {
                     <DropdownMenuItem asChild>
                       <Link
                         href="/history"
-                        className="flex items-start gap-2.5 p-2 rounded-lg cursor-pointer text-slate-700 hover:bg-slate-50"
+                        className="flex items-center justify-between px-2.5 py-2 rounded-md cursor-pointer text-xs font-medium text-slate-700 hover:bg-slate-50"
                       >
-                        <div className="p-1 rounded-md bg-amber-100 text-amber-700 mt-0.5 relative">
-                          <CheckSquare className="w-4 h-4" />
+                        <div className="flex items-center gap-2.5">
+                          <CheckSquare className="w-4 h-4 text-amber-600" />
+                          <span>Approval Queue</span>
                         </div>
-                        <div className="flex-1">
-                          <div className="text-xs font-semibold flex items-center justify-between">
-                            <span>Antrean Approval</span>
-                            {pendingApprovalsCount > 0 && (
-                              <Badge variant="warning" className="text-[10px] px-1.5 py-0">
-                                {pendingApprovalsCount} Pending
-                              </Badge>
-                            )}
-                          </div>
-                          <div className="text-[11px] text-slate-500">Verifikasi & persetujuan laporan staf</div>
-                        </div>
+                        {pendingApprovalsCount > 0 && (
+                          <Badge variant="warning" className="text-[10px] px-1.5 py-0">
+                            {pendingApprovalsCount}
+                          </Badge>
+                        )}
                       </Link>
                     </DropdownMenuItem>
                   )}
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              {/* 2. Menu: Antrean & Jadwal */}
+              {/* 2. Menu: Queue & Schedule */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button
@@ -274,42 +259,32 @@ export default function Navbar() {
                     }`}
                   >
                     <Clock className={`w-4 h-4 stroke-[1.75] ${isQueueActive ? 'text-[#C2410C]' : 'text-slate-500'}`} />
-                    <span>Antrean & Jadwal</span>
+                    <span>Queue &amp; Schedule</span>
                     <ChevronDown className="w-3.5 h-3.5 text-slate-400 opacity-70" />
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-72 p-1.5">
+                <DropdownMenuContent align="start" className="w-56 p-1">
                   <DropdownMenuItem asChild>
                     <Link
                       href="/requests"
-                      className={`flex items-start gap-2.5 p-2 rounded-lg cursor-pointer ${
-                        pathname === '/requests' ? 'bg-orange-50 text-[#C2410C]' : 'text-slate-700 hover:bg-slate-50'
+                      className={`flex items-center gap-2.5 px-2.5 py-2 rounded-md cursor-pointer text-xs font-medium ${
+                        pathname === '/requests' ? 'bg-orange-50 text-[#C2410C] font-semibold' : 'text-slate-700 hover:bg-slate-50'
                       }`}
                     >
-                      <div className="p-1 rounded-md bg-indigo-100 text-indigo-700 mt-0.5">
-                        <Inbox className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <div className="text-xs font-semibold">Antrean Permintaan Masuk</div>
-                        <div className="text-[11px] text-slate-500">Permintaan report dari Sales, AM, dan NOC</div>
-                      </div>
+                      <Inbox className="w-4 h-4 text-indigo-600" />
+                      <span>Request Queue</span>
                     </Link>
                   </DropdownMenuItem>
 
                   <DropdownMenuItem asChild>
                     <Link
                       href="/request-report"
-                      className={`flex items-start gap-2.5 p-2 rounded-lg cursor-pointer ${
-                        pathname === '/request-report' ? 'bg-orange-50 text-[#C2410C]' : 'text-slate-700 hover:bg-slate-50'
+                      className={`flex items-center gap-2.5 px-2.5 py-2 rounded-md cursor-pointer text-xs font-medium ${
+                        pathname === '/request-report' ? 'bg-orange-50 text-[#C2410C] font-semibold' : 'text-slate-700 hover:bg-slate-50'
                       }`}
                     >
-                      <div className="p-1 rounded-md bg-blue-100 text-blue-700 mt-0.5">
-                        <Send className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <div className="text-xs font-semibold">Form Request Shareable</div>
-                        <div className="text-[11px] text-slate-500">Tautan form untuk dibagikan ke divisi lain</div>
-                      </div>
+                      <Send className="w-4 h-4 text-blue-600" />
+                      <span>Request Form</span>
                     </Link>
                   </DropdownMenuItem>
 
@@ -318,17 +293,12 @@ export default function Navbar() {
                   <DropdownMenuItem asChild>
                     <Link
                       href="/schedule"
-                      className={`flex items-start gap-2.5 p-2 rounded-lg cursor-pointer ${
-                        pathname === '/schedule' ? 'bg-orange-50 text-[#C2410C]' : 'text-slate-700 hover:bg-slate-50'
+                      className={`flex items-center gap-2.5 px-2.5 py-2 rounded-md cursor-pointer text-xs font-medium ${
+                        pathname === '/schedule' ? 'bg-orange-50 text-[#C2410C] font-semibold' : 'text-slate-700 hover:bg-slate-50'
                       }`}
                     >
-                      <div className="p-1 rounded-md bg-emerald-100 text-emerald-700 mt-0.5">
-                        <CalendarCheck className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <div className="text-xs font-semibold">Jadwal Bulanan & SLA 24 Jam</div>
-                        <div className="text-[11px] text-slate-500">Monitoring laporan rutin bulanan tanggal 1</div>
-                      </div>
+                      <CalendarCheck className="w-4 h-4 text-emerald-600" />
+                      <span>Monthly Schedule &amp; SLA</span>
                     </Link>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -350,44 +320,34 @@ export default function Navbar() {
                     <ChevronDown className="w-3.5 h-3.5 text-slate-400 opacity-70" />
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-64 p-1.5">
+                <DropdownMenuContent align="start" className="w-52 p-1">
                   <DropdownMenuItem asChild>
                     <Link
                       href="/customers"
-                      className={`flex items-start gap-2.5 p-2 rounded-lg cursor-pointer ${
-                        pathname === '/customers' ? 'bg-orange-50 text-[#C2410C]' : 'text-slate-700 hover:bg-slate-50'
+                      className={`flex items-center gap-2.5 px-2.5 py-2 rounded-md cursor-pointer text-xs font-medium ${
+                        pathname === '/customers' ? 'bg-orange-50 text-[#C2410C] font-semibold' : 'text-slate-700 hover:bg-slate-50'
                       }`}
                     >
-                      <div className="p-1 rounded-md bg-orange-100 text-[#EA580C] mt-0.5">
-                        <Users className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <div className="text-xs font-semibold">Direktori Pelanggan</div>
-                        <div className="text-[11px] text-slate-500">Master customer, SID, dan konfigurasi SLA</div>
-                      </div>
+                      <Users className="w-4 h-4 text-[#EA580C]" />
+                      <span>Customer Directory</span>
                     </Link>
                   </DropdownMenuItem>
 
                   <DropdownMenuItem asChild>
                     <Link
                       href="/discovery"
-                      className={`flex items-start gap-2.5 p-2 rounded-lg cursor-pointer ${
-                        pathname === '/discovery' ? 'bg-orange-50 text-[#C2410C]' : 'text-slate-700 hover:bg-slate-50'
+                      className={`flex items-center gap-2.5 px-2.5 py-2 rounded-md cursor-pointer text-xs font-medium ${
+                        pathname === '/discovery' ? 'bg-orange-50 text-[#C2410C] font-semibold' : 'text-slate-700 hover:bg-slate-50'
                       }`}
                     >
-                      <div className="p-1 rounded-md bg-emerald-100 text-emerald-700 mt-0.5">
-                        <Radio className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <div className="text-xs font-semibold">Discovery Jaringan</div>
-                        <div className="text-[11px] text-slate-500">Tree interface MRTG Cacti & PRTG sensor</div>
-                      </div>
+                      <Radio className="w-4 h-4 text-emerald-600" />
+                      <span>Network Discovery</span>
                     </Link>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              {/* 4. Menu: Kelola Sistem (Supervisor & Admin) */}
+              {/* 4. Menu: System Management (Supervisor & Admin) */}
               {isSupervisorOrAdmin && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -400,25 +360,20 @@ export default function Navbar() {
                       }`}
                     >
                       <ShieldCheck className={`w-4 h-4 stroke-[1.75] ${isSystemActive ? 'text-[#C2410C]' : 'text-slate-500'}`} />
-                      <span>Kelola Sistem</span>
+                      <span>System</span>
                       <ChevronDown className="w-3.5 h-3.5 text-slate-400 opacity-70" />
                     </button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="w-64 p-1.5">
+                  <DropdownMenuContent align="start" className="w-52 p-1">
                     <DropdownMenuItem asChild>
                       <Link
                         href="/users"
-                        className={`flex items-start gap-2.5 p-2 rounded-lg cursor-pointer ${
-                          pathname === '/users' ? 'bg-orange-50 text-[#C2410C]' : 'text-slate-700 hover:bg-slate-50'
+                        className={`flex items-center gap-2.5 px-2.5 py-2 rounded-md cursor-pointer text-xs font-medium ${
+                          pathname === '/users' ? 'bg-orange-50 text-[#C2410C] font-semibold' : 'text-slate-700 hover:bg-slate-50'
                         }`}
                       >
-                        <div className="p-1 rounded-md bg-purple-100 text-purple-700 mt-0.5">
-                          <UserCheck className="w-4 h-4" />
-                        </div>
-                        <div>
-                          <div className="text-xs font-semibold">Manajemen Pengguna</div>
-                          <div className="text-[11px] text-slate-500">Kelola akun Staff, Supervisor & akses</div>
-                        </div>
+                        <UserCheck className="w-4 h-4 text-purple-600" />
+                        <span>User Management</span>
                       </Link>
                     </DropdownMenuItem>
 
@@ -426,17 +381,12 @@ export default function Navbar() {
                       <DropdownMenuItem asChild>
                         <Link
                           href="/settings"
-                          className={`flex items-start gap-2.5 p-2 rounded-lg cursor-pointer ${
-                            pathname === '/settings' ? 'bg-orange-50 text-[#C2410C]' : 'text-slate-700 hover:bg-slate-50'
+                          className={`flex items-center gap-2.5 px-2.5 py-2 rounded-md cursor-pointer text-xs font-medium ${
+                            pathname === '/settings' ? 'bg-orange-50 text-[#C2410C] font-semibold' : 'text-slate-700 hover:bg-slate-50'
                           }`}
                         >
-                          <div className="p-1 rounded-md bg-slate-100 text-slate-700 mt-0.5">
-                            <Settings className="w-4 h-4" />
-                          </div>
-                          <div>
-                            <div className="text-xs font-semibold">Pengaturan Sistem</div>
-                            <div className="text-[11px] text-slate-500">Notifikasi Telegram, kop surat & template</div>
-                          </div>
+                          <Settings className="w-4 h-4 text-slate-500" />
+                          <span>System Settings</span>
                         </Link>
                       </DropdownMenuItem>
                     )}
@@ -479,7 +429,7 @@ export default function Navbar() {
                         {currentUser.email || `@${currentUser.username}`}
                       </p>
                       <div className="mt-1.5 flex items-center gap-1.5">
-                        <span className="text-[10px] text-slate-400">Jabatan:</span>
+                        <span className="text-[10px] text-slate-400">Role:</span>
                         {getRoleBadge(currentUser.role)}
                       </div>
                     </div>
@@ -488,7 +438,7 @@ export default function Navbar() {
                       <DropdownMenuItem asChild>
                         <Link href="/settings" className="gap-2 cursor-pointer text-xs">
                           <Settings className="w-4 h-4 text-slate-500" />
-                          <span>Pengaturan Sistem</span>
+                          <span>System Settings</span>
                         </Link>
                       </DropdownMenuItem>
                     )}
@@ -527,10 +477,10 @@ export default function Navbar() {
       {/* Mobile Drawer Menu (Hierarchically Sectioned) */}
       {isMobileMenuOpen && (
         <div className="lg:hidden border-t border-slate-200 bg-white px-4 pt-3 pb-5 space-y-4 shadow-xl max-h-[calc(100vh-4rem)] overflow-y-auto">
-          {/* Section 1: Laporan */}
+          {/* Section 1: Reports */}
           <div className="space-y-1">
             <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2">
-              Laporan
+              Reports
             </div>
             <Link
               href="/"
@@ -540,7 +490,7 @@ export default function Navbar() {
               }`}
             >
               <FilePlus className="w-4 h-4 text-[#EA580C]" />
-              <span>Buat Laporan Baru</span>
+              <span>Create Report</span>
             </Link>
             <Link
               href="/history"
@@ -551,20 +501,20 @@ export default function Navbar() {
             >
               <div className="flex items-center gap-2">
                 <History className="w-4 h-4 text-slate-600" />
-                <span>Riwayat & Arsip Dokumen</span>
+                <span>Report History</span>
               </div>
               {isSupervisorOrAdmin && pendingApprovalsCount > 0 && (
                 <Badge variant="warning" className="text-[10px] px-1.5 py-0">
-                  {pendingApprovalsCount} Pending
+                  {pendingApprovalsCount}
                 </Badge>
               )}
             </Link>
           </div>
 
-          {/* Section 2: Antrean & Jadwal */}
+          {/* Section 2: Queue & Schedule */}
           <div className="space-y-1 pt-2 border-t border-slate-100">
             <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2">
-              Antrean & Jadwal
+              Queue &amp; Schedule
             </div>
             <Link
               href="/requests"
@@ -574,7 +524,7 @@ export default function Navbar() {
               }`}
             >
               <Inbox className="w-4 h-4 text-indigo-600" />
-              <span>Antrean Permintaan Masuk</span>
+              <span>Request Queue</span>
             </Link>
             <Link
               href="/request-report"
@@ -584,7 +534,7 @@ export default function Navbar() {
               }`}
             >
               <Send className="w-4 h-4 text-blue-600" />
-              <span>Form Request Shareable</span>
+              <span>Request Form</span>
             </Link>
             <Link
               href="/schedule"
@@ -594,7 +544,7 @@ export default function Navbar() {
               }`}
             >
               <CalendarCheck className="w-4 h-4 text-emerald-600" />
-              <span>Jadwal Bulanan & SLA 24 Jam</span>
+              <span>Monthly Schedule &amp; SLA</span>
             </Link>
           </div>
 
@@ -611,7 +561,7 @@ export default function Navbar() {
               }`}
             >
               <Users className="w-4 h-4 text-[#EA580C]" />
-              <span>Direktori Pelanggan</span>
+              <span>Customer Directory</span>
             </Link>
             <Link
               href="/discovery"
@@ -621,15 +571,15 @@ export default function Navbar() {
               }`}
             >
               <Radio className="w-4 h-4 text-emerald-600" />
-              <span>Discovery Jaringan</span>
+              <span>Network Discovery</span>
             </Link>
           </div>
 
-          {/* Section 4: Kelola Sistem */}
+          {/* Section 4: System */}
           {isSupervisorOrAdmin && (
             <div className="space-y-1 pt-2 border-t border-slate-100">
               <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2">
-                Kelola Sistem
+                System
               </div>
               <Link
                 href="/users"
@@ -639,7 +589,7 @@ export default function Navbar() {
                 }`}
               >
                 <UserCheck className="w-4 h-4 text-purple-600" />
-                <span>Manajemen Pengguna</span>
+                <span>User Management</span>
               </Link>
               {isAdmin && (
                 <Link
@@ -649,8 +599,8 @@ export default function Navbar() {
                     pathname === '/settings' ? 'bg-orange-50 text-[#C2410C] font-semibold' : 'text-slate-700 hover:bg-slate-100'
                   }`}
                 >
-                  <Settings className="w-4 h-4 text-slate-600" />
-                  <span>Pengaturan Sistem</span>
+                  <Settings className="w-4 h-4 text-slate-500" />
+                  <span>System Settings</span>
                 </Link>
               )}
             </div>
@@ -685,9 +635,9 @@ export default function Navbar() {
       <ConfirmDialog
         open={showLogoutConfirm}
         onOpenChange={setShowLogoutConfirm}
-        title="Keluar dari Sesi"
-        description="Apakah Anda yakin ingin keluar dari sesi akun ini?"
-        confirmText="Keluar"
+        title="Sign Out"
+        description="Are you sure you want to sign out of your account session?"
+        confirmText="Sign Out"
         variant="primary"
         loading={isLoggingOut}
         onConfirm={handleLogout}

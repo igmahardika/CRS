@@ -721,7 +721,7 @@ export default function TicketCaseManager({
                 variant="outline"
                 className="text-[11px] font-medium py-0 px-2 text-slate-600 bg-slate-50 tabular-nums shrink-0"
               >
-                {tickets.length} Tiket
+                {tickets.length} {tickets.length === 1 ? 'Ticket' : 'Tickets'}
               </Badge>
             </div>
             <p className="text-[11px] text-slate-500 font-sans mt-0.5 truncate">
@@ -742,7 +742,7 @@ export default function TicketCaseManager({
                 setImportActionType('append');
                 setAlsoSyncCrossData(true);
               }}
-              title="Salin dan tempel baris data dari Excel / Sistem Helpdesk"
+              title="Copy and paste tickets from Excel or Helpdesk"
               className="h-8 px-2.5 text-xs font-medium text-slate-700 hover:text-slate-900"
             >
               <FileSpreadsheet className="w-3.5 h-3.5 mr-1.5 text-emerald-600 shrink-0" />
@@ -759,7 +759,7 @@ export default function TicketCaseManager({
                 className="h-8 px-2.5 text-xs font-medium rounded-r-none border-r-0"
               >
                 <Plus className="w-3.5 h-3.5 mr-1 text-[#EA580C] shrink-0" />
-                <span>Tiket</span>
+                <span>Ticket</span>
               </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -768,7 +768,7 @@ export default function TicketCaseManager({
                     variant="secondary"
                     size="sm"
                     className="h-8 px-1.5 rounded-l-none text-slate-500 hover:text-slate-700"
-                    title="Tambah banyak tiket sekaligus"
+                    title="Add multiple tickets"
                   >
                     <ChevronDown className="w-3.5 h-3.5" />
                   </Button>
@@ -776,15 +776,15 @@ export default function TicketCaseManager({
                 <DropdownMenuContent align="end" className="w-44">
                   <DropdownMenuItem onClick={() => handleAddTicket(3)} className="text-xs">
                     <Layers className="w-3.5 h-3.5 mr-2 text-blue-500" />
-                    <span>+ 3 Tiket Sekaligus</span>
+                    <span>+ 3 Tickets</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => handleAddTicket(5)} className="text-xs">
                     <Layers className="w-3.5 h-3.5 mr-2 text-blue-500" />
-                    <span>+ 5 Tiket Sekaligus</span>
+                    <span>+ 5 Tickets</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => handleAddTicket(10)} className="text-xs">
                     <Layers className="w-3.5 h-3.5 mr-2 text-blue-500" />
-                    <span>+ 10 Tiket Sekaligus</span>
+                    <span>+ 10 Tickets</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -798,9 +798,9 @@ export default function TicketCaseManager({
                 size="sm"
                 onClick={() => setConfirmClear('tickets')}
                 className="h-8 px-2 text-xs text-slate-400 hover:text-rose-600 hover:bg-rose-50"
-                title="Kosongkan seluruh daftar tiket"
+                title="Clear all tickets"
               >
-                Kosongkan
+                Clear
               </Button>
             )}
           </div>
@@ -811,10 +811,10 @@ export default function TicketCaseManager({
           <div className="flex items-center justify-between p-3.5 bg-slate-50/80 border border-dashed border-slate-200 rounded-lg text-xs text-slate-500">
             <div className="flex items-center gap-2">
               <AlertCircle className="w-4 h-4 text-slate-400 shrink-0" />
-              <span>Tidak ada tiket customer service pada periode ini.</span>
+              <span>No customer service tickets recorded for this period.</span>
             </div>
             <span className="text-[11px] text-slate-400 hidden sm:inline">
-              Klik <strong>+ Tiket</strong> atau <strong>Paste Excel</strong> untuk mengisi data
+              Click <strong>+ Ticket</strong> or <strong>Paste Excel</strong> to add records
             </span>
           </div>
         ) : (
@@ -831,7 +831,7 @@ export default function TicketCaseManager({
                       {idx + 1}
                     </span>
                     <span className="text-xs font-semibold text-slate-800 truncate">
-                      {t.noTicket ? t.noTicket : `Tiket #${idx + 1}`}
+                      {t.noTicket ? t.noTicket : `Ticket #${idx + 1}`}
                     </span>
                     {t.status && (
                       <Badge variant="outline" className="text-[10px] py-0 px-1.5">
@@ -845,7 +845,7 @@ export default function TicketCaseManager({
                     size="icon-sm"
                     onClick={() => handleDeleteTicket(idx)}
                     className="text-slate-400 hover:text-rose-600 hover:bg-rose-50 -mr-1 shrink-0"
-                    title="Hapus Tiket Ini"
+                    title="Delete Ticket"
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>
@@ -855,7 +855,7 @@ export default function TicketCaseManager({
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
                   <div className="min-w-0">
                     <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider block mb-1">
-                      No. Tiket
+                      Ticket No
                     </span>
                     <Input
                       inputSize="sm"
@@ -863,13 +863,12 @@ export default function TicketCaseManager({
                       value={t.noTicket}
                       onChange={(e) => handleUpdateTicket(idx, 'noTicket', e.target.value)}
                       className="text-xs font-medium"
-                      placeholder={`TKT-${year}${padMonth}-01`}
                     />
                   </div>
 
                   <div className="min-w-0">
                     <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider block mb-1">
-                      Start (Tgl & Jam)
+                      Start Date & Time
                     </span>
                     <Input
                       inputSize="sm"
@@ -882,13 +881,12 @@ export default function TicketCaseManager({
                         handleUpdateTicket(idx, 'date', dateOnly);
                       }}
                       className="text-xs tabular-nums"
-                      placeholder="YYYY-MM-DD HH:mm"
                     />
                   </div>
 
                   <div className="min-w-0">
                     <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider block mb-1">
-                      End (Tgl & Jam)
+                      End Date & Time
                     </span>
                     <Input
                       inputSize="sm"
@@ -896,7 +894,6 @@ export default function TicketCaseManager({
                       value={t.endDate || ''}
                       onChange={(e) => handleUpdateTicket(idx, 'endDate', e.target.value)}
                       className="text-xs tabular-nums"
-                      placeholder="YYYY-MM-DD HH:mm"
                     />
                   </div>
 
@@ -958,27 +955,25 @@ export default function TicketCaseManager({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2 border-t border-slate-200/60">
                   <div>
                     <span className="text-[10px] font-medium text-slate-500 block mb-1">
-                      Deskripsi Kendala (Customer Request / Issue)
+                      Issue Description
                     </span>
                     <Input
                       inputSize="sm"
                       type="text"
                       value={t.description}
                       onChange={(e) => handleUpdateTicket(idx, 'description', e.target.value)}
-                      placeholder="Contoh: Link flapping pada interface Gi0/0/1"
                       className="text-xs"
                     />
                   </div>
                   <div>
                     <span className="text-[10px] font-medium text-slate-500 block mb-1">
-                      Tindakan Penyelesaian (Action Taken)
+                      Action Taken
                     </span>
                     <Input
                       inputSize="sm"
                       type="text"
                       value={t.action}
                       onChange={(e) => handleUpdateTicket(idx, 'action', e.target.value)}
-                      placeholder="Contoh: Pembersihan patchcord & restart port switch"
                       className="text-xs"
                     />
                   </div>
@@ -1005,7 +1000,7 @@ export default function TicketCaseManager({
                 variant="outline"
                 className="text-[11px] font-medium py-0 px-2 text-rose-600 bg-rose-50 border-rose-200 tabular-nums shrink-0"
               >
-                {cases.length > 0 ? `${cases.length} Kasus (${slaResult.totalDowntimeMinutes} Mnt)` : '0 Kasus'}
+                {cases.length > 0 ? `${cases.length} ${cases.length === 1 ? 'Case' : 'Cases'} (${slaResult.totalDowntimeMinutes} min)` : '0 Cases'}
               </Badge>
             </div>
             <p className="text-[11px] text-slate-500 font-sans mt-0.5 truncate">
@@ -1026,7 +1021,7 @@ export default function TicketCaseManager({
                 setImportActionType('append');
                 setAlsoSyncCrossData(true);
               }}
-              title="Salin dan tempel baris data gangguan dari Excel / Sistem Helpdesk"
+              title="Copy and paste downtime incidents from Excel or Helpdesk"
               className="h-8 px-2.5 text-xs font-medium text-slate-700 hover:text-slate-900"
             >
               <FileSpreadsheet className="w-3.5 h-3.5 mr-1.5 text-emerald-600 shrink-0" />
@@ -1043,7 +1038,7 @@ export default function TicketCaseManager({
                 className="h-8 px-2.5 text-xs font-medium rounded-r-none border-r-0"
               >
                 <Plus className="w-3.5 h-3.5 mr-1 text-[#EA580C] shrink-0" />
-                <span>Kasus</span>
+                <span>Case</span>
               </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -1052,7 +1047,7 @@ export default function TicketCaseManager({
                     variant="secondary"
                     size="sm"
                     className="h-8 px-1.5 rounded-l-none text-slate-500 hover:text-slate-700"
-                    title="Tambah banyak kasus gangguan sekaligus"
+                    title="Add multiple downtime cases"
                   >
                     <ChevronDown className="w-3.5 h-3.5" />
                   </Button>
@@ -1060,15 +1055,15 @@ export default function TicketCaseManager({
                 <DropdownMenuContent align="end" className="w-44">
                   <DropdownMenuItem onClick={() => handleAddCase(3)} className="text-xs">
                     <Layers className="w-3.5 h-3.5 mr-2 text-rose-500" />
-                    <span>+ 3 Kasus Sekaligus</span>
+                    <span>+ 3 Cases</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => handleAddCase(5)} className="text-xs">
                     <Layers className="w-3.5 h-3.5 mr-2 text-rose-500" />
-                    <span>+ 5 Kasus Sekaligus</span>
+                    <span>+ 5 Cases</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => handleAddCase(10)} className="text-xs">
                     <Layers className="w-3.5 h-3.5 mr-2 text-rose-500" />
-                    <span>+ 10 Kasus Sekaligus</span>
+                    <span>+ 10 Cases</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -1082,9 +1077,9 @@ export default function TicketCaseManager({
                 size="sm"
                 onClick={() => setConfirmClear('cases')}
                 className="h-8 px-2 text-xs text-slate-400 hover:text-rose-600 hover:bg-rose-50"
-                title="Kosongkan seluruh daftar kasus downtime"
+                title="Clear all downtime cases"
               >
-                Kosongkan
+                Clear
               </Button>
             )}
           </div>
@@ -1095,7 +1090,7 @@ export default function TicketCaseManager({
           <div className="flex items-center justify-between p-3.5 bg-emerald-50/70 border border-dashed border-emerald-200 rounded-lg text-xs text-emerald-800">
             <div className="flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-              <span>Nol gangguan tercatat pada periode ini. Pencapaian <strong>100.00% uptime</strong>.</span>
+              <span>Zero incidents recorded for this period. Achieved <strong>100.00% uptime</strong>.</span>
             </div>
             <Badge
               variant="outline"
@@ -1118,10 +1113,10 @@ export default function TicketCaseManager({
                       {idx + 1}
                     </span>
                     <span className="text-xs font-semibold text-slate-800 truncate">
-                      {c.noCase ? c.noCase : `Kasus #${idx + 1}`}
+                      {c.noCase ? c.noCase : `Case #${idx + 1}`}
                     </span>
                     <Badge variant="outline" className="text-[10px] py-0 px-1.5 text-rose-700 bg-rose-50 border-rose-200">
-                      {c.downtimeMinutes} Mnt
+                      {c.downtimeMinutes} min
                     </Badge>
                   </div>
                   <Button
@@ -1130,7 +1125,7 @@ export default function TicketCaseManager({
                     size="icon-sm"
                     onClick={() => handleDeleteCase(idx)}
                     className="text-slate-400 hover:text-rose-600 hover:bg-rose-50 -mr-1 shrink-0"
-                    title="Hapus Kasus Ini"
+                    title="Delete Case"
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>
@@ -1140,7 +1135,7 @@ export default function TicketCaseManager({
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
                   <div className="min-w-0">
                     <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider block mb-1">
-                      No. Kasus
+                      Case No
                     </span>
                     <Input
                       inputSize="sm"
@@ -1148,13 +1143,12 @@ export default function TicketCaseManager({
                       value={c.noCase}
                       onChange={(e) => handleUpdateCase(idx, 'noCase', e.target.value)}
                       className="text-xs font-medium"
-                      placeholder={`CASE-${year}${padMonth}-01`}
                     />
                   </div>
 
                   <div className="min-w-0">
                     <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider block mb-1">
-                      Start (Tgl & Jam)
+                      Start Date & Time
                     </span>
                     <Input
                       inputSize="sm"
@@ -1171,13 +1165,12 @@ export default function TicketCaseManager({
                         }
                       }}
                       className="text-xs tabular-nums"
-                      placeholder="YYYY-MM-DD HH:mm"
                     />
                   </div>
 
                   <div className="min-w-0">
                     <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider block mb-1">
-                      End (Tgl & Jam)
+                      End Date & Time
                     </span>
                     <Input
                       inputSize="sm"
@@ -1193,7 +1186,6 @@ export default function TicketCaseManager({
                         }
                       }}
                       className="text-xs tabular-nums"
-                      placeholder="YYYY-MM-DD HH:mm"
                     />
                   </div>
 
@@ -1215,10 +1207,9 @@ export default function TicketCaseManager({
                           )
                         }
                         className="text-xs font-semibold text-rose-600 pr-11 tabular-nums"
-                        placeholder="30"
                       />
                       <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[11px] font-medium text-slate-400 pointer-events-none">
-                        Mnt
+                        min
                       </span>
                     </div>
                   </div>
@@ -1228,27 +1219,25 @@ export default function TicketCaseManager({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2 border-t border-slate-200/60">
                   <div>
                     <span className="text-[10px] font-medium text-slate-500 block mb-1">
-                      Penyebab Gangguan (Root Cause)
+                      Root Cause
                     </span>
                     <Input
                       inputSize="sm"
                       type="text"
                       value={c.description}
                       onChange={(e) => handleUpdateCase(idx, 'description', e.target.value)}
-                      placeholder="Contoh: Kabel fiber optik putus KM 12 akibat galian PLN"
                       className="text-xs"
                     />
                   </div>
                   <div>
                     <span className="text-[10px] font-medium text-slate-500 block mb-1">
-                      Tindakan Penyelesaian (Resolution)
+                      Resolution
                     </span>
                     <Input
                       inputSize="sm"
                       type="text"
                       value={c.action}
                       onChange={(e) => handleUpdateCase(idx, 'action', e.target.value)}
-                      placeholder="Contoh: Splicing core 1-4 & pengukuran OTDR normal"
                       className="text-xs"
                     />
                   </div>
@@ -1268,12 +1257,12 @@ export default function TicketCaseManager({
             <DialogTitle className="flex items-center gap-2 text-slate-900 text-base">
               <FileSpreadsheet className="w-5 h-5 text-emerald-600" />
               <span>
-                Paste Data dari Excel (
+                Paste Data from Excel (
                 {importMode === 'tickets' ? 'Support Tickets' : 'Downtime Incident Cases'})
               </span>
             </DialogTitle>
             <DialogDescription className="text-xs text-slate-500">
-              Mendukung salinan langsung dari <strong>Sistem Aplikasi Tiket/Helpdesk</strong> maupun spreadsheet Excel standar.
+              Supports direct clipboard copy from ticketing/helpdesk portals or standard spreadsheets.
             </DialogDescription>
           </DialogHeader>
 
@@ -1283,7 +1272,7 @@ export default function TicketCaseManager({
               <div className="flex items-center justify-between">
                 <span className="font-semibold text-slate-800 flex items-center gap-1.5">
                   <ClipboardPaste className="w-3.5 h-3.5 text-[#EA580C]" />
-                  Auto-Detect Format Helpdesk & Spreadsheet
+                  Auto-Detect Helpdesk &amp; Spreadsheet Format
                 </span>
                 <Button
                   type="button"
@@ -1293,7 +1282,7 @@ export default function TicketCaseManager({
                   className="h-6 text-[11px] text-[#EA580C] hover:text-[#C2410C] px-2 font-medium"
                 >
                   <Sparkles className="w-3 h-3 mr-1" />
-                  Gunakan Contoh Tabel Helpdesk
+                  Load Sample Table
                 </Button>
               </div>
 
@@ -1301,25 +1290,25 @@ export default function TicketCaseManager({
                 <div className="bg-blue-50/80 border border-blue-200 rounded p-2 text-[11px] text-blue-900 space-y-1">
                   <div className="font-semibold flex items-center gap-1 text-blue-800">
                     <Info className="w-3.5 h-3.5" />
-                    <span>Format Tabel Aplikasi Tiket/Helpdesk Dikenali Otomatis!</span>
+                    <span>Ticketing / Helpdesk Table Format Recognized!</span>
                   </div>
                   <p className="text-blue-700 leading-relaxed font-sans">
-                    Kolom otomatis dipetakan: <strong>No Tiket</strong> &bull; <strong>Open Datetime</strong> &rarr; Tanggal &bull; <strong>Deskripsi/Penyebab</strong> &bull; <strong>Penanganan</strong> &rarr; Solusi &bull; <strong>Durasi Downtime</strong> ({`"07:02:00"`} &rarr; 422 menit).
+                    Columns mapped: <strong>Ticket No</strong> &bull; <strong>Open Datetime</strong> &rarr; Date &bull; <strong>Description / Cause</strong> &bull; <strong>Action / Resolution</strong> &bull; <strong>Downtime Duration</strong>.
                   </p>
                 </div>
               ) : (
                 <div className="text-[11px] text-slate-600 bg-white p-2 rounded border border-slate-200/80 leading-relaxed font-sans">
                   {importMode === 'tickets' ? (
                     <span>
-                      Urutan standar: <strong>[No Tiket]</strong> &bull; <strong>[Tanggal]</strong> &bull;{' '}
-                      <strong>[Deskripsi]</strong> &bull; <strong>[Penanganan]</strong> &bull;{' '}
-                      <strong>[Status]</strong> (Atau paste langsung seluruh tabel helpdesk).
+                      Standard order: <strong>[Ticket No]</strong> &bull; <strong>[Date]</strong> &bull;{' '}
+                      <strong>[Description]</strong> &bull; <strong>[Action]</strong> &bull;{' '}
+                      <strong>[Status]</strong> (or paste entire helpdesk table directly).
                     </span>
                   ) : (
                     <span>
-                      Urutan standar: <strong>[No Kasus]</strong> &bull; <strong>[Tanggal]</strong> &bull;{' '}
-                      <strong>[Penyebab]</strong> &bull; <strong>[Penanganan]</strong> &bull;{' '}
-                      <strong>[Downtime Menit/hh:mm:ss]</strong>.
+                      Standard order: <strong>[Case No]</strong> &bull; <strong>[Date]</strong> &bull;{' '}
+                      <strong>[Root Cause]</strong> &bull; <strong>[Resolution]</strong> &bull;{' '}
+                      <strong>[Downtime Minutes / hh:mm:ss]</strong>.
                     </span>
                   )}
                 </div>
@@ -1332,11 +1321,6 @@ export default function TicketCaseManager({
                 rows={6}
                 value={rawPastedText}
                 onChange={(e) => setRawPastedText(e.target.value)}
-                placeholder={
-                  importMode === 'tickets'
-                    ? `Tempel tabel helpdesk atau baris Excel di sini (Ctrl+V)...\nSistem akan otomatis membaca kolom No Tiket, Tanggal Open, Deskripsi, Penanganan, dan Status.`
-                    : `Tempel tabel helpdesk atau baris Excel di sini (Ctrl+V)...\nSistem akan otomatis membaca No Kasus, Tanggal, Penyebab, Penanganan, dan Durasi Downtime (format 07:02:00 otomatis dikonversi ke menit).`
-                }
                 className="text-xs font-sans leading-relaxed"
               />
             </div>
@@ -1349,9 +1333,9 @@ export default function TicketCaseManager({
                     <span className="font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 flex items-center gap-1 shrink-0">
                       <Check className="w-3.5 h-3.5 text-emerald-600" />
                       <span>
-                        Terbaca{' '}
+                        Parsed{' '}
                         <strong>{activeImportItems.length}</strong>{' '}
-                        {importMode === 'tickets' ? 'Tiket Support' : 'Kasus Gangguan'}
+                        {importMode === 'tickets' ? 'Support Tickets' : 'Incident Cases'}
                       </span>
                     </span>
 
@@ -1359,7 +1343,7 @@ export default function TicketCaseManager({
                     {parsedData.isHelpdesk && crossImportItems.length > 0 && (
                       <span className="text-[11px] text-slate-500 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
                         ({crossImportItems.length}{' '}
-                        {importMode === 'tickets' ? 'Kasus Problem disaring' : 'Tiket Komplain disaring'})
+                        {importMode === 'tickets' ? 'Problem cases filtered' : 'Complaint tickets filtered'})
                       </span>
                     )}
                   </div>
@@ -1370,8 +1354,8 @@ export default function TicketCaseManager({
                     value={importActionType}
                     onChange={(val) => setImportActionType(val)}
                     options={[
-                      { value: 'append', label: 'Tambahkan' },
-                      { value: 'replace', label: 'Ganti Semua' },
+                      { value: 'append', label: 'Append to List' },
+                      { value: 'replace', label: 'Replace List' },
                     ]}
                   />
                 </div>
@@ -1390,12 +1374,12 @@ export default function TicketCaseManager({
                     >
                       <ArrowRightLeft className="w-3.5 h-3.5 text-[#EA580C]" />
                       <span>
-                        Sekaligus simpan juga{' '}
+                        Also import{' '}
                         <strong>
                           {crossImportItems.length}{' '}
-                          {importMode === 'tickets' ? 'Kasus Gangguan' : 'Tiket Support'}
+                          {importMode === 'tickets' ? 'Incident Cases' : 'Support Tickets'}
                         </strong>{' '}
-                        ke tabel{' '}
+                        simultaneously into{' '}
                         <strong>
                           {importMode === 'tickets'
                             ? 'Downtime Incident Cases'
@@ -1412,13 +1396,13 @@ export default function TicketCaseManager({
                     <thead className="bg-slate-100 text-slate-600 font-semibold sticky top-0">
                       <tr>
                         <th className="p-1.5 border-b border-slate-200">
-                          {importMode === 'tickets' ? 'No. Tiket' : 'No. Kasus'}
+                          {importMode === 'tickets' ? 'Ticket No' : 'Case No'}
                         </th>
-                        <th className="p-1.5 border-b border-slate-200">Date & Time</th>
+                        <th className="p-1.5 border-b border-slate-200">Date &amp; Time</th>
                         <th className="p-1.5 border-b border-slate-200">
-                          {importMode === 'tickets' ? 'Deskripsi Kendala' : 'Penyebab Gangguan'}
+                          {importMode === 'tickets' ? 'Description' : 'Root Cause'}
                         </th>
-                        <th className="p-1.5 border-b border-slate-200">Penanganan / Solusi</th>
+                        <th className="p-1.5 border-b border-slate-200">Action / Resolution</th>
                         <th className="p-1.5 border-b border-slate-200">
                           {importMode === 'tickets' ? 'Status' : 'Downtime'}
                         </th>
@@ -1436,7 +1420,7 @@ export default function TicketCaseManager({
                                 <td className="p-1.5 text-slate-600 whitespace-nowrap tabular-nums text-[10px] leading-tight">
                                   <div className="font-semibold text-slate-800">{period.start}</div>
                                   {period.end && (
-                                    <div className="text-[9.5px] text-slate-500">{`s/d ${period.end}`}</div>
+                                    <div className="text-[9.5px] text-slate-500">{`to ${period.end}`}</div>
                                   )}
                                 </td>
                                 <td className="p-1.5 text-slate-600 truncate max-w-[140px]" title={item.description}>
@@ -1461,7 +1445,7 @@ export default function TicketCaseManager({
                                 <td className="p-1.5 text-slate-600 whitespace-nowrap tabular-nums text-[10px] leading-tight">
                                   <div className="font-semibold text-slate-800">{period.start}</div>
                                   {period.end && (
-                                    <div className="text-[9.5px] text-slate-500">{`s/d ${period.end}`}</div>
+                                    <div className="text-[9.5px] text-slate-500">{`to ${period.end}`}</div>
                                   )}
                                 </td>
                                 <td className="p-1.5 text-slate-600 truncate max-w-[140px]" title={item.description}>
@@ -1471,7 +1455,7 @@ export default function TicketCaseManager({
                                   {item.action || '-'}
                                 </td>
                                 <td className="p-1.5 font-semibold text-rose-600 whitespace-nowrap tabular-nums">
-                                  {item.downtimeMinutes} Mnt
+                                  {item.downtimeMinutes} min
                                 </td>
                               </tr>
                             );
@@ -1490,7 +1474,7 @@ export default function TicketCaseManager({
               onClick={() => setImportMode(null)}
               className="text-xs"
             >
-              Batal
+              Cancel
             </Button>
             <Button
               type="button"
@@ -1501,11 +1485,11 @@ export default function TicketCaseManager({
             >
               <Check className="w-3.5 h-3.5 mr-1.5" />
               <span>
-                Terapkan Data (
+                Apply Data (
                 {activeImportItems.length}{' '}
-                {importMode === 'tickets' ? 'Tiket' : 'Kasus'}
+                {importMode === 'tickets' ? 'Tickets' : 'Cases'}
                 {parsedData.isHelpdesk && alsoSyncCrossData && crossImportItems.length > 0
-                  ? ` + ${crossImportItems.length} ${importMode === 'tickets' ? 'Kasus' : 'Tiket'}`
+                  ? ` + ${crossImportItems.length} ${importMode === 'tickets' ? 'Cases' : 'Tickets'}`
                   : ''}
                 )
               </span>
@@ -1515,19 +1499,19 @@ export default function TicketCaseManager({
       </Dialog>
 
       {/* ---------------------------------------------------- */}
-      {/* ConfirmDialog: Kosongkan Seluruh Data                 */}
+      {/* ConfirmDialog: Clear All Records                      */}
       {/* ---------------------------------------------------- */}
       <ConfirmDialog
         open={confirmClear !== null}
         onOpenChange={(open) => !open && setConfirmClear(null)}
-        title={confirmClear === 'tickets' ? 'Kosongkan Seluruh Tiket?' : 'Kosongkan Seluruh Kasus?'}
+        title={confirmClear === 'tickets' ? 'Clear All Tickets?' : 'Clear All Cases?'}
         description={
           confirmClear === 'tickets'
-            ? 'Apakah Anda yakin ingin menghapus seluruh tiket support pada periode ini? Aksi ini tidak dapat dibatalkan.'
-            : 'Apakah Anda yakin ingin menghapus seluruh kasus downtime pada periode ini? Persentase uptime akan kembali menjadi 100.00%.'
+            ? 'Are you sure you want to delete all support tickets for this period? This action cannot be undone.'
+            : 'Are you sure you want to delete all downtime cases for this period? Monthly uptime will reset to 100.00%.'
         }
-        confirmText="Ya, Kosongkan"
-        cancelText="Batal"
+        confirmText="Yes, Clear All"
+        cancelText="Cancel"
         variant="destructive"
         onConfirm={confirmClear === 'tickets' ? handleClearAllTickets : handleClearAllCases}
       />

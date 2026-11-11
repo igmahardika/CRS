@@ -284,21 +284,21 @@ export default function SettingsPage() {
       if (res.ok && data.success) {
         setTelegramTestResult({
           type: 'success',
-          message: data.message || 'Pesan uji coba berhasil terkirim ke topik Telegram!',
+          message: data.message || 'Test notification sent successfully to Telegram topic!',
         });
-        toast.success('Pesan uji coba berhasil terkirim ke topik Telegram!');
+        toast.success('Test notification sent successfully to Telegram topic!');
       } else {
         setTelegramTestResult({
           type: 'error',
-          message: data.error || 'Gagal mengirim pesan ke Telegram. Periksa token dan chat ID.',
+          message: data.error || 'Failed to send Telegram message. Check bot token and chat ID.',
         });
-        toast.error(data.error || 'Gagal kirim pesan ke Telegram.');
+        toast.error(data.error || 'Failed to send Telegram message.');
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       setTelegramTestResult({
         type: 'error',
-        message: `Koneksi error: ${msg}`,
+        message: `Connection error: ${msg}`,
       });
       toast.error(msg);
     } finally {
@@ -395,11 +395,7 @@ export default function SettingsPage() {
                       value={config.mrtgBaseUrl}
                       onChange={(e) => setConfig({ ...config, mrtgBaseUrl: e.target.value })}
                       className="text-xs"
-                      placeholder="http://cacti.internal.net or http://192.168.1.10/cacti"
                     />
-                    <span className="text-[11px] text-slate-500 mt-1 block">
-                      Target endpoints: <code>/graph_image.php</code> and <code>/graph_xport.php</code>
-                    </span>
                   </div>
 
                   <div>
@@ -426,7 +422,6 @@ export default function SettingsPage() {
                         value={config.mrtgUsername}
                         onChange={(e) => setConfig({ ...config, mrtgUsername: e.target.value })}
                         className="text-xs"
-                        placeholder="cacti_user"
                       />
                     </div>
                     <div>
@@ -437,7 +432,6 @@ export default function SettingsPage() {
                           value={config.mrtgPassword || ''}
                           onChange={(e) => setConfig({ ...config, mrtgPassword: e.target.value })}
                           className="text-xs pr-8"
-                          placeholder="••••••••"
                         />
                         <Button
                           variant="ghost"
@@ -500,11 +494,7 @@ export default function SettingsPage() {
                       value={config.prtgBaseUrl}
                       onChange={(e) => setConfig({ ...config, prtgBaseUrl: e.target.value })}
                       className="text-xs"
-                      placeholder="https://prtg.example.com or http://10.10.x.x:8080"
                     />
-                    <span className="text-[11px] text-slate-500 mt-1 block">
-                      Target endpoints: <code>/chart.png</code> and <code>/api/historicdata.json</code>
-                    </span>
                   </div>
 
                   <div>
@@ -530,7 +520,6 @@ export default function SettingsPage() {
                         value={config.prtgUsername}
                         onChange={(e) => setConfig({ ...config, prtgUsername: e.target.value })}
                         className="text-xs"
-                        placeholder="prtgadmin"
                       />
                     </div>
                     <div>
@@ -543,7 +532,6 @@ export default function SettingsPage() {
                           value={config.prtgPassword || ''}
                           onChange={(e) => setConfig({ ...config, prtgPassword: e.target.value })}
                           className="text-xs pr-8"
-                          placeholder="••••••••"
                         />
                         <Button
                           variant="ghost"
@@ -594,7 +582,7 @@ export default function SettingsPage() {
                 <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
                   <h3 className="font-heading font-semibold text-slate-900 text-sm flex items-center gap-2">
                     <Send className="w-4 h-4 text-[#0088cc]" />
-                    <span>Telegram Bot Notifications (Grup &amp; Topik)</span>
+                    <span>Telegram Bot Notifications</span>
                   </h3>
                   <label className="flex items-center gap-2 cursor-pointer text-xs font-medium text-slate-700">
                     <input
@@ -605,15 +593,11 @@ export default function SettingsPage() {
                       }
                       className="rounded border-slate-300 text-[#EA580C] focus:ring-[#EA580C] w-4 h-4"
                     />
-                    <span>Aktifkan Notifikasi Telegram</span>
+                    <span>Enable Telegram Notifications</span>
                   </label>
                 </div>
 
                 <div className="space-y-3.5 text-xs">
-                  <p className="text-[11px] text-slate-500">
-                    Notifikasi otomatis akan dikirimkan langsung ke topik khusus grup Telegram ini untuk: permintaan baru dari departemen lain, penugasan laporan bulanan (SLA 24 jam), dan notifikasi draft report yang butuh approval supervisor.
-                  </p>
-
                   <div>
                     <label className="font-medium text-slate-700 block mb-1">
                       Telegram Bot Token <span className="text-rose-500">*</span>
@@ -624,7 +608,6 @@ export default function SettingsPage() {
                         value={config.telegramBotToken}
                         onChange={(e) => setConfig({ ...config, telegramBotToken: e.target.value })}
                         className="text-xs pr-8 font-mono"
-                        placeholder="Contoh: 123456789:ABCdefGhIJKlmNoPQRstuVWXyz"
                       />
                       <Button
                         type="button"
@@ -632,14 +615,11 @@ export default function SettingsPage() {
                         size="icon-sm"
                         onClick={() => setShowTelegramToken(!showTelegramToken)}
                         className="absolute right-0.5 top-0.5 h-7 w-7 text-slate-400 hover:text-slate-600"
-                        title={showTelegramToken ? 'Sembunyikan Token' : 'Lihat Token'}
+                        title={showTelegramToken ? 'Hide Token' : 'Show Token'}
                       >
                         {showTelegramToken ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                       </Button>
                     </div>
-                    <span className="text-[11px] text-slate-400 mt-1 block">
-                      Dibuat melalui bot resmi <code>@BotFather</code> di Telegram.
-                    </span>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -651,26 +631,18 @@ export default function SettingsPage() {
                         value={config.telegramChatId}
                         onChange={(e) => setConfig({ ...config, telegramChatId: e.target.value })}
                         className="text-xs font-mono"
-                        placeholder="Contoh: -1001234567890"
                       />
-                      <span className="text-[11px] text-slate-400 mt-1 block">
-                        ID Grup Telegram (diawali <code>-100...</code> untuk supergroup).
-                      </span>
                     </div>
 
                     <div>
                       <label className="font-medium text-slate-700 block mb-1">
-                        ID Topik Grup (Message Thread ID)
+                        Topic Thread ID (Optional)
                       </label>
                       <Input
                         value={config.telegramThreadId}
                         onChange={(e) => setConfig({ ...config, telegramThreadId: e.target.value })}
                         className="text-xs font-mono"
-                        placeholder="Contoh: 12 atau kosongkan jika general"
                       />
-                      <span className="text-[11px] text-slate-400 mt-1 block">
-                        ID Topik khusus forum di grup tempat pesan akan masuk.
-                      </span>
                     </div>
                   </div>
 
@@ -701,7 +673,7 @@ export default function SettingsPage() {
                       disabled={!config.telegramBotToken.trim() || !config.telegramChatId.trim()}
                     >
                       <Send className="w-3.5 h-3.5 mr-1.5 text-[#0088cc]" />
-                      <span>Test Kirim ke Topik Telegram</span>
+                      <span>Test Telegram Notification</span>
                     </Button>
                   </div>
                 </div>
@@ -889,7 +861,6 @@ export default function SettingsPage() {
                       value={config.documentNumberPrefix}
                       onChange={(e) => setConfig({ ...config, documentNumberPrefix: e.target.value })}
                       className="font-medium"
-                      placeholder="IMUN.01"
                     />
                   </div>
                 </div>

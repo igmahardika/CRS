@@ -588,7 +588,6 @@ export default function UsersManagementPage() {
               <Input
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="e.g. John Doe"
                 required
               />
             </FormField>
@@ -598,7 +597,6 @@ export default function UsersManagementPage() {
                 <Input
                   value={formData.username}
                   onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                  placeholder="e.g. john.doe"
                   className="text-xs"
                   required
                 />
@@ -608,23 +606,21 @@ export default function UsersManagementPage() {
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  placeholder="john@example.com"
                 />
               </FormField>
             </div>
 
-            <FormField label="Password" required hint="Minimum 6 characters">
+            <FormField label="Password" required>
               <Input
                 type="password"
                 required
                 minLength={6}
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                placeholder="Password"
               />
             </FormField>
 
-            <FormField label="Role / Jabatan Pengguna">
+            <FormField label="User Role">
               <Select
                 value={formData.role}
                 onValueChange={(val) =>
@@ -632,15 +628,15 @@ export default function UsersManagementPage() {
                 }
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Pilih jabatan/role" />
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="STAFF">Staff (Report Generator & Input Data)</SelectItem>
-                  <SelectItem value="SUPERVISOR">Supervisor (Verifikasi & Approval Laporan)</SelectItem>
-                  <SelectItem value="ADMIN">Administrator (Akses Penuh Sistem)</SelectItem>
-                  <SelectItem value="REQUESTER">Requester (Form Request Laporan SLA/MRTG)</SelectItem>
-                  <SelectItem value="OPERATOR">Operator (Legacy Access)</SelectItem>
-                  <SelectItem value="VIEWER">Viewer (Read-Only)</SelectItem>
+                  <SelectItem value="STAFF">Staff</SelectItem>
+                  <SelectItem value="SUPERVISOR">Supervisor</SelectItem>
+                  <SelectItem value="ADMIN">Administrator</SelectItem>
+                  <SelectItem value="REQUESTER">Requester</SelectItem>
+                  <SelectItem value="OPERATOR">Operator</SelectItem>
+                  <SelectItem value="VIEWER">Viewer</SelectItem>
                 </SelectContent>
               </Select>
             </FormField>
@@ -681,7 +677,7 @@ export default function UsersManagementPage() {
                 />
               </FormField>
 
-              <FormField label="Role / Jabatan Pengguna">
+              <FormField label="User Role">
                 <Select
                   value={editingUser.role}
                   onValueChange={(val) =>
@@ -692,15 +688,15 @@ export default function UsersManagementPage() {
                   }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Pilih jabatan/role" />
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="STAFF">Staff (Report Generator & Input Data)</SelectItem>
-                    <SelectItem value="SUPERVISOR">Supervisor (Verifikasi & Approval Laporan)</SelectItem>
-                    <SelectItem value="ADMIN">Administrator (Akses Penuh Sistem)</SelectItem>
-                    <SelectItem value="REQUESTER">Requester (Form Request Laporan SLA/MRTG)</SelectItem>
-                    <SelectItem value="OPERATOR">Operator (Legacy Access)</SelectItem>
-                    <SelectItem value="VIEWER">Viewer (Read-Only)</SelectItem>
+                    <SelectItem value="STAFF">Staff</SelectItem>
+                    <SelectItem value="SUPERVISOR">Supervisor</SelectItem>
+                    <SelectItem value="ADMIN">Administrator</SelectItem>
+                    <SelectItem value="REQUESTER">Requester</SelectItem>
+                    <SelectItem value="OPERATOR">Operator</SelectItem>
+                    <SelectItem value="VIEWER">Viewer</SelectItem>
                   </SelectContent>
                 </Select>
               </FormField>
@@ -744,14 +740,13 @@ export default function UsersManagementPage() {
                 Reset login password for <strong className="text-slate-900">{passwordModalUser.name}</strong> (@{passwordModalUser.username}).
               </p>
 
-              <FormField label="New Password" required hint="Minimum 6 characters">
+              <FormField label="New Password" required>
                 <Input
                   type="password"
                   required
                   minLength={6}
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="Enter new password"
                 />
               </FormField>
 

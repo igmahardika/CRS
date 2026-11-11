@@ -483,7 +483,7 @@ export default function DiscoveryPage() {
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search device, interface, Service ID, or Graph ID..."
+            placeholder="Search discovery..."
             className="pl-9 pr-9 h-9 text-[13px]"
           />
           {search && (
@@ -713,11 +713,11 @@ export default function DiscoveryPage() {
                 </div>
               ) : (
                 <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-[11px]">
-                  <span>Customer dengan Service ID ini belum terdaftar di direktori. Masukkan Service ID (SID) yang sesuai dari direktori pelanggan.</span>
+                  <span>No customer with this Service ID found in directory. Enter a valid Service ID (SID) to map.</span>
                 </div>
               )}
 
-              <FormField label="Service ID (SID)" required hint="Enter an existing Service ID (SID) from directory">
+              <FormField label="Service ID (SID)" required>
                 <Input
                   value={mapping.serviceId}
                   onChange={async (e) => {
@@ -736,7 +736,6 @@ export default function DiscoveryPage() {
                       }
                     }
                   }}
-                  placeholder="e.g. 01.0007.1"
                   className="text-xs"
                 />
               </FormField>

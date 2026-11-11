@@ -596,7 +596,7 @@ function GeneratorPageContent() {
           <div className="flex items-center gap-2">
             <Inbox className="w-4 h-4 text-amber-600 shrink-0" />
             <div>
-              <span className="font-semibold">Sedang Memproses Tiket Permintaan: </span>
+              <span className="font-semibold">Processing Request Ticket: </span>
               <code className="bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-mono font-bold text-[11px] border border-amber-200">
                 {activeRequestTicket}
               </code>
@@ -612,7 +612,7 @@ function GeneratorPageContent() {
               setActiveRequestId(null);
             }}
             className="h-6 w-6 text-amber-600 hover:text-amber-800 hover:bg-amber-100/50"
-            title="Tutup banner permintaan"
+            title="Close banner"
           >
             ✕
           </Button>
@@ -625,10 +625,10 @@ function GeneratorPageContent() {
           <div className="flex items-center gap-2">
             <Clock className="w-4 h-4 text-orange-600 shrink-0" />
             <div>
-              <span className="font-semibold">Sedang Memproses Tugas Rutin Bulanan (SLA 24 Jam): </span>
+              <span className="font-semibold">Processing Routine Schedule Task (24h SLA): </span>
               <span className="font-medium text-orange-800">{customerName}</span>
               <span className="ml-2 px-1.5 py-0.5 rounded bg-orange-200/70 text-orange-900 font-bold text-[11px]">
-                Periode {reportPeriod}
+                Period {reportPeriod}
               </span>
             </div>
           </div>
@@ -638,7 +638,7 @@ function GeneratorPageContent() {
             size="icon-sm"
             onClick={() => setActiveScheduleTaskId(null)}
             className="h-6 w-6 text-orange-600 hover:text-orange-800 hover:bg-orange-100/50"
-            title="Tutup banner jadwal rutin"
+            title="Close banner"
           >
             ✕
           </Button>
@@ -656,7 +656,7 @@ function GeneratorPageContent() {
                 <span className="w-5 h-5 rounded-full bg-orange-100 text-[#C2410C] text-[11px] font-bold flex items-center justify-center">
                   1
                 </span>
-                <span>Customer & Report Period</span>
+                <span>Customer &amp; Report Period</span>
               </h3>
               <Button
                 type="button"
@@ -678,7 +678,6 @@ function GeneratorPageContent() {
                 <Input
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
-                  placeholder="e.g. RSJ. Dr. Soeharto Heerdjan"
                 />
               </FormField>
 
@@ -687,8 +686,6 @@ function GeneratorPageContent() {
                   <Input
                     value={customerId}
                     onChange={(e) => setCustomerId(e.target.value)}
-                    className=""
-                    placeholder="e.g. 01.2180.1124"
                   />
                 </FormField>
                 <FormField label="Service ID" required>
@@ -699,8 +696,6 @@ function GeneratorPageContent() {
                       setServiceId(newSid);
                       setNodeCount(extractNodeFromServiceId(newSid));
                     }}
-                    className=""
-                    placeholder="e.g. 01.2180.1"
                   />
                 </FormField>
               </div>
@@ -730,7 +725,6 @@ function GeneratorPageContent() {
                       const match = getSlaByServiceName(newServiceName);
                       setTargetSla(match.targetSla);
                     }}
-                    placeholder="e.g. Prime 300 Mbps or Impressive 100Mbps"
                   />
                 </div>
                 <div className="sm:col-span-1">
@@ -759,7 +753,7 @@ function GeneratorPageContent() {
                       }}
                     >
                       <SelectTrigger className="h-9 w-full text-xs">
-                        <SelectValue placeholder="Select Month" />
+                        <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         {monthNames.map((m, idx) => (
@@ -807,7 +801,6 @@ function GeneratorPageContent() {
                       setIsManualDocNumber(true);
                     }}
                     className="text-xs"
-                    placeholder="01/IMUN.01/SLA/10/2026"
                   />
                 </div>
               </div>
@@ -907,7 +900,6 @@ function GeneratorPageContent() {
                           setPrtgSensorId(val);
                         }
                       }}
-                      placeholder={graphEngine === 'PRTG' ? 'e.g. 10542' : 'e.g. 2180'}
                       className="flex-1 font-medium"
                     />
                     <Button

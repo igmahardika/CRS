@@ -77,8 +77,8 @@ interface ScheduleStats {
 }
 
 const monthNames = [
-  'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-  'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'
 ];
 
 export default function SchedulePage() {
@@ -147,14 +147,14 @@ export default function SchedulePage() {
 
     if (tasks.length === 0) {
       setSlaUrgency('IDLE');
-      setTimeRemainingStr('Belum Dimulai');
+      setTimeRemainingStr('Not Started');
       setSlaProgressPercent(0);
       return;
     }
 
     if (pendingTasks.length === 0 && tasks.length > 0) {
       setSlaUrgency('COMPLETED');
-      setTimeRemainingStr('Semua Tugas Selesai 🎉');
+      setTimeRemainingStr('All Tasks Completed 🎉');
       setSlaProgressPercent(100);
       return;
     }
@@ -175,7 +175,7 @@ export default function SchedulePage() {
         setSlaUrgency('EXPIRED');
         const overdueHours = Math.floor(Math.abs(diffMs) / (1000 * 60 * 60));
         const overdueMins = Math.floor((Math.abs(diffMs) % (1000 * 60 * 60)) / (1000 * 60));
-        setTimeRemainingStr(`Melewati SLA (${overdueHours}j ${overdueMins}m lalu)`);
+        setTimeRemainingStr(`${overdueHours}h ${overdueMins}m Overdue`);
         return;
       }
 
@@ -183,7 +183,7 @@ export default function SchedulePage() {
       const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
       const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
 
-      const formatted = `${String(hours).padStart(2, '0')} Jam ${String(minutes).padStart(2, '0')} Menit ${String(seconds).padStart(2, '0')} Detik`;
+      const formatted = `${String(hours).padStart(2, '0')}h ${String(minutes).padStart(2, '0')}m ${String(seconds).padStart(2, '0')}s`;
       setTimeRemainingStr(formatted);
 
       if (hours >= 12) {
@@ -275,12 +275,12 @@ export default function SchedulePage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Jadwal Pelanggan Rutin & SLA 24 Jam"
-        description="Monitoring pengawalan pembuatan laporan bulanan pelanggan kontrak rutin setiap tanggal 1 (SLA 24 Jam)."
+        title="Monthly Routine Schedule & 24h SLA"
+        description="Track and monitor routine monthly customer reports within 24-hour SLA."
         breadcrumb={
           <Link href="/" className="hover:text-slate-800 flex items-center gap-1 font-medium text-slate-500">
             <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Kembali ke Generator</span>
+            <span>Back to Generator</span>
           </Link>
         }
         actions={
@@ -288,7 +288,7 @@ export default function SchedulePage() {
             <Link href="/customers">
               <Button variant="secondary" size="sm">
                 <Users className="w-3.5 h-3.5 mr-1.5" />
-                <span>Kelola Pelanggan Rutin</span>
+                <span>Manage Routine Customers</span>
               </Button>
             </Link>
             <Button
@@ -298,7 +298,7 @@ export default function SchedulePage() {
               className="bg-[#EA580C] hover:bg-[#C2410C]"
             >
               <Play className="w-3.5 h-3.5 mr-1.5 fill-current" />
-              <span>Trigger Kickoff Rutin</span>
+              <span>Trigger Monthly Kickoff</span>
             </Button>
           </div>
         }
@@ -335,26 +335,26 @@ export default function SchedulePage() {
                 }`}
               />
               <span className="font-bold text-sm tracking-tight">
-                PENGHITUNG WAKTU SLA 24 JAM
+                24-HOUR SLA COUNTDOWN
               </span>
               <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-white/80 border border-current/20">
-                Periode {monthNames[selectedMonth - 1]} {selectedYear}
+                Period {monthNames[selectedMonth - 1]} {selectedYear}
               </span>
             </div>
             <p className="text-xs text-slate-600 leading-relaxed">
               {slaUrgency === 'COMPLETED'
-                ? 'Semua laporan kontrak rutin untuk periode ini telah rampung dibuat dan siap disetujui.'
+                ? 'All routine contract reports for this period have been completed and archived.'
                 : slaUrgency === 'EXPIRED'
-                ? 'Batas waktu SLA 24 Jam telah terlampaui. Segera selesaikan sisa laporan yang belum dibuat.'
+                ? 'The 24-hour SLA window has expired. Please process remaining pending reports.'
                 : slaUrgency === 'IDLE'
-                ? 'Belum ada kickoff jadwal rutin yang diinisiasi untuk periode ini. Klik tombol "Trigger Kickoff Rutin" untuk memulai.'
-                : 'Laporan wajib diselesaikan dalam 24 jam sejak kickoff tanggal 1. Notifikasi telah diteruskan ke Telegram tim.'}
+                ? 'No routine kickoff triggered for this period. Click "Trigger Monthly Kickoff" to start.'
+                : 'Reports must be completed within 24 hours of routine kickoff. Telegram alerts are active.'}
             </p>
           </div>
 
           <div className="flex flex-col items-start md:items-end shrink-0">
             <span className="text-[11px] uppercase tracking-wider font-semibold text-slate-500">
-              {slaUrgency === 'EXPIRED' ? 'Status Batas Waktu' : 'Sisa Waktu Pengerjaan'}
+              {slaUrgency === 'EXPIRED' ? 'SLA Status' : 'Time Remaining'}
             </span>
             <div
               className={`font-mono font-bold text-lg md:text-xl tracking-tight flex items-center gap-2 ${
@@ -378,9 +378,9 @@ export default function SchedulePage() {
         {slaUrgency !== 'IDLE' && (
           <div className="mt-4 pt-3 border-t border-current/10">
             <div className="flex justify-between text-[11px] font-medium mb-1.5">
-              <span>Progress Waktu 24 Jam ({slaProgressPercent}% terpakai)</span>
+              <span>24-Hour Window ({slaProgressPercent}% elapsed)</span>
               <span>
-                {stats.completed} dari {stats.total} Laporan Selesai ({stats.completionRate}%)
+                {stats.completed} of {stats.total} Reports Completed ({stats.completionRate}%)
               </span>
             </div>
             <div className="w-full bg-black/10 rounded-full h-2 overflow-hidden">
@@ -404,30 +404,30 @@ export default function SchedulePage() {
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard
-          label="Total Pelanggan Rutin"
+          label="Total Routine Customers"
           value={stats.total}
           icon={Users}
-          subtext={`Periode ${monthNames[selectedMonth - 1]} ${selectedYear}`}
+          subtext={`Period ${monthNames[selectedMonth - 1]} ${selectedYear}`}
         />
         <StatCard
-          label="Laporan Selesai"
+          label="Completed Reports"
           value={stats.completed}
           icon={CheckCircle2}
-          subtext={`${stats.completionRate}% penyelesaian SLA`}
+          subtext={`${stats.completionRate}% completion rate`}
           badge={<Badge variant="success">{stats.completionRate}%</Badge>}
         />
         <StatCard
-          label="Menunggu Dikerjakan"
+          label="Pending Tasks"
           value={stats.pending}
           icon={Clock}
-          subtext="Harus selesai < 24 jam"
+          subtext="Due within 24 hours"
           badge={stats.pending > 0 ? <Badge variant="warning">{stats.pending}</Badge> : undefined}
         />
         <StatCard
-          label="Melewati Batas SLA"
+          label="SLA Breached"
           value={stats.breached}
           icon={AlertTriangle}
-          subtext="SLA 24 jam terlampaui"
+          subtext="Exceeded 24-hour SLA"
           badge={stats.breached > 0 ? <Badge variant="destructive">{stats.breached}</Badge> : undefined}
         />
       </div>
@@ -443,7 +443,7 @@ export default function SchedulePage() {
                 onValueChange={(val) => setSelectedMonth(parseInt(val, 10))}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Pilih Bulan" />
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   {monthNames.map((m, idx) => (
@@ -460,7 +460,7 @@ export default function SchedulePage() {
                 onValueChange={(val) => setSelectedYear(parseInt(val, 10))}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Pilih Tahun" />
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   {[2024, 2025, 2026, 2027].map((y) => (
@@ -482,7 +482,7 @@ export default function SchedulePage() {
             <Input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Cari pelanggan atau Service ID..."
+              placeholder="Search customer or Service ID..."
               className="pl-9 text-xs"
             />
           </div>
@@ -496,7 +496,7 @@ export default function SchedulePage() {
             onClick={() => setStatusFilter('ALL')}
             className={statusFilter === 'ALL' ? 'bg-slate-900 text-white hover:bg-slate-800 hover:text-white h-7 px-2.5 text-xs' : 'text-slate-600 h-7 px-2.5 text-xs'}
           >
-            Semua ({stats.total})
+            All ({stats.total})
           </Button>
           <Button
             variant={statusFilter === 'PENDING' ? 'secondary' : 'ghost'}
@@ -504,7 +504,7 @@ export default function SchedulePage() {
             onClick={() => setStatusFilter('PENDING')}
             className={statusFilter === 'PENDING' ? 'bg-amber-600 text-white hover:bg-amber-700 hover:text-white h-7 px-2.5 text-xs' : 'text-slate-600 h-7 px-2.5 text-xs'}
           >
-            Pending / Belum Selesai ({stats.pending})
+            Pending ({stats.pending})
           </Button>
           <Button
             variant={statusFilter === 'COMPLETED' ? 'secondary' : 'ghost'}
@@ -512,7 +512,7 @@ export default function SchedulePage() {
             onClick={() => setStatusFilter('COMPLETED')}
             className={statusFilter === 'COMPLETED' ? 'bg-emerald-600 text-white hover:bg-emerald-700 hover:text-white h-7 px-2.5 text-xs' : 'text-slate-600 h-7 px-2.5 text-xs'}
           >
-            Selesai ({stats.completed})
+            Completed ({stats.completed})
           </Button>
           <Button
             variant={statusFilter === 'BREACHED' ? 'secondary' : 'ghost'}
@@ -520,7 +520,7 @@ export default function SchedulePage() {
             onClick={() => setStatusFilter('BREACHED')}
             className={statusFilter === 'BREACHED' ? 'bg-rose-600 text-white hover:bg-rose-700 hover:text-white h-7 px-2.5 text-xs' : 'text-slate-600 h-7 px-2.5 text-xs'}
           >
-            Melewati SLA ({stats.breached})
+            SLA Breached ({stats.breached})
           </Button>
         </div>
       </div>
@@ -530,15 +530,15 @@ export default function SchedulePage() {
         {loading ? (
           <div className="py-16 text-center text-xs text-slate-500">
             <Spinner size="md" className="mx-auto text-[#EA580C] mb-2" />
-            <span>Memuat jadwal tugas rutin...</span>
+            <span>Loading routine schedule tasks...</span>
           </div>
         ) : tasks.length === 0 ? (
           <div className="p-8">
             <EmptyState
               icon={CalendarCheck}
-              title={`Belum Ada Kickoff untuk ${monthNames[selectedMonth - 1]} ${selectedYear}`}
-              description="Klik tombol 'Trigger Kickoff Rutin' untuk menghasilkan daftar tugas pembuatan laporan bulanan bagi seluruh pelanggan rutin dengan batas waktu SLA 24 Jam."
-              actionLabel="Trigger Kickoff Sekarang"
+              title={`No Tasks Generated for ${monthNames[selectedMonth - 1]} ${selectedYear}`}
+              description="Click 'Trigger Monthly Kickoff' to compile routine tasks and initiate the 24-hour SLA countdown."
+              actionLabel="Trigger Kickoff Now"
               onAction={() => {
                 setKickoffMonth(selectedMonth);
                 setKickoffYear(selectedYear);
@@ -550,8 +550,8 @@ export default function SchedulePage() {
           <div className="p-8">
             <EmptyState
               icon={Search}
-              title="Tidak Ada Tugas yang Sesuai Filter"
-              description="Coba ubah kata kunci pencarian atau tab status filter."
+              title="No Tasks Found"
+              description="Try adjusting your search query or status filter."
               actionLabel="Reset Filter"
               onAction={() => {
                 setStatusFilter('ALL');
@@ -565,12 +565,12 @@ export default function SchedulePage() {
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-12 text-center">No</TableHead>
-                  <TableHead>Pelanggan</TableHead>
-                  <TableHead>Service ID & Paket</TableHead>
-                  <TableHead>Tipe Laporan</TableHead>
-                  <TableHead>Waktu Kickoff & Batas SLA</TableHead>
+                  <TableHead>Customer</TableHead>
+                  <TableHead>Service ID &amp; Plan</TableHead>
+                  <TableHead>Report Type</TableHead>
+                  <TableHead>Kickoff &amp; SLA Deadline</TableHead>
                   <TableHead className="text-center">Status</TableHead>
-                  <TableHead className="text-right">Aksi</TableHead>
+                  <TableHead className="text-right">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -584,7 +584,7 @@ export default function SchedulePage() {
                         {idx + 1}
                       </TableCell>
 
-                      {/* Pelanggan */}
+                      {/* Customer */}
                       <TableCell>
                         <div className="font-semibold text-slate-900 text-xs">{t.customerName}</div>
                         <div className="text-[11px] text-slate-500 font-mono">{t.customerId}</div>
@@ -596,7 +596,7 @@ export default function SchedulePage() {
                         <div className="text-[11px] text-slate-500">{t.serviceName}</div>
                       </TableCell>
 
-                      {/* Tipe Laporan */}
+                      {/* Report Type */}
                       <TableCell>
                         <Badge
                           variant={t.reportType === 'SLA' ? 'info' : t.reportType === 'MRTG' ? 'warning' : 'neutral'}
@@ -608,14 +608,14 @@ export default function SchedulePage() {
                       {/* Kickoff & SLA */}
                       <TableCell>
                         <div className="text-xs text-slate-700">
-                          {kickoffDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}{' '}
-                          {kickoffDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB
+                          {kickoffDate.toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}{' '}
+                          {kickoffDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                         </div>
                         <div className="text-[11px] text-slate-500 flex items-center gap-1">
-                          <span>Batas:</span>
+                          <span>Deadline:</span>
                           <span className="font-semibold text-rose-700">
-                            {deadlineDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}{' '}
-                            {deadlineDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB
+                            {deadlineDate.toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}{' '}
+                            {deadlineDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                           </span>
                         </div>
                       </TableCell>
@@ -624,22 +624,22 @@ export default function SchedulePage() {
                       <TableCell className="text-center">
                         {t.status === 'COMPLETED' ? (
                           <div className="inline-flex flex-col items-center">
-                            <Badge variant="success">✓ Selesai</Badge>
+                            <Badge variant="success">✓ Completed</Badge>
                             {t.processedByName && (
                               <span className="text-[10px] text-slate-500 mt-0.5">
-                                oleh {t.processedByName}
+                                by {t.processedByName}
                               </span>
                             )}
                           </div>
                         ) : t.status === 'BREACHED' ? (
                           <div className="inline-flex flex-col items-center">
-                            <Badge variant="destructive">⚠️ Melewati SLA</Badge>
-                            <span className="text-[10px] text-rose-600 mt-0.5">Belum Selesai</span>
+                            <Badge variant="destructive">⚠️ SLA Breached</Badge>
+                            <span className="text-[10px] text-rose-600 mt-0.5">Pending</span>
                           </div>
                         ) : (
                           <div className="inline-flex flex-col items-center">
-                            <Badge variant="warning">⏳ Menunggu</Badge>
-                            <span className="text-[10px] text-amber-700 mt-0.5">Dalam 24 Jam</span>
+                            <Badge variant="warning">⏳ Pending</Badge>
+                            <span className="text-[10px] text-amber-700 mt-0.5">Within 24h</span>
                           </div>
                         )}
                       </TableCell>
@@ -655,22 +655,22 @@ export default function SchedulePage() {
                                 t.periodYear
                               }&type=${t.reportType === 'MRTG' ? 'MRTG' : 'SLA'}&scheduleTaskId=${t.id}`}
                               className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-[#EA580C] hover:bg-[#C2410C] text-white rounded-md text-xs font-semibold shadow-xs transition-colors"
-                              title="Buka di Report Generator"
+                              title="Process in Report Generator"
                             >
-                              <span>Kerjakan Tugas</span>
+                              <span>Process Task</span>
                               <ExternalLink className="w-3 h-3" />
                             </Link>
                           ) : (
                             <div className="flex items-center gap-1">
                               <span className="text-xs text-emerald-600 font-medium px-2 py-1">
-                                Tuntas
+                                Done
                               </span>
                               <Button
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => handleToggleTaskStatus(t, 'PENDING')}
                                 className="text-[11px] h-7 px-2 text-slate-500 hover:text-slate-800"
-                                title="Buka kembali tugas"
+                                title="Reopen task"
                               >
                                 Reopen
                               </Button>
@@ -693,23 +693,23 @@ export default function SchedulePage() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Play className="w-4 h-4 text-[#EA580C] fill-current" />
-              <span>Inisiasi Kickoff Laporan Rutin</span>
+              <span>Initiate Monthly Kickoff</span>
             </DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4 py-2">
             <p className="text-xs text-slate-600 leading-relaxed">
-              Memulai proses kickoff akan mengompilasi seluruh pelanggan dengan tanda <b>Wajib Laporan Rutin Bulanan</b>, menghitung batas SLA 24 Jam, dan mengirimkan siaran otomatis ke grup Telegram Tim.
+              Starting kickoff compiles all customers marked with <b>Monthly Routine Report</b>, sets the 24-hour SLA deadline, and broadcasts an alert to Telegram.
             </p>
 
             <div className="grid grid-cols-2 gap-3">
-              <FormField label="Periode Bulan">
+              <FormField label="Report Month">
                 <Select
                   value={String(kickoffMonth)}
                   onValueChange={(val) => setKickoffMonth(parseInt(val, 10))}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Bulan" />
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     {monthNames.map((m, idx) => (
@@ -721,13 +721,13 @@ export default function SchedulePage() {
                 </Select>
               </FormField>
 
-              <FormField label="Periode Tahun">
+              <FormField label="Report Year">
                 <Select
                   value={String(kickoffYear)}
                   onValueChange={(val) => setKickoffYear(parseInt(val, 10))}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Tahun" />
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     {[2024, 2025, 2026, 2027].map((y) => (
@@ -751,12 +751,9 @@ export default function SchedulePage() {
                   htmlFor="includeAll"
                   className="text-xs font-medium text-slate-700 cursor-pointer select-none"
                 >
-                  Sertakan semua pelanggan jika belum ada yang ditandai rutin
+                  Include all customers if none marked routine
                 </label>
               </div>
-              <p className="text-[11px] text-slate-500 pl-6">
-                Centang ini jika Anda belum sempat menandai pelanggan rutin satu per satu di Direktori Pelanggan.
-              </p>
             </div>
           </div>
 
@@ -766,7 +763,7 @@ export default function SchedulePage() {
               onClick={() => setIsKickoffModalOpen(false)}
               disabled={isSubmittingKickoff}
             >
-              Batal
+              Cancel
             </Button>
             <Button
               variant="primary"
@@ -774,7 +771,7 @@ export default function SchedulePage() {
               loading={isSubmittingKickoff}
               className="bg-[#EA580C] hover:bg-[#C2410C]"
             >
-              Mulai Kickoff Sekarang
+              Start Kickoff
             </Button>
           </DialogFooter>
         </DialogContent>

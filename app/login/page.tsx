@@ -79,7 +79,6 @@ function LoginForm() {
           <FormField label="Username" required>
             <Input
               type="text"
-              placeholder="Enter username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               autoFocus
@@ -93,7 +92,6 @@ function LoginForm() {
             <div className="relative">
               <Input
                 type={showPassword ? 'text' : 'password'}
-                placeholder="Enter password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={loading}

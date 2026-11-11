@@ -177,12 +177,12 @@ export default function RequestsQueuePage() {
     <div className="space-y-6">
       {/* Page Header */}
       <PageHeader
-        title="Antrean Permintaan Laporan"
-        description="Kelola tiket pengajuan pembuatan laporan SLA & MRTG yang diajukan oleh departemen lain (AM, Sales, NOC, Customer Care)."
+        title="Report Requests Queue"
+        description="Manage report requests submitted by departments (Account Management, Sales, NOC, Customer Care)."
         breadcrumb={
           <Link href="/" className="hover:text-slate-800 flex items-center gap-1 font-medium text-slate-500">
             <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Kembali ke Generator</span>
+            <span>Back to Generator</span>
           </Link>
         }
         actions={
@@ -191,24 +191,24 @@ export default function RequestsQueuePage() {
               variant="secondary"
               size="sm"
               onClick={handleCopyShareLink}
-              title="Salin tautan form untuk dibagikan ke departemen lain"
+              title="Copy request form link"
             >
               {copiedShareLink ? (
                 <>
                   <Check className="w-3.5 h-3.5 mr-1.5 text-emerald-600" />
-                  <span>Link Tersalin!</span>
+                  <span>Link Copied!</span>
                 </>
               ) : (
                 <>
                   <Share2 className="w-3.5 h-3.5 mr-1.5 text-[#EA580C]" />
-                  <span>Salin Link Form</span>
+                  <span>Copy Form Link</span>
                 </>
               )}
             </Button>
             <Link href="/request-report" target="_blank">
               <Button variant="primary" size="sm">
                 <Send className="w-3.5 h-3.5 mr-1.5" />
-                <span>Buka Form</span>
+                <span>Open Form</span>
               </Button>
             </Link>
           </div>
@@ -218,28 +218,28 @@ export default function RequestsQueuePage() {
       {/* Stat Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <StatCard
-          label="Total Permintaan"
+          label="Total Requests"
           value={totalCount}
           icon={Inbox}
-          subtext="Semua tiket pengajuan"
+          subtext="All submitted tickets"
         />
         <StatCard
-          label="Menunggu Diproses"
+          label="Pending"
           value={pendingCount}
           icon={Clock}
-          subtext="Perlu penanganan staf"
+          subtext="Awaiting staff action"
         />
         <StatCard
-          label="Sedang Dikerjakan"
+          label="In Progress"
           value={inProgressCount}
           icon={Sliders}
-          subtext="Proses di generator"
+          subtext="Processing in generator"
         />
         <StatCard
-          label="Selesai"
+          label="Completed"
           value={completedCount}
           icon={CheckCircle2}
-          subtext="Laporan diterbitkan"
+          subtext="Reports published"
         />
       </div>
 
@@ -251,7 +251,7 @@ export default function RequestsQueuePage() {
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Cari tiket, pelanggan, pemohon, atau divisi..."
+            placeholder="Search ticket, customer, requester, department..."
             className="pl-9 pr-9 h-9 text-[13px]"
           />
           {search && (
@@ -260,7 +260,7 @@ export default function RequestsQueuePage() {
               size="icon-sm"
               onClick={() => setSearch('')}
               className="absolute right-1 top-0.5 h-8 w-8 text-slate-400 hover:text-slate-600"
-              title="Hapus pencarian"
+              title="Clear search"
             >
               <X className="w-3.5 h-3.5" />
             </Button>
@@ -295,7 +295,7 @@ export default function RequestsQueuePage() {
                   : 'text-slate-600 hover:text-slate-900 h-7 px-2.5 text-xs'
               }
             >
-              <span>Semua ({totalCount})</span>
+              <span>All ({totalCount})</span>
             </Button>
             <Button
               variant={statusFilter === 'PENDING' ? 'secondary' : 'ghost'}
@@ -319,7 +319,7 @@ export default function RequestsQueuePage() {
                   : 'text-blue-700 hover:bg-blue-50 h-7 px-2.5 text-xs font-medium'
               }
             >
-              <span>Diproses ({inProgressCount})</span>
+              <span>In Progress ({inProgressCount})</span>
             </Button>
             <Button
               variant={statusFilter === 'COMPLETED' ? 'secondary' : 'ghost'}
@@ -331,7 +331,7 @@ export default function RequestsQueuePage() {
                   : 'text-emerald-700 hover:bg-emerald-50 h-7 px-2.5 text-xs font-medium'
               }
             >
-              <span>Selesai ({completedCount})</span>
+              <span>Completed ({completedCount})</span>
             </Button>
           </div>
         </div>
@@ -342,7 +342,7 @@ export default function RequestsQueuePage() {
         {loading && (
           <div className="py-16 text-center text-xs text-slate-500">
             <Spinner size="md" className="mx-auto text-[#EA580C] mb-2" />
-            <span>Memuat antrean permintaan laporan...</span>
+            <span>Loading request queue...</span>
           </div>
         )}
 
@@ -350,8 +350,8 @@ export default function RequestsQueuePage() {
           <div className="p-6">
             <EmptyState
               icon={Inbox}
-              title="Tidak Ada Tiket yang Cocok"
-              description="Tidak ada permintaan laporan yang sesuai dengan filter atau kata kunci saat ini."
+              title="No Tickets Found"
+              description="No report requests match the active filter or search keywords."
               actionLabel="Reset Filter"
               onAction={() => {
                 setSearch('');
@@ -365,12 +365,12 @@ export default function RequestsQueuePage() {
           <div className="p-8">
             <EmptyState
               icon={Inbox}
-              title="Antrean Permintaan Masih Kosong"
-              description="Saat departemen lain mengisi link form permintaan laporan (/request-report), tiket permintaan akan otomatis muncul di sini."
+              title="Request Queue is Empty"
+              description="When other departments submit the shareable request form, new tickets will appear here automatically."
               action={
                 <Button variant="primary" size="sm" onClick={handleCopyShareLink}>
                   <Share2 className="w-3.5 h-3.5 mr-1.5" />
-                  <span>Salin Link Form Permintaan</span>
+                  <span>Copy Form Link</span>
                 </Button>
               }
             />
@@ -382,20 +382,20 @@ export default function RequestsQueuePage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-32">No. Tiket</TableHead>
-                  <TableHead className="w-24 text-center">Urgensi</TableHead>
-                  <TableHead>Pelanggan & Service ID</TableHead>
-                  <TableHead>Tipe Laporan</TableHead>
-                  <TableHead>Periode</TableHead>
-                  <TableHead>Pemohon (Divisi)</TableHead>
+                  <TableHead className="w-32">Ticket No.</TableHead>
+                  <TableHead className="w-24 text-center">Priority</TableHead>
+                  <TableHead>Customer &amp; Service ID</TableHead>
+                  <TableHead>Report Type</TableHead>
+                  <TableHead>Period</TableHead>
+                  <TableHead>Requester (Dept)</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Waktu Request</TableHead>
-                  <TableHead className="text-right">Aksi</TableHead>
+                  <TableHead>Created</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filtered.map((r) => {
-                  const monthName = monthNames[r.periodMonth - 1] || `Bulan ${r.periodMonth}`;
+                  const monthName = monthNames[r.periodMonth - 1] || `Month ${r.periodMonth}`;
                   const isUrgent = r.urgency === 'URGENT';
 
                   return (
@@ -411,7 +411,7 @@ export default function RequestsQueuePage() {
                             size="icon-sm"
                             onClick={() => handleCopyTicket(r.ticketNumber)}
                             className="h-6 w-6 text-slate-400 hover:text-slate-700"
-                            title="Salin nomor tiket"
+                            title="Copy ticket"
                           >
                             {copiedTicket === r.ticketNumber ? (
                               <Check className="w-3.5 h-3.5 text-emerald-600" />
@@ -465,14 +465,14 @@ export default function RequestsQueuePage() {
                       <TableCell>
                         {r.status === 'COMPLETED' ? (
                           <Badge variant="success" dot>
-                            Selesai
+                            Completed
                           </Badge>
                         ) : r.status === 'IN_PROGRESS' ? (
                           <Badge variant="info" dot>
-                            Diproses
+                            In Progress
                           </Badge>
                         ) : r.status === 'CANCELLED' ? (
-                          <Badge variant="neutral">Dibatalkan</Badge>
+                          <Badge variant="neutral">Cancelled</Badge>
                         ) : (
                           <Badge variant="warning" dot>
                             Pending
@@ -482,7 +482,7 @@ export default function RequestsQueuePage() {
 
                       {/* Created At */}
                       <TableCell suppressHydrationWarning className="text-xs text-slate-500">
-                        {new Date(r.createdAt).toLocaleDateString('id-ID', {
+                        {new Date(r.createdAt).toLocaleDateString('en-US', {
                           day: '2-digit',
                           month: 'short',
                           hour: '2-digit',
@@ -498,7 +498,7 @@ export default function RequestsQueuePage() {
                             variant="ghost"
                             size="icon-sm"
                             onClick={() => setSelectedRequest(r)}
-                            title="Lihat Detail Permintaan"
+                            title="View Ticket Details"
                           >
                             <Eye className="w-4 h-4 text-slate-600" />
                           </Button>
@@ -510,17 +510,16 @@ export default function RequestsQueuePage() {
                               size="sm"
                               onClick={() => handleProcessInGenerator(r)}
                               className="bg-[#EA580C] hover:bg-[#C2410C] text-white text-xs h-7 px-2.5"
-                              title="Buka form Generator dengan data terisi otomatis"
+                              title="Open Generator with auto-filled data"
                             >
                               <Play className="w-3 h-3 mr-1 fill-white" />
-                              <span>Proses di Generator</span>
+                              <span>Process</span>
                             </Button>
                           )}
 
-                          {/* Status changer dropdown if completed */}
                           {r.status === 'COMPLETED' && (
                             <Badge variant="success" className="text-[11px]">
-                              Tuntas
+                              Done
                             </Badge>
                           )}
                         </div>
@@ -538,7 +537,7 @@ export default function RequestsQueuePage() {
       <Dialog open={Boolean(selectedRequest)} onOpenChange={(open) => !open && setSelectedRequest(null)}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Detail Tiket Permintaan Laporan</DialogTitle>
+            <DialogTitle>Request Ticket Details</DialogTitle>
             <p className="text-xs text-slate-500">{selectedRequest?.ticketNumber}</p>
           </DialogHeader>
 
@@ -546,7 +545,7 @@ export default function RequestsQueuePage() {
             <div className="space-y-4 text-xs font-sans py-2">
               <div className="grid grid-cols-2 gap-3 bg-slate-50 p-3 rounded-lg border border-slate-200">
                 <div>
-                  <span className="text-slate-500 text-[11px] block">Nama Pelanggan</span>
+                  <span className="text-slate-500 text-[11px] block">Customer Name</span>
                   <div className="font-semibold text-slate-900">{selectedRequest.customerName}</div>
                 </div>
                 <div>
@@ -556,11 +555,11 @@ export default function RequestsQueuePage() {
                   </div>
                 </div>
                 <div>
-                  <span className="text-slate-500 text-[11px] block">Tipe Laporan Diminta</span>
+                  <span className="text-slate-500 text-[11px] block">Requested Report Type</span>
                   <div className="font-semibold text-[#EA580C]">{selectedRequest.reportType} Report</div>
                 </div>
                 <div>
-                  <span className="text-slate-500 text-[11px] block">Periode</span>
+                  <span className="text-slate-500 text-[11px] block">Period</span>
                   <div className="font-medium text-slate-800">
                     {monthNames[selectedRequest.periodMonth - 1]} {selectedRequest.periodYear}
                   </div>
@@ -570,24 +569,24 @@ export default function RequestsQueuePage() {
               {/* Requester Info */}
               <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-1.5">
                 <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                  Informasi Pemohon
+                  Requester Information
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Nama:</span>
+                  <span className="text-slate-500">Name:</span>
                   <span className="font-semibold text-slate-800">{selectedRequest.requesterName}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Departemen:</span>
+                  <span className="text-slate-500">Department:</span>
                   <span className="font-medium text-slate-700">{selectedRequest.requesterDept}</span>
                 </div>
                 {selectedRequest.requesterEmail && (
                   <div className="flex justify-between">
-                    <span className="text-slate-500">Email/Kontak:</span>
+                    <span className="text-slate-500">Contact:</span>
                     <span className="text-slate-700">{selectedRequest.requesterEmail}</span>
                   </div>
                 )}
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Tingkat Urgensi:</span>
+                  <span className="text-slate-500">Priority:</span>
                   <Badge variant={selectedRequest.urgency === 'URGENT' ? 'destructive' : 'neutral'} dot>
                     {selectedRequest.urgency === 'URGENT' ? 'Urgent' : 'Normal'}
                   </Badge>
@@ -598,7 +597,7 @@ export default function RequestsQueuePage() {
               {selectedRequest.notes && (
                 <div className="p-3 bg-amber-50/50 border border-amber-200 rounded-lg text-slate-800 space-y-1">
                   <span className="text-[11px] font-semibold text-amber-800 block">
-                    Catatan Kebutuhan dari Pemohon:
+                    Notes from Requester:
                   </span>
                   <p className="text-xs text-slate-700 italic">
                     &quot;{selectedRequest.notes}&quot;
@@ -608,7 +607,7 @@ export default function RequestsQueuePage() {
 
               {/* Status Updater */}
               <div className="flex items-center justify-between pt-2">
-                <span className="text-xs font-semibold text-slate-700">Ubah Status Tiket:</span>
+                <span className="text-xs font-semibold text-slate-700">Update Status:</span>
                 <div className="flex items-center gap-1.5">
                   <Button
                     variant={selectedRequest.status === 'PENDING' ? 'secondary' : 'ghost'}
@@ -624,7 +623,7 @@ export default function RequestsQueuePage() {
                     onClick={() => handleUpdateStatus(selectedRequest.id, 'IN_PROGRESS')}
                     className="text-xs h-7 px-2 text-blue-700"
                   >
-                    Diproses
+                    In Progress
                   </Button>
                   <Button
                     variant={selectedRequest.status === 'COMPLETED' ? 'secondary' : 'ghost'}
@@ -632,7 +631,7 @@ export default function RequestsQueuePage() {
                     onClick={() => handleUpdateStatus(selectedRequest.id, 'COMPLETED')}
                     className="text-xs h-7 px-2 text-emerald-700"
                   >
-                    Selesai
+                    Completed
                   </Button>
                   <Button
                     variant={selectedRequest.status === 'CANCELLED' ? 'secondary' : 'ghost'}
@@ -640,14 +639,14 @@ export default function RequestsQueuePage() {
                     onClick={() => handleUpdateStatus(selectedRequest.id, 'CANCELLED')}
                     className="text-xs h-7 px-2 text-rose-700"
                   >
-                    Batalkan
+                    Cancel
                   </Button>
                 </div>
               </div>
 
               <DialogFooter className="pt-3 border-t border-slate-100 flex items-center justify-between">
                 <Button variant="secondary" onClick={() => setSelectedRequest(null)}>
-                  Tutup
+                  Close
                 </Button>
                 <Button
                   variant="primary"
@@ -658,7 +657,7 @@ export default function RequestsQueuePage() {
                   className="bg-[#EA580C] hover:bg-[#C2410C] text-white"
                 >
                   <Play className="w-3.5 h-3.5 mr-1 fill-white" />
-                  <span>Proses di Generator</span>
+                  <span>Process in Generator</span>
                 </Button>
               </DialogFooter>
             </div>

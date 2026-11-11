@@ -153,7 +153,7 @@ export default function CustomerModal({
               <Input
                 value={search}
                 onChange={(e) => handleSearchChange(e.target.value)}
-                placeholder="Search by name, Customer ID, or Service ID..."
+                placeholder="Search customers..."
                 className="pl-9 h-9"
               />
             </div>

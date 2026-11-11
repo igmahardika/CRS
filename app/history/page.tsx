@@ -277,28 +277,28 @@ export default function HistoryPage() {
       {reports.length > 0 && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <StatCard
-            label="Total Laporan"
+            label="Total Reports"
             value={totalReports}
             icon={FileText}
-            subtext="Arsip dokumen tersimpan"
+            subtext="Archived documents"
           />
           <StatCard
-            label="Menunggu Approval"
+            label="Pending Approval"
             value={pendingReports}
             icon={Clock}
-            subtext="Butuh review Supervisor"
+            subtext="Awaiting review"
           />
           <StatCard
-            label="Disetujui (Approved)"
+            label="Approved"
             value={approvedReports}
             icon={CheckCircle2}
-            subtext="Siap didistribusikan"
+            subtext="Ready for distribution"
           />
           <StatCard
-            label="Perlu Revisi"
+            label="Revision Needed"
             value={revisionReports}
             icon={AlertTriangle}
-            subtext="Catatan evaluasi aktif"
+            subtext="Returned with notes"
           />
         </div>
       )}
@@ -311,7 +311,7 @@ export default function HistoryPage() {
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Cari no. dokumen, pelanggan, service ID, atau staf..."
+            placeholder="Search reports..."
             className="pl-9 pr-9 h-9 text-[13px]"
           />
           {search && (
@@ -320,7 +320,7 @@ export default function HistoryPage() {
               size="icon-sm"
               onClick={() => setSearch('')}
               className="absolute right-1 top-0.5 h-8 w-8 text-slate-400 hover:text-slate-600"
-              title="Hapus pencarian"
+              title="Clear search"
             >
               <X className="w-3.5 h-3.5" />
             </Button>
@@ -357,7 +357,7 @@ export default function HistoryPage() {
                   : 'text-slate-600 hover:text-slate-900 h-7 px-2.5 text-xs'
               }
             >
-              <span>Semua ({totalReports})</span>
+              <span>All ({totalReports})</span>
             </Button>
             <Button
               variant={statusFilter === 'PENDING_APPROVAL' ? 'secondary' : 'ghost'}
@@ -393,7 +393,7 @@ export default function HistoryPage() {
                   : 'text-rose-700 hover:bg-rose-50 h-7 px-2.5 text-xs font-medium'
               }
             >
-              <span>Revisi ({revisionReports})</span>
+              <span>Revision ({revisionReports})</span>
             </Button>
           </div>
 
@@ -409,7 +409,7 @@ export default function HistoryPage() {
                   : 'text-slate-600 hover:bg-slate-100 h-8 px-2.5 text-xs'
               }
             >
-              <span>Tipe: Semua</span>
+              <span>Type: All</span>
             </Button>
             <Button
               variant={typeFilter === 'SLA' ? 'secondary' : 'ghost'}
@@ -878,28 +878,27 @@ export default function HistoryPage() {
       <Dialog open={Boolean(rejectModalReport)} onOpenChange={(open) => !open && setRejectModalReport(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Minta Revisi Laporan</DialogTitle>
+            <DialogTitle>Request Report Revision</DialogTitle>
             <p className="text-xs text-slate-500">{rejectModalReport?.documentNumber} - {rejectModalReport?.customerName}</p>
           </DialogHeader>
 
           <div className="space-y-4 py-2">
-            <FormField label="Catatan Evaluasi / Hal yang Perlu Diperbaiki" required>
+            <FormField label="Evaluation Notes / Required Changes" required>
               <Textarea
                 rows={4}
                 value={rejectionNotes}
                 onChange={(e) => setRejectionNotes(e.target.value)}
-                placeholder="Contoh: Periode SLA belum mencakup tiket pemadaman tanggal 15. Mohon periksa kembali durasi downtime."
                 required
               />
             </FormField>
             <p className="text-[11px] text-slate-500">
-              Catatan ini akan disimpan pada dokumen dan notifikasi otomatis akan dikirim ke topik Telegram tim.
+              These revision notes will be saved and dispatched to the team's Telegram topic.
             </p>
           </div>
 
           <DialogFooter className="pt-3 border-t border-slate-100">
             <Button variant="secondary" onClick={() => setRejectModalReport(null)}>
-              Batal
+              Cancel
             </Button>
             <Button
               variant="destructive"
@@ -908,7 +907,7 @@ export default function HistoryPage() {
               loading={isSubmittingReject}
             >
               <MessageSquare className="w-3.5 h-3.5 mr-1.5" />
-              <span>Kirim Catatan Revisi</span>
+              <span>Submit Revision Notes</span>
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -918,9 +917,9 @@ export default function HistoryPage() {
       <ConfirmDialog
         open={Boolean(deletingReport)}
         onOpenChange={(open) => !open && setDeletingReport(null)}
-        title="Hapus Arsip Laporan"
-        description={`Hapus laporan "${deletingReport?.docNum}" secara permanen dari arsip sistem? Tindakan ini tidak dapat dibatalkan.`}
-        confirmLabel="Hapus Laporan"
+        title="Delete Report Archive"
+        description={`Permanently delete report "${deletingReport?.docNum}" from system archives? This action cannot be undone.`}
+        confirmLabel="Delete Report"
         variant="destructive"
         onConfirm={handleDelete}
       />

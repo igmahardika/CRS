@@ -387,11 +387,10 @@ export default function DesignPreviewPage() {
           Form Controls & Inline Validation
         </h2>
         <div className="border border-slate-200 bg-white rounded-lg p-6 shadow-sm grid grid-cols-1 md:grid-cols-3 gap-6">
-          <FormField label="Customer Identifier" required hint="Alphanumeric ID code">
+          <FormField label="Customer Identifier" required>
             <Input
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
-              placeholder="e.g. 01.2180.1124"
             />
           </FormField>
 
@@ -412,8 +411,8 @@ export default function DesignPreviewPage() {
           </FormField>
 
           <div className="md:col-span-2">
-            <FormField label="Root Cause Analysis" hint="Max 250 characters">
-              <Textarea placeholder="Describe the incident, downtime impact, and resolution actions taken..." />
+            <FormField label="Root Cause Analysis">
+              <Textarea />
             </FormField>
           </div>
 

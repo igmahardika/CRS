@@ -440,7 +440,7 @@ export default function CustomersPage() {
 
   const filterOptions: { id: typeof filterTab; label: string; count: number }[] = [
     { id: 'ALL', label: 'All', count: customers.length },
-    { id: 'ROUTINE', label: 'Wajib Bulanan', count: countRoutine },
+    { id: 'ROUTINE', label: 'Monthly Routine', count: countRoutine },
     { id: 'HAS_CACTI', label: 'Has Cacti', count: countWithCacti },
     { id: 'HAS_PRTG', label: 'Has PRTG', count: countWithPrtg },
     { id: 'HAS_BOTH', label: 'Dual Engine', count: countWithBoth },
@@ -534,7 +534,7 @@ export default function CustomersPage() {
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by customer name, CID, SID, or sensor ID..."
+              placeholder="Search customers..."
               className="pl-9 pr-9 h-9 text-[13px]"
             />
             {search && (
@@ -887,7 +887,7 @@ export default function CustomersPage() {
                           {c.isMonthlyRoutine && (
                             <span
                               className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-orange-100 text-[#EA580C] border border-orange-200"
-                              title={`Wajib Laporan Bulanan (${c.routineReportType || 'SLA'})`}
+                              title={`Monthly Routine Report (${c.routineReportType || 'SLA'})`}
                             >
                               📅 {c.routineReportType || 'SLA'}
                             </span>
