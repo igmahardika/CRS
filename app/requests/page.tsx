@@ -178,7 +178,7 @@ export default function RequestsQueuePage() {
       {/* Page Header */}
       <PageHeader
         title="Report Requests Queue"
-        description="Manage report requests submitted by departments (Account Management, Sales, NOC, Customer Care)."
+        description="Manage report requests submitted by departments (Network Operation, Technical & Infrastructure, Customer Experience, Account Executive, Finance)."
         breadcrumb={
           <Link href="/" className="hover:text-slate-800 flex items-center gap-1 font-medium text-slate-500">
             <ArrowLeft className="w-3.5 h-3.5" />

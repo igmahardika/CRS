@@ -60,7 +60,7 @@ export default function RequestReportPage() {
   const currentYear = new Date().getFullYear();
 
   const [requesterName, setRequesterName] = useState('');
-  const [requesterDept, setRequesterDept] = useState('Account Management');
+  const [requesterDept, setRequesterDept] = useState('Network Operation');
   const [requesterEmail, setRequesterEmail] = useState('');
   const [reportType, setReportType] = useState<'SLA' | 'MRTG' | 'BOTH'>('SLA');
   const [customerName, setCustomerName] = useState('');
@@ -353,13 +353,11 @@ export default function RequestReportPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Account Management">Account Management (AM)</SelectItem>
-                    <SelectItem value="Sales & Business Development">Sales &amp; Business Development</SelectItem>
-                    <SelectItem value="Network Operations Center">Network Operations Center (NOC)</SelectItem>
-                    <SelectItem value="Customer Care & Helpdesk">Customer Care &amp; Helpdesk</SelectItem>
-                    <SelectItem value="Technical Support">Technical Support</SelectItem>
-                    <SelectItem value="Management">Management</SelectItem>
-                    <SelectItem value="Other">Other Department</SelectItem>
+                    <SelectItem value="Network Operation">Network Operation</SelectItem>
+                    <SelectItem value="Technical & Infrastructure">Technical &amp; Infrastructure</SelectItem>
+                    <SelectItem value="Customer Experience">Customer Experience</SelectItem>
+                    <SelectItem value="Account Executive">Account Executive</SelectItem>
+                    <SelectItem value="Finance">Finance</SelectItem>
                   </SelectContent>
                 </Select>
               </FormField>
