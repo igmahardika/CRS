@@ -347,8 +347,8 @@ export default function Navbar() {
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              {/* 4. Menu: System Management (Supervisor & Admin) */}
-              {isSupervisorOrAdmin && (
+              {/* 4. Menu: System Management (Admin Only) */}
+              {isAdmin && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button
@@ -377,19 +377,17 @@ export default function Navbar() {
                       </Link>
                     </DropdownMenuItem>
 
-                    {isAdmin && (
-                      <DropdownMenuItem asChild>
-                        <Link
-                          href="/settings"
-                          className={`flex items-center gap-2.5 px-2.5 py-2 rounded-md cursor-pointer text-xs font-medium ${
-                            pathname === '/settings' ? 'bg-orange-50 text-[#C2410C] font-semibold' : 'text-slate-700 hover:bg-slate-50'
-                          }`}
-                        >
-                          <Settings className="w-4 h-4 text-slate-500" />
-                          <span>System Settings</span>
-                        </Link>
-                      </DropdownMenuItem>
-                    )}
+                    <DropdownMenuItem asChild>
+                      <Link
+                        href="/settings"
+                        className={`flex items-center gap-2.5 px-2.5 py-2 rounded-md cursor-pointer text-xs font-medium ${
+                          pathname === '/settings' ? 'bg-orange-50 text-[#C2410C] font-semibold' : 'text-slate-700 hover:bg-slate-50'
+                        }`}
+                      >
+                        <Settings className="w-4 h-4 text-slate-500" />
+                        <span>System Settings</span>
+                      </Link>
+                    </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               )}
@@ -575,8 +573,8 @@ export default function Navbar() {
             </Link>
           </div>
 
-          {/* Section 4: System */}
-          {isSupervisorOrAdmin && (
+          {/* Section 4: System (Admin Only) */}
+          {isAdmin && (
             <div className="space-y-1 pt-2 border-t border-slate-100">
               <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2">
                 System
@@ -591,18 +589,16 @@ export default function Navbar() {
                 <UserCheck className="w-4 h-4 text-purple-600" />
                 <span>User Management</span>
               </Link>
-              {isAdmin && (
-                <Link
-                  href="/settings"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition ${
-                    pathname === '/settings' ? 'bg-orange-50 text-[#C2410C] font-semibold' : 'text-slate-700 hover:bg-slate-100'
-                  }`}
-                >
-                  <Settings className="w-4 h-4 text-slate-500" />
-                  <span>System Settings</span>
-                </Link>
-              )}
+              <Link
+                href="/settings"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition ${
+                  pathname === '/settings' ? 'bg-orange-50 text-[#C2410C] font-semibold' : 'text-slate-700 hover:bg-slate-100'
+                }`}
+              >
+                <Settings className="w-4 h-4 text-slate-500" />
+                <span>System Settings</span>
+              </Link>
             </div>
           )}
 

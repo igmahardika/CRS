@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { requireAuth } from '@/lib/auth';
+import { requireOperatorOrAdmin } from '@/lib/auth';
 import { sendTelegramNotification } from '@/lib/telegram';
 
 const monthNames = [
@@ -9,7 +9,7 @@ const monthNames = [
 ];
 
 export async function POST(req: NextRequest) {
-  const auth = await requireAuth();
+  const auth = await requireOperatorOrAdmin();
   if (!auth.authorized) {
     return NextResponse.json({ error: auth.error }, { status: auth.status });
   }

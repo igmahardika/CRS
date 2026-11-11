@@ -1128,7 +1128,7 @@ function GeneratorPageContent() {
                     onChange={(e) => setDirectApprove(e.target.checked)}
                     className="w-3.5 h-3.5 text-[#EA580C] rounded border-slate-300 focus:ring-[#EA580C]"
                   />
-                  <span>Langsung Setujui (Auto-Approve)</span>
+                  <span>Direct Approve</span>
                 </label>
               )}
 
