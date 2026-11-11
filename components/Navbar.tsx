@@ -118,8 +118,9 @@ export default function Navbar() {
     .toUpperCase();
 
   // Active section flags
+  const isPublicRequestPage = pathname === '/request-report';
   const isReportsActive = pathname === '/' || pathname === '/history';
-  const isQueueActive = pathname === '/requests' || pathname === '/request-report' || pathname === '/schedule';
+  const isQueueActive = pathname === '/requests' || pathname === '/schedule';
   const isMasterActive = pathname === '/customers' || pathname === '/discovery';
   const isSystemActive = pathname === '/users' || pathname === '/settings';
 
@@ -164,7 +165,7 @@ export default function Navbar() {
         <div className="flex justify-between h-14 items-center">
           {/* Left: Brand Logo */}
           <div className="flex items-center space-x-6">
-            <Link href="/" className="flex items-center space-x-2.5 shrink-0 group">
+            <Link href={currentUser ? "/" : "/request-report"} className="flex items-center space-x-2.5 shrink-0 group">
               <div className="w-8 h-8 rounded-lg bg-[#EA580C] text-white flex items-center justify-center shadow-xs transition-transform group-hover:scale-105">
                 <BarChart3 className="w-4 h-4 stroke-[2]" />
               </div>
@@ -179,7 +180,18 @@ export default function Navbar() {
             </Link>
 
             {/* Desktop Navigation Groups (Hierarchical Menu with Dropdowns) */}
-            <nav className="hidden lg:flex items-center space-x-1">
+            {isPublicRequestPage ? (
+              <nav className="flex items-center space-x-1">
+                <Link
+                  href="/request-report"
+                  className="px-3.5 py-1.5 rounded-full text-[13px] flex items-center gap-1.5 outline-none bg-[#FFF7ED] text-[#C2410C] font-semibold border border-orange-200/80 shadow-2xs"
+                >
+                  <Send className="w-4 h-4 text-[#C2410C] stroke-[2]" />
+                  <span>Request Form</span>
+                </Link>
+              </nav>
+            ) : (
+              <nav className="hidden lg:flex items-center space-x-1">
               {/* 1. Menu: Reports */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -392,88 +404,169 @@ export default function Navbar() {
                 </DropdownMenu>
               )}
             </nav>
+            )}
           </div>
 
           {/* Right: User Profile & Role Chip */}
-          <div className="hidden sm:flex items-center space-x-3">
-            {currentUser ? (
-              <div className="flex items-center space-x-2">
-                {/* Role Badge Chip */}
-                {getRoleBadge(currentUser.role)}
-
-                {/* User Dropdown */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 px-2 gap-2 text-slate-700 hover:text-slate-900 rounded-full"
+          <div className="flex items-center space-x-3">
+            {isPublicRequestPage ? (
+              <div className="flex items-center space-x-2.5">
+                {currentUser ? (
+                  <>
+                    <Link
+                      href="/"
+                      className="hidden sm:inline-flex items-center text-xs font-semibold text-slate-600 hover:text-[#EA580C] px-2.5 py-1 rounded-md hover:bg-slate-100 transition-colors"
                     >
-                      <div className="w-6 h-6 rounded-full bg-slate-900 text-white font-medium flex items-center justify-center text-[10px]">
-                        {userInitials}
-                      </div>
-                      <span className="text-[13px] font-medium hidden md:inline-block max-w-[120px] truncate">
-                        {currentUser.name}
-                      </span>
-                      <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56 p-1.5">
-                    <div className="px-2.5 py-2">
-                      <p className="text-xs font-bold text-slate-900 truncate">
-                        {currentUser.name}
-                      </p>
-                      <p className="text-[11px] text-slate-500 font-sans truncate">
-                        {currentUser.email || `@${currentUser.username}`}
-                      </p>
-                      <div className="mt-1.5 flex items-center gap-1.5">
-                        <span className="text-[10px] text-slate-400">Role:</span>
-                        {getRoleBadge(currentUser.role)}
-                      </div>
+                      &larr; Back to Dashboard
+                    </Link>
+                    <div className="flex items-center space-x-2">
+                      {getRoleBadge(currentUser.role)}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 px-2 gap-2 text-slate-700 hover:text-slate-900 rounded-full"
+                          >
+                            <div className="w-6 h-6 rounded-full bg-slate-900 text-white font-medium flex items-center justify-center text-[10px]">
+                              {userInitials}
+                            </div>
+                            <span className="text-[13px] font-medium hidden md:inline-block max-w-[120px] truncate">
+                              {currentUser.name}
+                            </span>
+                            <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-56 p-1.5">
+                          <div className="px-2.5 py-2">
+                            <p className="text-xs font-bold text-slate-900 truncate">
+                              {currentUser.name}
+                            </p>
+                            <p className="text-[11px] text-slate-500 font-sans truncate">
+                              {currentUser.email || `@${currentUser.username}`}
+                            </p>
+                            <div className="mt-1.5 flex items-center gap-1.5">
+                              <span className="text-[10px] text-slate-400">Role:</span>
+                              {getRoleBadge(currentUser.role)}
+                            </div>
+                          </div>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem asChild>
+                            <Link href="/" className="gap-2 cursor-pointer text-xs font-medium">
+                              <BarChart3 className="w-4 h-4 text-[#EA580C]" />
+                              <span>Go to Dashboard</span>
+                            </Link>
+                          </DropdownMenuItem>
+                          {isAdmin && (
+                            <DropdownMenuItem asChild>
+                              <Link href="/settings" className="gap-2 cursor-pointer text-xs">
+                                <Settings className="w-4 h-4 text-slate-500" />
+                                <span>System Settings</span>
+                              </Link>
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuItem
+                            onClick={() => setShowLogoutConfirm(true)}
+                            className="gap-2 text-red-600 focus:text-red-700 focus:bg-red-50 cursor-pointer text-xs"
+                          >
+                            <LogOut className="w-4 h-4" />
+                            <span>Sign out</span>
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
-                    <DropdownMenuSeparator />
-                    {isAdmin && (
-                      <DropdownMenuItem asChild>
-                        <Link href="/settings" className="gap-2 cursor-pointer text-xs">
-                          <Settings className="w-4 h-4 text-slate-500" />
-                          <span>System Settings</span>
-                        </Link>
-                      </DropdownMenuItem>
-                    )}
-                    <DropdownMenuItem
-                      onClick={() => setShowLogoutConfirm(true)}
-                      className="gap-2 text-red-600 focus:text-red-700 focus:bg-red-50 cursor-pointer text-xs"
-                    >
-                      <LogOut className="w-4 h-4" />
-                      <span>Sign out</span>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                  </>
+                ) : (
+                  <div className="flex items-center space-x-1.5 px-3 py-1 bg-slate-100 border border-slate-200 rounded-full text-xs font-medium text-slate-700">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    <span>Public Request Portal</span>
+                  </div>
+                )}
               </div>
             ) : (
-              <div className="flex items-center space-x-1.5 px-2.5 py-1 bg-emerald-50 border border-emerald-200 rounded-full text-[11px] font-medium text-emerald-700">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                <span>Online</span>
+              <div className="hidden sm:flex items-center space-x-3">
+                {currentUser ? (
+                  <div className="flex items-center space-x-2">
+                    {/* Role Badge Chip */}
+                    {getRoleBadge(currentUser.role)}
+
+                    {/* User Dropdown */}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 px-2 gap-2 text-slate-700 hover:text-slate-900 rounded-full"
+                        >
+                          <div className="w-6 h-6 rounded-full bg-slate-900 text-white font-medium flex items-center justify-center text-[10px]">
+                            {userInitials}
+                          </div>
+                          <span className="text-[13px] font-medium hidden md:inline-block max-w-[120px] truncate">
+                            {currentUser.name}
+                          </span>
+                          <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-56 p-1.5">
+                        <div className="px-2.5 py-2">
+                          <p className="text-xs font-bold text-slate-900 truncate">
+                            {currentUser.name}
+                          </p>
+                          <p className="text-[11px] text-slate-500 font-sans truncate">
+                            {currentUser.email || `@${currentUser.username}`}
+                          </p>
+                          <div className="mt-1.5 flex items-center gap-1.5">
+                            <span className="text-[10px] text-slate-400">Role:</span>
+                            {getRoleBadge(currentUser.role)}
+                          </div>
+                        </div>
+                        <DropdownMenuSeparator />
+                        {isAdmin && (
+                          <DropdownMenuItem asChild>
+                            <Link href="/settings" className="gap-2 cursor-pointer text-xs">
+                              <Settings className="w-4 h-4 text-slate-500" />
+                              <span>System Settings</span>
+                            </Link>
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuItem
+                          onClick={() => setShowLogoutConfirm(true)}
+                          className="gap-2 text-red-600 focus:text-red-700 focus:bg-red-50 cursor-pointer text-xs"
+                        >
+                          <LogOut className="w-4 h-4" />
+                          <span>Sign out</span>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                ) : (
+                  <div className="flex items-center space-x-1.5 px-2.5 py-1 bg-emerald-50 border border-emerald-200 rounded-full text-[11px] font-medium text-emerald-700">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                    <span>Online</span>
+                  </div>
+                )}
               </div>
             )}
           </div>
 
           {/* Mobile Menu Toggle Button */}
-          <div className="flex lg:hidden items-center">
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              aria-label="Toggle Navigation Menu"
-            >
-              {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            </Button>
-          </div>
+          {!isPublicRequestPage && (
+            <div className="flex lg:hidden items-center">
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                aria-label="Toggle Navigation Menu"
+              >
+                {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              </Button>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Mobile Drawer Menu (Hierarchically Sectioned) */}
-      {isMobileMenuOpen && (
+      {!isPublicRequestPage && isMobileMenuOpen && (
         <div className="lg:hidden border-t border-slate-200 bg-white px-4 pt-3 pb-5 space-y-4 shadow-xl max-h-[calc(100vh-4rem)] overflow-y-auto">
           {/* Section 1: Reports */}
           <div className="space-y-1">
