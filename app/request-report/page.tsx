@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import {
   Send,
@@ -16,6 +16,8 @@ import {
   Calendar,
   Layers,
   Sparkles,
+  Search,
+  X,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -30,7 +32,23 @@ import {
   SelectContent,
   SelectItem,
   PageHeader,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  Spinner,
 } from '@/components/ui';
+
+interface CustomerSearchResult {
+  id: string;
+  customerName: string;
+  customerId: string;
+  serviceId: string;
+  serviceName: string;
+  routineReportType?: string;
+  targetSla?: number;
+}
 
 const monthNames = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -47,10 +65,96 @@ export default function RequestReportPage() {
   const [reportType, setReportType] = useState<'SLA' | 'MRTG' | 'BOTH'>('SLA');
   const [customerName, setCustomerName] = useState('');
   const [serviceId, setServiceId] = useState('');
+  const [selectedCustomer, setSelectedCustomer] = useState<CustomerSearchResult | null>(null);
+
+  // Autocomplete state
+  const [customerResults, setCustomerResults] = useState<CustomerSearchResult[]>([]);
+  const [isSearchingCustomer, setIsSearchingCustomer] = useState(false);
+  const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Browse Directory Modal state
+  const [isBrowseModalOpen, setIsBrowseModalOpen] = useState(false);
+  const [modalSearch, setModalSearch] = useState('');
+  const [modalCustomers, setModalCustomers] = useState<CustomerSearchResult[]>([]);
+  const [isModalLoading, setIsModalLoading] = useState(false);
+
   const [periodMonth, setPeriodMonth] = useState(String(currentMonth));
   const [periodYear, setPeriodYear] = useState(String(currentYear));
   const [urgency, setUrgency] = useState<'NORMAL' | 'URGENT'>('NORMAL');
   const [notes, setNotes] = useState('');
+
+  // Fetch autocomplete suggestions with debounce
+  const fetchAutocompleteCustomers = useCallback(async (query: string) => {
+    setIsSearchingCustomer(true);
+    try {
+      const res = await fetch(`/api/requests/customers?search=${encodeURIComponent(query)}`);
+      const data = await res.json();
+      if (data.customers) {
+        setCustomerResults(data.customers);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setIsSearchingCustomer(false);
+    }
+  }, []);
+
+  // Fetch customers for Browse Directory modal
+  const fetchModalCustomers = useCallback(async (query: string) => {
+    setIsModalLoading(true);
+    try {
+      const res = await fetch(`/api/requests/customers?search=${encodeURIComponent(query)}`);
+      const data = await res.json();
+      if (data.customers) {
+        setModalCustomers(data.customers);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setIsModalLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!selectedCustomer) {
+      const timer = setTimeout(() => {
+        fetchAutocompleteCustomers(customerName);
+      }, 200);
+      return () => clearTimeout(timer);
+    }
+  }, [customerName, selectedCustomer, fetchAutocompleteCustomers]);
+
+  // Click outside listener for autocomplete dropdown
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowCustomerDropdown(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleSelectCustomer = (c: CustomerSearchResult) => {
+    setSelectedCustomer(c);
+    setCustomerName(c.customerName);
+    setServiceId(c.serviceId);
+    setShowCustomerDropdown(false);
+
+    // Auto-sync preferred report type if configured
+    if (c.routineReportType === 'SLA' || c.routineReportType === 'MRTG' || c.routineReportType === 'BOTH') {
+      setReportType(c.routineReportType as 'SLA' | 'MRTG' | 'BOTH');
+    }
+
+    toast.success(`Selected customer: ${c.customerName}`);
+  };
+
+  const handleClearCustomer = () => {
+    setSelectedCustomer(null);
+    setCustomerName('');
+    setServiceId('');
+  };
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submittedTicket, setSubmittedTicket] = useState<{
@@ -67,7 +171,7 @@ export default function RequestReportPage() {
   const handleCopyTicket = (ticket: string) => {
     navigator.clipboard.writeText(ticket);
     setCopiedTicket(true);
-    toast.success('Nomor tiket berhasil disalin!');
+    toast.success('Ticket number copied to clipboard!');
     setTimeout(() => setCopiedTicket(false), 2000);
   };
 
@@ -75,7 +179,7 @@ export default function RequestReportPage() {
     e.preventDefault();
 
     if (!requesterName.trim() || !requesterDept.trim() || !customerName.trim()) {
-      toast.error('Mohon lengkapi nama pemohon, departemen, dan nama pelanggan.');
+      toast.error('Please complete Requester Name, Department, and Customer Name.');
       return;
     }
 
@@ -100,7 +204,7 @@ export default function RequestReportPage() {
 
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || 'Gagal mengirimkan permintaan');
+        throw new Error(data.error || 'Failed to submit request');
       }
 
       setSubmittedTicket({
@@ -112,16 +216,17 @@ export default function RequestReportPage() {
         createdAt: data.request.createdAt,
       });
 
-      toast.success(`Permintaan berhasil disubmit! No Tiket: ${data.request.ticketNumber}`);
+      toast.success(`Request submitted successfully! Ticket: ${data.request.ticketNumber}`);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      toast.error(`Terjadi kesalahan: ${msg}`);
+      toast.error(`Error: ${msg}`);
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleResetForm = () => {
+    setSelectedCustomer(null);
     setCustomerName('');
     setServiceId('');
     setNotes('');
@@ -321,14 +426,119 @@ export default function RequestReportPage() {
                 </FormField>
               </div>
 
-              <div className="sm:col-span-2">
-                <FormField label="Customer Name" required>
-                  <Input
-                    value={customerName}
-                    onChange={(e) => setCustomerName(e.target.value)}
-                    required
-                  />
-                </FormField>
+              <div className="sm:col-span-2" ref={dropdownRef}>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-medium text-slate-700">
+                    Customer Name <span className="text-rose-500">*</span>
+                  </label>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setIsBrowseModalOpen(true);
+                      fetchModalCustomers(modalSearch);
+                    }}
+                    className="h-6 text-xs text-[#EA580C] hover:text-[#C2410C] px-2 font-medium"
+                  >
+                    <Building2 className="w-3.5 h-3.5 mr-1" />
+                    <span>Browse Directory</span>
+                  </Button>
+                </div>
+
+                {selectedCustomer ? (
+                  <div className="flex items-center justify-between p-3 bg-emerald-50/70 border border-emerald-200 rounded-lg animate-in fade-in">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-7 h-7 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                        <CheckCircle2 className="w-4 h-4 stroke-[2.5]" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-xs font-semibold text-emerald-950 flex items-center gap-2 flex-wrap">
+                          <span>{selectedCustomer.customerName}</span>
+                          <Badge variant="success" className="text-[10px] py-0 px-1.5">
+                            Registered in Directory
+                          </Badge>
+                        </div>
+                        <div className="text-[11px] text-emerald-700 mt-0.5 truncate">
+                          SID: <span className="font-mono font-semibold">{selectedCustomer.serviceId}</span>
+                          <span className="mx-1.5">•</span>
+                          CID: <span className="font-mono">{selectedCustomer.customerId}</span>
+                          <span className="mx-1.5">•</span>
+                          <span>{selectedCustomer.serviceName}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleClearCustomer}
+                      className="text-xs text-slate-500 hover:text-slate-800 h-7 px-2"
+                    >
+                      Change
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="relative">
+                    <Input
+                      value={customerName}
+                      onChange={(e) => {
+                        setCustomerName(e.target.value);
+                        setShowCustomerDropdown(true);
+                      }}
+                      onFocus={() => {
+                        setShowCustomerDropdown(true);
+                        if (customerResults.length === 0) fetchAutocompleteCustomers(customerName);
+                      }}
+                      required
+                      className="text-xs"
+                    />
+                    {isSearchingCustomer && (
+                      <div className="absolute right-3 top-2.5">
+                        <Spinner size="sm" className="text-[#EA580C]" />
+                      </div>
+                    )}
+
+                    {showCustomerDropdown && (
+                      <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg z-30 max-h-60 overflow-y-auto divide-y divide-slate-100 animate-in fade-in duration-150">
+                        {customerResults.length > 0 ? (
+                          customerResults.map((c) => (
+                            <button
+                              key={c.id}
+                              type="button"
+                              onClick={() => handleSelectCustomer(c)}
+                              className="w-full p-2.5 text-left hover:bg-orange-50/60 transition flex items-center justify-between gap-3 text-xs"
+                            >
+                              <div className="min-w-0">
+                                <div className="font-semibold text-slate-900 truncate">
+                                  {c.customerName}
+                                </div>
+                                <div className="text-[11px] text-slate-500 flex items-center gap-1.5 mt-0.5">
+                                  <span className="font-mono text-slate-700 font-medium">SID: {c.serviceId}</span>
+                                  <span>•</span>
+                                  <span className="font-mono text-slate-500">CID: {c.customerId}</span>
+                                  <span>•</span>
+                                  <span className="text-slate-600 truncate">{c.serviceName}</span>
+                                </div>
+                              </div>
+                              <Badge variant="soft" className="shrink-0 text-[10px]">
+                                Select
+                              </Badge>
+                            </button>
+                          ))
+                        ) : (
+                          <div className="p-3 text-center text-xs text-slate-500">
+                            {customerName.trim() ? (
+                              <span>No matching registered customer found. Continue typing to use custom name.</span>
+                            ) : (
+                              <span>Start typing to search registered customers...</span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="sm:col-span-2">
@@ -336,6 +546,7 @@ export default function RequestReportPage() {
                   <Input
                     value={serviceId}
                     onChange={(e) => setServiceId(e.target.value)}
+                    className="text-xs font-mono"
                   />
                 </FormField>
               </div>
@@ -444,6 +655,87 @@ export default function RequestReportPage() {
           </div>
         </form>
       )}
+
+      {/* Browse Customer Directory Dialog */}
+      <Dialog open={isBrowseModalOpen} onOpenChange={setIsBrowseModalOpen}>
+        <DialogContent className="max-w-xl max-h-[85vh] flex flex-col p-6">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-slate-900">
+              <Building2 className="w-5 h-5 text-[#EA580C]" />
+              <span>Select Customer from Directory</span>
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="py-2 space-y-3 flex-1 flex flex-col min-h-0">
+            <div className="relative">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
+              <Input
+                value={modalSearch}
+                onChange={(e) => {
+                  setModalSearch(e.target.value);
+                  fetchModalCustomers(e.target.value);
+                }}
+                placeholder="Search customers..."
+                className="pl-9 text-xs"
+                autoFocus
+              />
+            </div>
+
+            <div className="flex-1 overflow-y-auto border border-slate-200 rounded-lg divide-y divide-slate-100 max-h-80">
+              {isModalLoading ? (
+                <div className="py-12 text-center text-xs text-slate-500">
+                  <Spinner size="md" className="mx-auto text-[#EA580C] mb-2" />
+                  <span>Loading customer directory...</span>
+                </div>
+              ) : modalCustomers.length === 0 ? (
+                <div className="py-12 text-center text-xs text-slate-500">
+                  {modalSearch.trim()
+                    ? `No customers found matching "${modalSearch}"`
+                    : 'No customer records available in directory.'}
+                </div>
+              ) : (
+                modalCustomers.map((c) => (
+                  <div
+                    key={c.id}
+                    className="p-3 flex items-center justify-between gap-3 hover:bg-slate-50 transition"
+                  >
+                    <div className="min-w-0">
+                      <div className="font-semibold text-slate-900 text-xs truncate">
+                        {c.customerName}
+                      </div>
+                      <div className="text-[11px] text-slate-500 flex items-center gap-2 mt-0.5">
+                        <span className="font-mono text-slate-700 font-medium">SID: {c.serviceId}</span>
+                        <span>•</span>
+                        <span className="font-mono text-slate-500">CID: {c.customerId}</span>
+                        <span>•</span>
+                        <span className="text-slate-600 truncate">{c.serviceName}</span>
+                      </div>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => {
+                        handleSelectCustomer(c);
+                        setIsBrowseModalOpen(false);
+                      }}
+                      className="text-xs h-7 px-2.5"
+                    >
+                      Select
+                    </Button>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          <DialogFooter className="pt-2 border-t border-slate-100">
+            <Button type="button" variant="secondary" onClick={() => setIsBrowseModalOpen(false)}>
+              Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

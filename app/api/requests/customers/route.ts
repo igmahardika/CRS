@@ -1,0 +1,40 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+
+export async function GET(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const search = searchParams.get('search')?.trim() || searchParams.get('q')?.trim() || '';
+
+    const where = search
+      ? {
+          OR: [
+            { customerName: { contains: search } },
+            { serviceId: { contains: search } },
+            { customerId: { contains: search } },
+          ],
+        }
+      : undefined;
+
+    const customers = await prisma.customer.findMany({
+      where,
+      select: {
+        id: true,
+        customerName: true,
+        customerId: true,
+        serviceId: true,
+        serviceName: true,
+        routineReportType: true,
+        targetSla: true,
+      },
+      orderBy: { customerName: 'asc' },
+      take: 25,
+    });
+
+    return NextResponse.json({ customers });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
+}
+
