@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getSession, hashPassword } from '@/lib/auth';
+import { DEPARTMENTS, isValidDepartment } from '@/lib/permissions';
 
 // Middleware helper: Require ADMIN role
 async function requireAdmin() {
@@ -28,12 +29,13 @@ export async function GET() {
       name: true,
       email: true,
       role: true,
+      department: true,
       isActive: true,
       lastLogin: true,
       createdAt: true,
       updatedAt: true,
     },
-    orderBy: [{ role: 'asc' }, { createdAt: 'desc' }],
+    orderBy: [{ department: 'asc' }, { role: 'asc' }, { createdAt: 'desc' }],
   });
 
   return NextResponse.json({ users });
@@ -48,7 +50,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { username, name, email, password, role, isActive } = body;
+    const { username, name, email, password, role, department, isActive } = body;
 
     if (!username || !name || !password) {
       return NextResponse.json(
@@ -83,8 +85,23 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const validRoles = ['ADMIN', 'OPERATOR', 'VIEWER'];
-    const assignedRole = validRoles.includes(role) ? role : 'OPERATOR';
+    // Check unique email
+    const cleanEmail = email && String(email).trim() ? String(email).trim().toLowerCase() : null;
+    if (cleanEmail) {
+      const existingEmail = await prisma.user.findFirst({
+        where: { email: cleanEmail },
+      });
+      if (existingEmail) {
+        return NextResponse.json(
+          { error: `Email "${cleanEmail}" sudah digunakan oleh pengguna lain.` },
+          { status: 400 }
+        );
+      }
+    }
+
+    const validRoles = ['ADMIN', 'SUPERVISOR', 'STAFF', 'OPERATOR', 'VIEWER', 'REQUESTER'];
+    const assignedRole = validRoles.includes(role) ? role : 'STAFF';
+    const assignedDept = isValidDepartment(department) ? department : 'Network Operation';
 
     const { hash, salt } = hashPassword(password);
 
@@ -92,10 +109,11 @@ export async function POST(req: NextRequest) {
       data: {
         username: cleanUsername,
         name: String(name).trim(),
-        email: email ? String(email).trim().toLowerCase() : null,
+        email: cleanEmail,
         passwordHash: hash,
         passwordSalt: salt,
         role: assignedRole,
+        department: assignedDept,
         isActive: isActive !== undefined ? Boolean(isActive) : true,
       },
       select: {
@@ -104,6 +122,7 @@ export async function POST(req: NextRequest) {
         name: true,
         email: true,
         role: true,
+        department: true,
         isActive: true,
         createdAt: true,
       },
@@ -111,10 +130,16 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: `User "${newUser.name}" (@${newUser.username}) with role ${newUser.role} created successfully.`,
+      message: `User "${newUser.name}" (@${newUser.username}) [${newUser.department} - ${newUser.role}] created successfully.`,
       user: newUser,
     });
   } catch (err: unknown) {
+    if ((err as any)?.code === 'P2002') {
+      return NextResponse.json(
+        { error: 'Email atau username sudah terdaftar. Harap gunakan email/username lain.' },
+        { status: 400 }
+      );
+    }
     const msg = err instanceof Error ? err.message : String(err);
     console.error('[API Users POST]', err);
     return NextResponse.json({ error: msg }, { status: 500 });
@@ -130,7 +155,7 @@ export async function PUT(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { id, name, email, role, isActive, newPassword } = body;
+    const { id, name, email, role, department, isActive, newPassword } = body;
 
     if (!id) {
       return NextResponse.json({ error: 'User ID wajib disertakan.' }, { status: 400 });
@@ -159,8 +184,26 @@ export async function PUT(req: NextRequest) {
 
     const updateData: Record<string, unknown> = {};
     if (name) updateData.name = String(name).trim();
-    if (email !== undefined) updateData.email = email ? String(email).trim().toLowerCase() : null;
-    if (role && ['ADMIN', 'OPERATOR', 'VIEWER'].includes(role)) updateData.role = role;
+    if (email !== undefined) {
+      const cleanEmail = email && String(email).trim() ? String(email).trim().toLowerCase() : null;
+      if (cleanEmail) {
+        const existingEmail = await prisma.user.findFirst({
+          where: {
+            email: cleanEmail,
+            NOT: { id },
+          },
+        });
+        if (existingEmail) {
+          return NextResponse.json(
+            { error: `Email "${cleanEmail}" sudah digunakan oleh pengguna lain.` },
+            { status: 400 }
+          );
+        }
+      }
+      updateData.email = cleanEmail;
+    }
+    if (role && ['ADMIN', 'SUPERVISOR', 'STAFF', 'OPERATOR', 'VIEWER', 'REQUESTER'].includes(role)) updateData.role = role;
+    if (department && isValidDepartment(department)) updateData.department = department;
     if (isActive !== undefined) updateData.isActive = Boolean(isActive);
 
     if (newPassword && String(newPassword).trim()) {
@@ -184,6 +227,7 @@ export async function PUT(req: NextRequest) {
         name: true,
         email: true,
         role: true,
+        department: true,
         isActive: true,
         updatedAt: true,
       },
@@ -195,6 +239,12 @@ export async function PUT(req: NextRequest) {
       user: updated,
     });
   } catch (err: unknown) {
+    if ((err as any)?.code === 'P2002') {
+      return NextResponse.json(
+        { error: 'Email atau username sudah terdaftar. Harap gunakan email/username lain.' },
+        { status: 400 }
+      );
+    }
     const msg = err instanceof Error ? err.message : String(err);
     console.error('[API Users PUT]', err);
     return NextResponse.json({ error: msg }, { status: 500 });

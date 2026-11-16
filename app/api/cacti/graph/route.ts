@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requirePermission } from '@/lib/auth';
 import {
   getReportPeriodTimestamps,
   fetchCactiGraphImage,
@@ -8,6 +9,11 @@ import {
 } from '@/lib/mrtg-service';
 
 export async function POST(req: NextRequest) {
+  const auth = await requirePermission('report:create');
+  if (!auth.authorized) {
+    return NextResponse.json({ error: auth.error }, { status: auth.status });
+  }
+
   try {
     const body = await req.json();
     const { graphId, month, year, configOverride } = body;

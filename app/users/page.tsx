@@ -15,21 +15,55 @@ import {
   Search,
   ArrowLeft,
   X,
-  Lock,
-  Mail,
-  UserCheck,
-  UserX,
-  RefreshCw,
-  Check,
+  RotateCcw,
 } from 'lucide-react';
 import Link from 'next/link';
+import { toast } from 'sonner';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  Button,
+  Input,
+  FormField,
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+  Checkbox,
+  ConfirmDialog,
+  Badge,
+  PageHeader,
+  StatCard,
+  EmptyState,
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+  Spinner,
+} from '@/components/ui';
+import { DEPARTMENTS, Department, USER_ROLES, UserRole } from '@/lib/permissions';
+
+const ROLE_LABELS: Record<UserRole, string> = {
+  ADMIN: 'Administrator',
+  SUPERVISOR: 'Supervisor',
+  OPERATOR: 'Operator',
+  STAFF: 'Staff',
+  VIEWER: 'Viewer',
+};
 
 interface UserData {
   id: string;
   username: string;
   name: string;
   email: string | null;
-  role: 'ADMIN' | 'OPERATOR' | 'VIEWER';
+  role: 'ADMIN' | 'SUPERVISOR' | 'STAFF' | 'OPERATOR' | 'VIEWER';
+  department: string;
   isActive: boolean;
   lastLogin: string | null;
   createdAt: string;
@@ -39,12 +73,17 @@ export default function UsersManagementPage() {
   const [users, setUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
-  const [roleFilter, setRoleFilter] = useState<'ALL' | 'ADMIN' | 'OPERATOR' | 'VIEWER'>('ALL');
+  const [deptFilter, setDeptFilter] = useState<'ALL' | Department>('ALL');
+  const [roleFilter, setRoleFilter] = useState<'ALL' | 'ADMIN' | 'SUPERVISOR' | 'STAFF' | 'VIEWER' | 'OPERATOR'>('ALL');
 
   // Modal States
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserData | null>(null);
   const [passwordModalUser, setPasswordModalUser] = useState<UserData | null>(null);
+
+  // Delete user state
+  const [deletingUser, setDeletingUser] = useState<UserData | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Form states
   const [formData, setFormData] = useState({
@@ -52,7 +91,8 @@ export default function UsersManagementPage() {
     name: '',
     email: '',
     password: '',
-    role: 'OPERATOR' as 'ADMIN' | 'OPERATOR' | 'VIEWER',
+    role: 'STAFF' as 'ADMIN' | 'SUPERVISOR' | 'STAFF' | 'OPERATOR' | 'VIEWER',
+    department: 'Network Operation' as Department,
     isActive: true,
   });
   const [newPassword, setNewPassword] = useState('');
@@ -89,15 +129,19 @@ export default function UsersManagementPage() {
         !q ||
         u.name.toLowerCase().includes(q) ||
         u.username.toLowerCase().includes(q) ||
-        (u.email && u.email.toLowerCase().includes(q));
+        (u.email && u.email.toLowerCase().includes(q)) ||
+        (u.department && u.department.toLowerCase().includes(q));
 
       const matchesRole = roleFilter === 'ALL' || u.role === roleFilter;
-      return matchesSearch && matchesRole;
+      const matchesDept = deptFilter === 'ALL' || u.department === deptFilter;
+      return matchesSearch && matchesRole && matchesDept;
     });
-  }, [users, search, roleFilter]);
+  }, [users, search, roleFilter, deptFilter]);
 
   // Role counters
   const adminCount = users.filter((u) => u.role === 'ADMIN').length;
+  const supervisorCount = users.filter((u) => u.role === 'SUPERVISOR').length;
+  const staffCount = users.filter((u) => u.role === 'STAFF').length;
   const operatorCount = users.filter((u) => u.role === 'OPERATOR').length;
   const viewerCount = users.filter((u) => u.role === 'VIEWER').length;
 
@@ -115,20 +159,21 @@ export default function UsersManagementPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to create user.');
 
-      setFeedback({ type: 'success', message: data.message || 'User created successfully.' });
+      toast.success(data.message || 'User created successfully.');
       setIsCreateModalOpen(false);
       setFormData({
         username: '',
         name: '',
         email: '',
         password: '',
-        role: 'OPERATOR',
+        role: 'STAFF',
+        department: 'Network Operation',
         isActive: true,
       });
       fetchUsers();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      setFeedback({ type: 'error', message: msg });
+      toast.error(msg);
     } finally {
       setActionLoading(false);
     }
@@ -138,7 +183,6 @@ export default function UsersManagementPage() {
     e.preventDefault();
     if (!editingUser) return;
     setActionLoading(true);
-    setFeedback(null);
     try {
       const res = await fetch('/api/users', {
         method: 'PUT',
@@ -148,18 +192,19 @@ export default function UsersManagementPage() {
           name: editingUser.name,
           email: editingUser.email,
           role: editingUser.role,
+          department: editingUser.department,
           isActive: editingUser.isActive,
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to update user.');
 
-      setFeedback({ type: 'success', message: data.message || 'User updated successfully.' });
+      toast.success(data.message || 'User updated successfully.');
       setEditingUser(null);
       fetchUsers();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      setFeedback({ type: 'error', message: msg });
+      toast.error(msg);
     } finally {
       setActionLoading(false);
     }
@@ -169,7 +214,6 @@ export default function UsersManagementPage() {
     e.preventDefault();
     if (!passwordModalUser || !newPassword) return;
     setActionLoading(true);
-    setFeedback(null);
     try {
       const res = await fetch('/api/users', {
         method: 'PUT',
@@ -182,12 +226,12 @@ export default function UsersManagementPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to update password.');
 
-      setFeedback({ type: 'success', message: `Password for "${passwordModalUser.name}" updated successfully.` });
+      toast.success(`Password for "${passwordModalUser.name}" updated successfully.`);
       setPasswordModalUser(null);
       setNewPassword('');
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      setFeedback({ type: 'error', message: msg });
+      toast.error(msg);
     } finally {
       setActionLoading(false);
     }
@@ -202,241 +246,296 @@ export default function UsersManagementPage() {
       });
       const data = await res.json();
       if (res.ok) {
-        setFeedback({
-          type: 'success',
-          message: `Account "${user.name}" is now ${!user.isActive ? 'Active' : 'Disabled'}.`,
-        });
+        toast.success(`Account "${user.name}" is now ${!user.isActive ? 'Active' : 'Disabled'}.`);
         fetchUsers();
       } else {
-        setFeedback({ type: 'error', message: data.error });
+        toast.error(data.error || 'Failed to update user status.');
       }
     } catch (err) {
-      setFeedback({ type: 'error', message: String(err) });
+      toast.error(String(err));
     }
   };
 
-  const handleDeleteUser = async (user: UserData) => {
-    if (!confirm(`Permanently delete user "${user.name}" (@${user.username})?`)) {
-      return;
-    }
+  const handleConfirmDeleteUser = async () => {
+    if (!deletingUser) return;
+    setIsDeleting(true);
     try {
-      const res = await fetch(`/api/users?id=${user.id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/users?id=${deletingUser.id}`, { method: 'DELETE' });
       const data = await res.json();
       if (res.ok) {
-        setFeedback({ type: 'success', message: data.message || 'User deleted successfully.' });
+        toast.success(data.message || `User "${deletingUser.name}" deleted successfully.`);
+        setDeletingUser(null);
         fetchUsers();
       } else {
-        setFeedback({ type: 'error', message: data.error });
+        toast.error(data.error || 'Failed to delete user.');
       }
     } catch (err) {
-      setFeedback({ type: 'error', message: String(err) });
+      toast.error(String(err));
+    } finally {
+      setIsDeleting(false);
     }
   };
 
   const getRoleBadge = (role: string) => {
     switch (role) {
       case 'ADMIN':
-        return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
-            <Shield className="w-3 h-3 text-purple-600" />
-            <span>Administrator</span>
-          </span>
-        );
+        return <Badge variant="neutral">Administrator</Badge>;
+      case 'SUPERVISOR':
+        return <Badge variant="info">Supervisor</Badge>;
+      case 'STAFF':
+        return <Badge variant="warning">Staff</Badge>;
       case 'OPERATOR':
-        return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
-            <Sliders className="w-3 h-3 text-blue-600" />
-            <span>Operator</span>
-          </span>
-        );
+        return <Badge variant="soft">Operator</Badge>;
       case 'VIEWER':
       default:
-        return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
-            <Eye className="w-3 h-3 text-slate-500" />
-            <span>Viewer</span>
-          </span>
-        );
+        return <Badge variant="neutral">Viewer</Badge>;
+    }
+  };
+
+  const getDeptBadge = (dept: string) => {
+    switch (dept) {
+      case 'Network Operation':
+        return <Badge variant="success">NOC</Badge>;
+      case 'Customer Experience':
+        return <Badge variant="info">CX</Badge>;
+      case 'Account Executive':
+        return <Badge variant="warning">AE</Badge>;
+      case 'Finance':
+        return <Badge variant="neutral">Finance</Badge>;
+      default:
+        return <Badge variant="neutral">{dept || 'NOC'}</Badge>;
     }
   };
 
   return (
     <div className="space-y-6">
-      {/* Top Header Card */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center space-x-2 text-xs text-slate-500 mb-1">
-            <Link href="/" className="hover:text-slate-800 flex items-center gap-1 font-medium">
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Back to Generator</span>
-            </Link>
-          </div>
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-            <Users className="w-6 h-6 text-orange-500" />
-            <span>User Management</span>
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-            Configure system accounts, credentials, and role-based access permissions.
-          </p>
-        </div>
-
-        {/* Action Button & Badges */}
-        <div className="flex flex-wrap items-center gap-2.5">
-          <button
-            type="button"
+      {/* Standard Page Header with single primary button */}
+      <PageHeader
+        title="User Management"
+        description="Kelola akun pengguna, hak akses jabatan (Staff, Supervisor, Admin), dan kredensial."
+        breadcrumb={
+          <Link href="/" className="hover:text-slate-800 flex items-center gap-1 font-medium text-slate-500">
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Kembali ke Generator</span>
+          </Link>
+        }
+        actions={
+          <Button
+            variant="primary"
+            size="sm"
             onClick={() => setIsCreateModalOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white rounded-xl text-xs font-bold shadow-md shadow-orange-500/15 transition active:scale-95 cursor-pointer"
           >
-            <UserPlus className="w-4 h-4" />
-            <span>Add User</span>
-          </button>
-        </div>
-      </div>
+            <UserPlus className="w-3.5 h-3.5 mr-1.5" />
+            <span>Tambah User</span>
+          </Button>
+        }
+      />
 
-      {/* Role Stat Badges */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center font-bold">
-            <Users className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="text-[11px] font-semibold text-slate-500">Total Accounts</div>
-            <div className="text-lg font-black text-slate-900">{users.length}</div>
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-bold">
-            <Shield className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="text-[11px] font-semibold text-purple-700">Administrators</div>
-            <div className="text-lg font-black text-purple-900">{adminCount}</div>
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center font-bold">
-            <Sliders className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="text-[11px] font-semibold text-blue-700">Operators</div>
-            <div className="text-lg font-black text-blue-900">{operatorCount}</div>
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center font-bold">
-            <Eye className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="text-[11px] font-semibold text-slate-600">Viewers</div>
-            <div className="text-lg font-black text-slate-800">{viewerCount}</div>
-          </div>
-        </div>
+      {/* Role Stat Cards (Consistent single slate chip style) */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+        <StatCard label="Total Akun" value={users.length} icon={Users} subtext="Pengguna terdaftar" />
+        <StatCard label="Staff" value={staffCount} icon={Sliders} subtext="Generator & pembuat" />
+        <StatCard label="Supervisor" value={supervisorCount} icon={Shield} subtext="Verifikasi & approval" />
+        <StatCard label="Administrator" value={adminCount} icon={Shield} subtext="Akses penuh sistem" />
       </div>
 
       {/* Feedback Banner */}
       {feedback && (
         <div
-          className={`p-4 rounded-2xl border text-xs flex items-center justify-between shadow-xs ${feedback.type === 'success'
+          className={`p-4 rounded-lg border text-xs flex items-center justify-between shadow-xs ${
+            feedback.type === 'success'
               ? 'bg-emerald-50 border-emerald-200 text-emerald-900'
-              : 'bg-rose-50 border-rose-200 text-rose-900'
-            }`}
+              : 'bg-red-50 border-red-200 text-red-900'
+          }`}
         >
           <div className="flex items-center space-x-2">
             {feedback.type === 'success' ? (
               <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
             ) : (
-              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+              <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
             )}
             <span className="font-semibold">{feedback.message}</span>
           </div>
-          <button
+          <Button
+            variant="ghost"
+            size="icon-sm"
             onClick={() => setFeedback(null)}
-            className="text-slate-400 hover:text-slate-700 font-bold ml-2"
+            className="h-6 w-6 text-slate-500 hover:text-slate-800"
           >
-            ✕
-          </button>
+            <X className="w-3.5 h-3.5" />
+          </Button>
         </div>
       )}
 
       {/* Filter & Search Bar */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs flex flex-col md:flex-row items-center justify-between gap-3">
+      <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs flex flex-col md:flex-row items-center justify-between gap-3">
         {/* Search */}
         <div className="relative w-full md:max-w-md">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
-          <input
-            type="text"
+          <Search className="w-4 h-4 text-slate-500 absolute left-3 top-2.5 pointer-events-none" />
+          <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search name, username, or email..."
-            className="w-full pl-10 pr-4 py-2 text-xs sm:text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
+            placeholder="Cari nama user, username, atau email..."
+            className="pl-9 pr-9 h-9 text-[13px]"
           />
+          {search && (
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={() => setSearch('')}
+              className="absolute right-1 top-0.5 h-8 w-8 text-slate-500 hover:text-slate-800"
+              title="Clear search"
+            >
+              <X className="w-3.5 h-3.5" />
+            </Button>
+          )}
         </div>
 
         {/* Role Tabs */}
-        <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200 self-start md:self-auto text-xs font-bold">
-          <button
+        <div className="flex flex-wrap items-center gap-1 self-start md:self-auto">
+          {(search || roleFilter !== 'ALL') && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setSearch('');
+                setRoleFilter('ALL');
+              }}
+              className="text-xs text-orange-600 hover:text-orange-700 hover:bg-orange-50 h-8 px-2.5 font-medium mr-1"
+            >
+              <RotateCcw className="w-3.5 h-3.5 mr-1" />
+              <span>Reset</span>
+            </Button>
+          )}
+
+          <Button
+            variant={roleFilter === 'ALL' ? 'secondary' : 'ghost'}
+            size="sm"
             onClick={() => setRoleFilter('ALL')}
-            className={`px-3 py-1.5 rounded-lg transition ${roleFilter === 'ALL' ? 'bg-white text-orange-600 shadow-xs' : 'text-slate-600 hover:text-slate-900'
-              }`}
+            className={
+              roleFilter === 'ALL'
+                ? 'bg-slate-900 text-white hover:bg-slate-800 hover:text-white border-slate-900 h-8 px-2.5 text-xs font-semibold'
+                : 'text-slate-600 hover:bg-slate-100 h-8 px-2.5 text-xs'
+            }
           >
-            All Roles ({users.length})
-          </button>
-          <button
+            <span>Semua ({users.length})</span>
+          </Button>
+          <Button
+            variant={roleFilter === 'STAFF' ? 'secondary' : 'ghost'}
+            size="sm"
+            onClick={() => setRoleFilter('STAFF')}
+            className={
+              roleFilter === 'STAFF'
+                ? 'bg-slate-900 text-white hover:bg-slate-800 hover:text-white border-slate-900 h-8 px-2.5 text-xs font-semibold'
+                : 'text-slate-600 hover:bg-slate-100 h-8 px-2.5 text-xs'
+            }
+          >
+            <span>Staff ({staffCount})</span>
+          </Button>
+          <Button
+            variant={roleFilter === 'SUPERVISOR' ? 'secondary' : 'ghost'}
+            size="sm"
+            onClick={() => setRoleFilter('SUPERVISOR')}
+            className={
+              roleFilter === 'SUPERVISOR'
+                ? 'bg-slate-900 text-white hover:bg-slate-800 hover:text-white border-slate-900 h-8 px-2.5 text-xs font-semibold'
+                : 'text-slate-600 hover:bg-slate-100 h-8 px-2.5 text-xs'
+            }
+          >
+            <span>Supervisor ({supervisorCount})</span>
+          </Button>
+          <Button
+            variant={roleFilter === 'ADMIN' ? 'secondary' : 'ghost'}
+            size="sm"
             onClick={() => setRoleFilter('ADMIN')}
-            className={`px-3 py-1.5 rounded-lg transition ${roleFilter === 'ADMIN' ? 'bg-white text-purple-600 shadow-xs' : 'text-slate-600 hover:text-slate-900'
-              }`}
+            className={
+              roleFilter === 'ADMIN'
+                ? 'bg-slate-900 text-white hover:bg-slate-800 hover:text-white border-slate-900 h-8 px-2.5 text-xs font-semibold'
+                : 'text-slate-600 hover:bg-slate-100 h-8 px-2.5 text-xs'
+            }
           >
-            Admin ({adminCount})
-          </button>
-          <button
-            onClick={() => setRoleFilter('OPERATOR')}
-            className={`px-3 py-1.5 rounded-lg transition ${roleFilter === 'OPERATOR' ? 'bg-white text-blue-600 shadow-xs' : 'text-slate-600 hover:text-slate-900'
-              }`}
+            <span>Admin ({adminCount})</span>
+          </Button>
+        </div>
+
+        {/* Department Filter Bar */}
+        <div className="flex items-center gap-1.5 pt-2 border-t border-slate-100 flex-wrap">
+          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider mr-1">
+            Departemen:
+          </span>
+          <Button
+            variant={deptFilter === 'ALL' ? 'secondary' : 'ghost'}
+            size="sm"
+            onClick={() => setDeptFilter('ALL')}
+            className={
+              deptFilter === 'ALL'
+                ? 'bg-orange-50 text-orange-700 border-orange-200 h-7 px-2.5 text-xs font-semibold'
+                : 'text-slate-600 hover:bg-slate-100 h-7 px-2.5 text-xs'
+            }
           >
-            Operator ({operatorCount})
-          </button>
-          <button
-            onClick={() => setRoleFilter('VIEWER')}
-            className={`px-3 py-1.5 rounded-lg transition ${roleFilter === 'VIEWER' ? 'bg-white text-slate-800 shadow-xs' : 'text-slate-600 hover:text-slate-900'
-              }`}
-          >
-            Viewer ({viewerCount})
-          </button>
+            Semua
+          </Button>
+          {DEPARTMENTS.map((dept) => {
+            const count = users.filter((u) => u.department === dept).length;
+            const isActive = deptFilter === dept;
+            return (
+              <Button
+                key={dept}
+                variant={isActive ? 'secondary' : 'ghost'}
+                size="sm"
+                onClick={() => setDeptFilter(dept)}
+                className={
+                  isActive
+                    ? 'bg-orange-50 text-orange-700 border-orange-200 h-7 px-2.5 text-xs font-semibold'
+                    : 'text-slate-600 hover:bg-slate-100 h-7 px-2.5 text-xs'
+                }
+              >
+                <span>{dept}</span>
+                <span className="ml-1 text-xs opacity-75">({count})</span>
+              </Button>
+            );
+          })}
         </div>
       </div>
 
       {/* Users Table */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+      <div className="bg-white rounded-lg border border-slate-200 shadow-xs overflow-hidden">
         {loading ? (
-          <div className="py-16 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
-            <RefreshCw className="w-4 h-4 animate-spin text-orange-500" />
+          <div className="py-16 text-center text-xs text-slate-500">
+            <Spinner size="md" className="mx-auto text-orange-600 mb-2" />
             <span>Loading user accounts...</span>
           </div>
         ) : filteredUsers.length === 0 ? (
-          <div className="py-16 text-center text-slate-500 space-y-2">
-            <Users className="w-10 h-10 text-slate-300 mx-auto" />
-            <div className="text-sm font-bold text-slate-700">No Users Found</div>
-            <p className="text-xs text-slate-400 max-w-sm mx-auto">
-              {search ? 'No accounts match the specified search query.' : 'No registered accounts available.'}
-            </p>
+          <div className="p-4">
+            <EmptyState
+              icon={Users}
+              title="No Users Found"
+              description={
+                search ? 'No accounts match the specified search query.' : 'No registered accounts available.'
+              }
+              actionLabel={search || roleFilter !== 'ALL' || deptFilter !== 'ALL' ? 'Reset Filters' : undefined}
+              onAction={() => {
+                setSearch('');
+                setRoleFilter('ALL');
+                setDeptFilter('ALL');
+              }}
+            />
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
-              <thead>
-                <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-[11px]">
-                  <th className="py-3.5 px-5">User</th>
-                  <th className="py-3.5 px-4">Email</th>
-                  <th className="py-3.5 px-4">Role</th>
-                  <th className="py-3.5 px-4 text-center">Status</th>
-                  <th className="py-3.5 px-4">Last Sign In</th>
-                  <th className="py-3.5 px-5 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
+          <div className="overflow-x-auto max-h-[700px] overflow-y-auto relative scrollbar-thin">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>User</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Department</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead className="text-center">Status</TableHead>
+                  <TableHead>Last Sign In</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {filteredUsers.map((user) => {
                   const initials = user.name
                     .split(' ')
@@ -446,394 +545,341 @@ export default function UsersManagementPage() {
                     .toUpperCase();
 
                   return (
-                    <tr key={user.id} className="hover:bg-slate-50/80 transition">
+                    <TableRow key={user.id}>
                       {/* Name & Username */}
-                      <td className="py-3.5 px-5">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-slate-700 to-slate-900 text-white font-bold flex items-center justify-center text-xs shrink-0 shadow-xs">
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-lg bg-slate-900 text-white font-semibold flex items-center justify-center text-xs shrink-0 select-none">
                             {initials}
                           </div>
                           <div>
-                            <div className="font-bold text-slate-900 text-sm">{user.name}</div>
-                            <div className="text-slate-400 font-mono text-[11px]">@{user.username}</div>
+                            <div className="font-semibold text-slate-900">{user.name}</div>
+                            <div className="text-slate-500 text-xs">@{user.username}</div>
                           </div>
                         </div>
-                      </td>
+                      </TableCell>
 
                       {/* Email */}
-                      <td className="py-3.5 px-4 text-slate-600 font-medium">
-                        {user.email || <span className="text-slate-300 italic">-</span>}
-                      </td>
+                      <TableCell className="text-slate-600 font-medium">
+                        {user.email || <span className="text-slate-300 ">-</span>}
+                      </TableCell>
+
+                      {/* Department Badge */}
+                      <TableCell>
+                        {getDeptBadge(user.department)}
+                      </TableCell>
 
                       {/* Role Badge */}
-                      <td className="py-3.5 px-4">{getRoleBadge(user.role)}</td>
+                      <TableCell>{getRoleBadge(user.role)}</TableCell>
 
-                      {/* Status Toggle */}
-                      <td className="py-3.5 px-4 text-center">
-                        <button
-                          type="button"
+                      {/* Status Dot */}
+                      <TableCell className="text-center">
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           onClick={() => handleToggleActive(user)}
-                          className={`inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold border transition ${user.isActive
-                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
-                              : 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100'
-                            }`}
+                          className="h-7 px-2 hover:bg-slate-100"
                           title="Toggle active status"
                         >
-                          {user.isActive ? (
-                            <>
-                              <UserCheck className="w-3 h-3 text-emerald-600" />
-                              <span>Active</span>
-                            </>
-                          ) : (
-                            <>
-                              <UserX className="w-3 h-3 text-rose-600" />
-                              <span>Disabled</span>
-                            </>
-                          )}
-                        </button>
-                      </td>
+                          <Badge variant={user.isActive ? 'success' : 'neutral'} dot={true}>
+                            {user.isActive ? 'Active' : 'Disabled'}
+                          </Badge>
+                        </Button>
+                      </TableCell>
 
                       {/* Last Login */}
-                      <td suppressHydrationWarning className="py-3.5 px-4 text-slate-500 text-[11px]">
+                      <TableCell suppressHydrationWarning className="text-slate-500 text-xs">
                         {user.lastLogin ? (
                           new Date(user.lastLogin).toLocaleDateString('en-US', {
                             day: '2-digit',
                             month: 'short',
                             year: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit',
                           })
                         ) : (
-                          <span className="text-slate-300 italic">Never signed in</span>
+                          <span className="text-slate-500">Never</span>
                         )}
-                      </td>
+                      </TableCell>
 
                       {/* Actions */}
-                      <td className="py-3.5 px-5 text-right space-x-1.5 whitespace-nowrap">
-                        <button
-                          onClick={() => setPasswordModalUser(user)}
-                          className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition"
-                          title="Reset Password"
-                        >
-                          <KeyRound className="w-4 h-4 text-amber-600" />
-                        </button>
-                        <button
-                          onClick={() => setEditingUser(user)}
-                          className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition"
-                          title="Edit User"
-                        >
-                          <Edit2 className="w-4 h-4 text-blue-600" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteUser(user)}
-                          className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
-                          title="Delete User"
-                        >
-                          <Trash2 className="w-4 h-4 text-rose-500" />
-                        </button>
-                      </td>
-                    </tr>
+                      <TableCell className="text-right whitespace-nowrap">
+                        <div className="flex items-center justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            onClick={() => setPasswordModalUser(user)}
+                            title="Reset Password"
+                          >
+                            <KeyRound className="w-4 h-4 text-amber-600" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            onClick={() => setEditingUser(user)}
+                            title="Edit User"
+                          >
+                            <Edit2 className="w-4 h-4 text-slate-600" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            onClick={() => setDeletingUser(user)}
+                            title="Delete User"
+                            className="hover:bg-red-50 hover:text-red-700"
+                          >
+                            <Trash2 className="w-4 h-4 text-rose-600" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
                   );
                 })}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         )}
       </div>
 
       {/* ================= MODAL: CREATE USER ================= */}
-      {isCreateModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4">
-          <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-lg w-full overflow-hidden p-6 space-y-5 animate-in fade-in zoom-in-95">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div className="flex items-center space-x-2">
-                <div className="w-9 h-9 rounded-xl bg-orange-100 text-orange-600 flex items-center justify-center">
-                  <UserPlus className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-slate-900 text-base">Create New User</h3>
-                  <p className="text-xs text-slate-500">Add an administrator, operator, or viewer account</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setIsCreateModalOpen(false)}
-                className="p-1.5 text-slate-400 hover:text-slate-600 rounded-xl"
-              >
-                <X className="w-5 h-5" />
-              </button>
+      <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create New User</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleCreateUser} className="space-y-4 py-2">
+            <FormField label="Full Name" required>
+              <Input
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                required
+              />
+            </FormField>
+
+            <div className="grid grid-cols-2 gap-3">
+              <FormField label="Username" required>
+                <Input
+                  value={formData.username}
+                  onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                  className="text-xs"
+                  required
+                />
+              </FormField>
+              <FormField label="Email (Optional)">
+                <Input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                />
+              </FormField>
             </div>
 
-            <form onSubmit={handleCreateUser} className="space-y-4 text-xs">
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">
-                  Full Name <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="e.g. John Doe"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-xl font-medium focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
-                />
-              </div>
+            <FormField label="Password" required>
+              <Input
+                type="password"
+                required
+                minLength={6}
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              />
+            </FormField>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="font-bold text-slate-700 block mb-1">
-                    Username <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.username}
-                    onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                    placeholder="e.g. john.doe"
-                    className="w-full px-3 py-2 border border-slate-300 rounded-xl font-mono focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
-                  />
-                </div>
-                <div>
-                  <label className="font-bold text-slate-700 block mb-1">Email (Optional)</label>
-                  <input
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    placeholder="john@example.com"
-                    className="w-full px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">
-                  Password <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="password"
-                  required
-                  minLength={6}
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  placeholder="Minimum 6 characters"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-xl font-mono focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
-                />
-              </div>
-
-              {/* Role Selection */}
-              <div>
-                <label className="font-bold text-slate-700 block mb-1.5">Role Permission</label>
-                <div className="grid grid-cols-3 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setFormData({ ...formData, role: 'OPERATOR' })}
-                    className={`p-2.5 rounded-xl border text-left transition ${formData.role === 'OPERATOR'
-                        ? 'bg-blue-50 border-blue-500 text-blue-900 ring-2 ring-blue-500/20'
-                        : 'border-slate-200 hover:bg-slate-50 text-slate-700'
-                      }`}
-                  >
-                    <div className="font-bold flex items-center gap-1">
-                      <Sliders className="w-3.5 h-3.5 text-blue-600" />
-                      <span>Operator</span>
-                    </div>
-                    <p className="text-[10px] text-slate-500 mt-0.5">Generator, Master, & Discovery</p>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setFormData({ ...formData, role: 'ADMIN' })}
-                    className={`p-2.5 rounded-xl border text-left transition ${formData.role === 'ADMIN'
-                        ? 'bg-purple-50 border-purple-500 text-purple-900 ring-2 ring-purple-500/20'
-                        : 'border-slate-200 hover:bg-slate-50 text-slate-700'
-                      }`}
-                  >
-                    <div className="font-bold flex items-center gap-1">
-                      <Shield className="w-3.5 h-3.5 text-purple-600" />
-                      <span>Admin</span>
-                    </div>
-                    <p className="text-[10px] text-slate-500 mt-0.5">Full system management</p>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setFormData({ ...formData, role: 'VIEWER' })}
-                    className={`p-2.5 rounded-xl border text-left transition ${formData.role === 'VIEWER'
-                        ? 'bg-slate-100 border-slate-500 text-slate-900 ring-2 ring-slate-500/20'
-                        : 'border-slate-200 hover:bg-slate-50 text-slate-700'
-                      }`}
-                  >
-                    <div className="font-bold flex items-center gap-1">
-                      <Eye className="w-3.5 h-3.5 text-slate-500" />
-                      <span>Viewer</span>
-                    </div>
-                    <p className="text-[10px] text-slate-500 mt-0.5">Read-only history & PDF</p>
-                  </button>
-                </div>
-              </div>
-
-              {/* Modal Actions */}
-              <div className="pt-3 border-t border-slate-100 flex items-center justify-end space-x-2">
-                <button
-                  type="button"
-                  onClick={() => setIsCreateModalOpen(false)}
-                  className="px-4 py-2 border border-slate-300 rounded-xl text-slate-700 font-semibold hover:bg-slate-50 transition"
+            <div className="grid grid-cols-2 gap-3">
+              <FormField label="Department / Division" required>
+                <Select
+                  value={formData.department}
+                  onValueChange={(val) =>
+                    setFormData({ ...formData, department: val as Department })
+                  }
                 >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={actionLoading}
-                  className="px-5 py-2 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white rounded-xl font-bold shadow-md shadow-orange-500/20 transition disabled:opacity-50"
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DEPARTMENTS.map((dept) => (
+                      <SelectItem key={dept} value={dept}>
+                        {dept}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </FormField>
+
+              <FormField label="User Role" required>
+                <Select
+                  value={formData.role}
+                  onValueChange={(val) =>
+                    setFormData({ ...formData, role: val as UserRole })
+                  }
                 >
-                  {actionLoading ? 'Saving...' : 'Save User'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {USER_ROLES.map((role) => (
+                      <SelectItem key={role} value={role}>
+                        {ROLE_LABELS[role]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </FormField>
+            </div>
+
+            <DialogFooter className="pt-3 border-t border-slate-100">
+              <Button variant="secondary" onClick={() => setIsCreateModalOpen(false)}>
+                Cancel
+              </Button>
+              <Button variant="primary" type="submit" loading={actionLoading}>
+                Save User
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* ================= MODAL: EDIT USER ================= */}
-      {editingUser && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4">
-          <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-md w-full overflow-hidden p-6 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="font-bold text-slate-900 text-base">Edit User Account</h3>
-              <button onClick={() => setEditingUser(null)} className="p-1 text-slate-400 hover:text-slate-600">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleUpdateUser} className="space-y-3.5 text-xs">
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">Full Name</label>
-                <input
-                  type="text"
-                  required
+      <Dialog open={Boolean(editingUser)} onOpenChange={(open) => !open && setEditingUser(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit User Account</DialogTitle>
+          </DialogHeader>
+          {editingUser && (
+            <form onSubmit={handleUpdateUser} className="space-y-4 py-2">
+              <FormField label="Full Name" required>
+                <Input
                   value={editingUser.name}
                   onChange={(e) => setEditingUser({ ...editingUser, name: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-xl font-medium focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
+                  required
                 />
-              </div>
+              </FormField>
 
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">Email</label>
-                <input
+              <FormField label="Email">
+                <Input
                   type="email"
                   value={editingUser.email || ''}
                   onChange={(e) => setEditingUser({ ...editingUser, email: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
                 />
+              </FormField>
+
+              <div className="grid grid-cols-2 gap-3">
+                <FormField label="Department / Division" required>
+                  <Select
+                    value={editingUser.department || 'Network Operation'}
+                    onValueChange={(val) =>
+                      setEditingUser({
+                        ...editingUser,
+                        department: val,
+                      })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {DEPARTMENTS.map((dept) => (
+                        <SelectItem key={dept} value={dept}>
+                          {dept}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FormField>
+
+                <FormField label="User Role" required>
+                  <Select
+                    value={editingUser.role}
+                    onValueChange={(val) =>
+                      setEditingUser({
+                        ...editingUser,
+                        role: val as UserRole,
+                      })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {USER_ROLES.map((role) => (
+                        <SelectItem key={role} value={role}>
+                          {ROLE_LABELS[role]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FormField>
               </div>
 
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">Role Permission</label>
-                <select
-                  value={editingUser.role}
-                  onChange={(e) =>
-                    setEditingUser({
-                      ...editingUser,
-                      role: e.target.value as 'ADMIN' | 'OPERATOR' | 'VIEWER',
-                    })
-                  }
-                  className="w-full px-3 py-2 border border-slate-300 rounded-xl font-bold bg-white focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
-                >
-                  <option value="OPERATOR">Operator (Report Generator & Master)</option>
-                  <option value="ADMIN">Administrator (Full Access)</option>
-                  <option value="VIEWER">Viewer (Read-Only History)</option>
-                </select>
-              </div>
-
-              <div className="pt-2 flex items-center space-x-2">
-                <input
-                  type="checkbox"
+              <div className="flex items-center space-x-2 pt-1">
+                <Checkbox
                   id="editIsActive"
                   checked={editingUser.isActive}
-                  onChange={(e) => setEditingUser({ ...editingUser, isActive: e.target.checked })}
-                  className="rounded text-orange-600 focus:ring-orange-500 w-4 h-4 cursor-pointer"
+                  onCheckedChange={(c) => setEditingUser({ ...editingUser, isActive: !!c })}
                 />
-                <label htmlFor="editIsActive" className="font-bold text-slate-800 cursor-pointer">
+                <label
+                  htmlFor="editIsActive"
+                  className="text-xs font-sans text-slate-800 cursor-pointer select-none"
+                >
                   Account Active
                 </label>
               </div>
 
-              <div className="pt-3 border-t border-slate-100 flex items-center justify-end space-x-2">
-                <button
-                  type="button"
-                  onClick={() => setEditingUser(null)}
-                  className="px-4 py-2 border border-slate-300 rounded-xl text-slate-700 font-semibold hover:bg-slate-50 transition"
-                >
+              <DialogFooter className="pt-3 border-t border-slate-100">
+                <Button variant="secondary" onClick={() => setEditingUser(null)}>
                   Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={actionLoading}
-                  className="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold transition disabled:opacity-50"
-                >
-                  {actionLoading ? 'Saving...' : 'Save Changes'}
-                </button>
-              </div>
+                </Button>
+                <Button variant="primary" type="submit" loading={actionLoading}>
+                  Save Changes
+                </Button>
+              </DialogFooter>
             </form>
-          </div>
-        </div>
-      )}
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* ================= MODAL: RESET PASSWORD ================= */}
-      {passwordModalUser && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4">
-          <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-sm w-full overflow-hidden p-6 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center">
-                  <KeyRound className="w-4 h-4" />
-                </div>
-                <h3 className="font-bold text-slate-900 text-sm">Reset Password</h3>
-              </div>
-              <button onClick={() => setPasswordModalUser(null)} className="p-1 text-slate-400 hover:text-slate-600">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+      <Dialog open={Boolean(passwordModalUser)} onOpenChange={(open) => !open && setPasswordModalUser(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Reset Password</DialogTitle>
+          </DialogHeader>
+          {passwordModalUser && (
+            <form onSubmit={handleResetPassword} className="space-y-4 py-2">
+              <p className="text-xs text-slate-600 font-sans leading-relaxed">
+                Reset login password for <strong className="text-slate-900">{passwordModalUser.name}</strong> (@{passwordModalUser.username}).
+              </p>
 
-            <p className="text-xs text-slate-500 leading-relaxed">
-              Reset login password for <strong>{passwordModalUser.name}</strong> (@{passwordModalUser.username}).
-            </p>
-
-            <form onSubmit={handleResetPassword} className="space-y-3.5 text-xs">
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">
-                  New Password <span className="text-red-500">*</span>
-                </label>
-                <input
+              <FormField label="New Password" required>
+                <Input
                   type="password"
                   required
                   minLength={6}
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="Minimum 6 characters"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-xl font-mono focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
                 />
-              </div>
+              </FormField>
 
-              <div className="pt-3 border-t border-slate-100 flex items-center justify-end space-x-2">
-                <button
-                  type="button"
-                  onClick={() => setPasswordModalUser(null)}
-                  className="px-4 py-2 border border-slate-300 rounded-xl text-slate-700 font-semibold hover:bg-slate-50 transition"
-                >
+              <DialogFooter className="pt-3 border-t border-slate-100">
+                <Button variant="secondary" onClick={() => setPasswordModalUser(null)}>
                   Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={actionLoading || !newPassword}
-                  className="px-5 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold transition disabled:opacity-50"
-                >
-                  {actionLoading ? 'Saving...' : 'Update Password'}
-                </button>
-              </div>
+                </Button>
+                <Button variant="primary" type="submit" loading={actionLoading} disabled={!newPassword}>
+                  Update Password
+                </Button>
+              </DialogFooter>
             </form>
-          </div>
-        </div>
-      )}
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirmation Dialog for User Deletion */}
+      <ConfirmDialog
+        open={Boolean(deletingUser)}
+        onOpenChange={(open) => !open && setDeletingUser(null)}
+        title="Delete User Account"
+        description={`Permanently delete user account "${deletingUser?.name}" (@${deletingUser?.username})? This action cannot be undone.`}
+        confirmLabel="Delete User"
+        variant="destructive"
+        onConfirm={handleConfirmDeleteUser}
+      />
     </div>
   );
 }
-

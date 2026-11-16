@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyPassword, setSessionCookie, ensureDefaultAdmin } from '@/lib/auth';
+import { getDefaultLandingRoute } from '@/lib/permissions';
+import { UserSession } from '@/lib/token';
 
 export async function POST(req: NextRequest) {
   try {
@@ -54,20 +56,24 @@ export async function POST(req: NextRequest) {
       data: { lastLogin: new Date() },
     });
 
-    const userSession = {
+    const userSession: UserSession = {
       id: user.id,
       username: user.username,
       name: user.name,
       email: user.email,
-      role: user.role as 'ADMIN' | 'OPERATOR' | 'VIEWER',
+      role: user.role as UserSession['role'],
+      department: user.department || 'Network Operation',
     };
 
     await setSessionCookie(userSession);
+
+    const defaultRoute = getDefaultLandingRoute(userSession);
 
     return NextResponse.json({
       success: true,
       message: 'Sign in successful.',
       user: userSession,
+      defaultRoute,
     });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);

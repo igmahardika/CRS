@@ -5,7 +5,8 @@ export interface UserSession {
   username: string;
   name: string;
   email?: string | null;
-  role: 'ADMIN' | 'OPERATOR' | 'VIEWER';
+  role: 'ADMIN' | 'SUPERVISOR' | 'STAFF' | 'OPERATOR' | 'VIEWER';
+  department: string;
 }
 
 export const AUTH_COOKIE_NAME = 'genre_auth_token';
@@ -49,6 +50,10 @@ export function verifyToken(token: string): (UserSession & { exp: number }) | nu
     const payload = JSON.parse(Buffer.from(body, 'base64url').toString('utf-8'));
     if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
       return null; // Expired
+    }
+
+    if (!payload.department) {
+      payload.department = 'Network Operation';
     }
 
     return payload;

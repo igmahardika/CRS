@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Download, ZoomIn, ZoomOut, Layers } from 'lucide-react';
+import { Download, ZoomIn, ZoomOut, Layers, RefreshCw } from 'lucide-react';
 import { ReportData } from '@/lib/pdf-template';
-import { calculateSla } from '@/lib/sla-calculator';
+import { calculateSla, formatPeriodDisplay } from '@/lib/sla-calculator';
+import { Button, Badge } from '@/components/ui';
 
 interface LivePreviewProps {
   data: ReportData;
@@ -25,6 +26,13 @@ export default function LivePreview({
   const [zoom, setZoom] = useState<number>(65); // Default 65% scale for desktop viewing
   const [activePage, setActivePage] = useState<number | 'all'>('all');
 
+  // Auto-fit zoom on mobile viewport
+  React.useEffect(() => {
+    if (typeof window !== 'undefined' && window.innerWidth < 640) {
+      setZoom(40);
+    }
+  }, []);
+
   const isSla = data.reportType === 'SLA';
 
   const tickets = (data.tickets || []).filter(t => t.noTicket && t.noTicket.trim() !== '');
@@ -43,21 +51,36 @@ export default function LivePreview({
     }
   }, [totalPages, activePage]);
 
-  // SLA calculations
-  const [periodMonthStr, periodYearStr] = (data.reportPeriod || '').split(' ');
-  const monthNames = [
-    'january', 'february', 'march', 'april', 'may', 'june',
-    'july', 'august', 'september', 'october', 'november', 'december'
-  ];
-  let month = 10;
-  let year = 2026;
+  // SLA calculations with bilingual month parsing
+  const [periodMonthStr, periodYearStr] = (data.reportPeriod || '').trim().split(/\s+/);
+  const monthMap: Record<string, number> = {
+    january: 1, jan: 1, february: 2, feb: 2, march: 3, mar: 3,
+    april: 4, apr: 4, may: 5, june: 6, jun: 6,
+    july: 7, jul: 7, august: 8, aug: 8, september: 9, sep: 9, sept: 9,
+    october: 10, oct: 10, november: 11, nov: 11, december: 12, dec: 12,
+    januari: 1, februari: 2, maret: 3, mei: 5, juni: 6, juli: 7,
+    agustus: 8, agt: 8, ags: 8, oktober: 10, okt: 10, nopember: 11,
+    desember: 12, des: 12,
+  };
+
+  const now = new Date();
+  let month = now.getMonth() + 1;
+  let year = now.getFullYear();
+
   if (periodMonthStr) {
-    const foundIdx = monthNames.findIndex(m => m === periodMonthStr.toLowerCase());
-    if (foundIdx !== -1) month = foundIdx + 1;
+    const cleanKey = periodMonthStr.toLowerCase().replace(/[^a-z]/g, '');
+    if (monthMap[cleanKey]) {
+      month = monthMap[cleanKey];
+    } else {
+      const parsedM = parseInt(cleanKey, 10);
+      if (!isNaN(parsedM) && parsedM >= 1 && parsedM <= 12) month = parsedM;
+    }
   }
   if (periodYearStr) {
-    const parsedY = parseInt(periodYearStr, 10);
-    if (!isNaN(parsedY)) year = parsedY;
+    const parsedY = parseInt(periodYearStr.replace(/[^0-9]/g, ''), 10);
+    if (!isNaN(parsedY) && parsedY >= 2000 && parsedY <= 2100) {
+      year = parsedY;
+    }
   }
 
   const slaCalc = calculateSla(data.cases || [], data.tickets || [], year, month);
@@ -81,114 +104,137 @@ export default function LivePreview({
       {/* Top Toolbar */}
       <div className="bg-white border-b border-slate-200 px-4 py-2.5 flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center space-x-2">
-          <Layers className="w-4 h-4 text-orange-500" />
-          <span className="text-sm font-semibold text-slate-800">
+          <Layers className="w-4 h-4 text-orange-600" />
+          <span className="font-heading text-sm font-semibold text-slate-900">
             {`Live Preview (${totalPages} A4 Pages)`}
           </span>
-          <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-medium">
+          <Badge variant="neutral" className="text-xs">
             {data.reportType}
-          </span>
+          </Badge>
         </div>
 
         {/* View Controls & Action */}
         <div className="flex items-center space-x-2">
           {/* Page switch tabs */}
           <div className="hidden sm:flex bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-xs">
-            <button
+            <Button
+              type="button"
+              variant={activePage === 'all' ? 'secondary' : 'ghost'}
+              size="sm"
               onClick={() => setActivePage('all')}
-              className={`px-2 py-1 rounded-md font-medium transition ${
-                activePage === 'all'
-                  ? 'bg-white text-orange-600 shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
+              className={`h-7 px-2.5 text-xs font-medium ${
+                activePage === 'all' ? 'bg-white text-orange-700 shadow-xs' : 'text-slate-600'
               }`}
             >
               All
-            </button>
+            </Button>
             {Array.from({ length: totalPages }).map((_, i) => (
-              <button
+              <Button
                 key={i}
+                type="button"
+                variant={activePage === i + 1 ? 'secondary' : 'ghost'}
+                size="sm"
                 onClick={() => setActivePage(i + 1)}
-                className={`px-2 py-1 rounded-md font-medium transition ${
-                  activePage === i + 1
-                    ? 'bg-white text-orange-600 shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900'
+                className={`h-7 px-2.5 text-xs font-medium ${
+                  activePage === i + 1 ? 'bg-white text-orange-700 shadow-xs' : 'text-slate-600'
                 }`}
               >
                 {`Page ${i + 1}`}
-              </button>
+              </Button>
             ))}
           </div>
 
           {/* Zoom controls with Quick Presets */}
           <div className="flex items-center space-x-1 bg-slate-100 p-1 rounded-lg border border-slate-200 text-xs text-slate-700">
-            <button
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
               onClick={() => setZoom(z => Math.max(40, z - 10))}
-              className="p-1 hover:text-slate-900 rounded hover:bg-slate-200/60 transition"
+              className="h-7 w-7 text-slate-600 hover:text-slate-900"
               title="Zoom Out (-10%)"
             >
               <ZoomOut className="w-3.5 h-3.5" />
-            </button>
-            <span className="w-10 text-center font-bold font-mono text-[11px] tabular-nums">{`${zoom}%`}</span>
-            <button
+            </Button>
+            <span className="w-10 text-center font-bold text-xs tabular-nums text-slate-900">{`${zoom}%`}</span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
               onClick={() => setZoom(z => Math.min(130, z + 10))}
-              className="p-1 hover:text-slate-900 rounded hover:bg-slate-200/60 transition"
+              className="h-7 w-7 text-slate-600 hover:text-slate-900"
               title="Zoom In (+10%)"
             >
               <ZoomIn className="w-3.5 h-3.5" />
-            </button>
+            </Button>
             <div className="hidden lg:flex items-center space-x-0.5 border-l border-slate-300 pl-1 ml-0.5">
-              <button
+              <Button
+                type="button"
+                variant={zoom === 50 ? 'secondary' : 'ghost'}
+                size="sm"
                 onClick={() => setZoom(50)}
-                className={`px-1.5 py-0.5 text-[10px] font-bold rounded transition ${zoom === 50 ? 'bg-white text-orange-600 shadow-2xs' : 'text-slate-500 hover:text-slate-800'}`}
+                className={`h-6 px-1.5 text-xs font-medium ${
+                  zoom === 50 ? 'bg-white text-orange-700 shadow-xs font-semibold' : 'text-slate-500'
+                }`}
                 title="Zoom 50% (Fit)"
               >
                 Fit
-              </button>
-              <button
+              </Button>
+              <Button
+                type="button"
+                variant={zoom === 65 ? 'secondary' : 'ghost'}
+                size="sm"
                 onClick={() => setZoom(65)}
-                className={`px-1.5 py-0.5 text-[10px] font-bold rounded transition ${zoom === 65 ? 'bg-white text-orange-600 shadow-2xs' : 'text-slate-500 hover:text-slate-800'}`}
+                className={`h-6 px-1.5 text-xs font-medium ${
+                  zoom === 65 ? 'bg-white text-orange-700 shadow-xs font-semibold' : 'text-slate-500'
+                }`}
                 title="Zoom 65% (Optimal)"
               >
                 65%
-              </button>
-              <button
+              </Button>
+              <Button
+                type="button"
+                variant={zoom === 100 ? 'secondary' : 'ghost'}
+                size="sm"
                 onClick={() => setZoom(100)}
-                className={`px-1.5 py-0.5 text-[10px] font-bold rounded transition ${zoom === 100 ? 'bg-white text-orange-600 shadow-2xs' : 'text-slate-500 hover:text-slate-800'}`}
+                className={`h-6 px-1.5 text-xs font-medium ${
+                  zoom === 100 ? 'bg-white text-orange-700 shadow-xs font-semibold' : 'text-slate-500'
+                }`}
                 title="Zoom 100% (Real Size)"
               >
                 100%
-              </button>
+              </Button>
             </div>
           </div>
 
-          {/* Export PDF Button */}
+          {/* Download PDF Button */}
           {onDownloadPdf && (
-            <button
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
               onClick={onDownloadPdf}
               disabled={isGeneratingPdf}
-              className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 bg-gradient-to-r from-orange-500 to-amber-600 text-white rounded-lg text-xs font-semibold hover:from-orange-600 hover:to-amber-700 transition shadow-xs disabled:opacity-50"
+              className="text-orange-700 border-orange-200 hover:bg-orange-50 font-medium"
             >
               {isGeneratingPdf ? (
                 <>
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
-                  </svg>
+                  <RefreshCw className="w-3.5 h-3.5 mr-1.5 animate-spin" />
                   <span>Generating PDF...</span>
                 </>
               ) : (
                 <>
-                  <Download className="w-4 h-4" />
+                  <Download className="w-3.5 h-3.5 mr-1.5 text-orange-600" />
                   <span>Download PDF</span>
                 </>
               )}
-            </button>
+            </Button>
           )}
         </div>
       </div>
 
       {/* Preview Scrollable Area */}
-      <div className="flex-1 overflow-auto p-4 sm:p-6 flex flex-col items-center gap-8 bg-slate-200/70" suppressHydrationWarning>
+      <div className="flex-1 overflow-x-auto overflow-y-auto max-w-full p-2 sm:p-6 flex flex-col items-center gap-8 bg-slate-200/70" suppressHydrationWarning>
         <div
           style={{
             transform: `scale(${zoom / 100})`,
@@ -212,22 +258,22 @@ export default function LivePreview({
               />
 
               {!isSla ? (
-                <div className="font-heading text-[28pt] font-bold leading-[1.15] text-white tracking-tight mb-3">
+                <div className="font-heading text-[22pt] font-bold leading-[1.15] text-white tracking-tight mb-3">
                   Multi Router Traffic Grapher<br />
                   (MRTG) Report
                 </div>
               ) : (
-                <div className="font-heading text-[40pt] font-bold leading-[1.1] text-white tracking-tight mb-3.5">
+                <div className="font-heading text-[28pt] font-bold leading-[1.1] text-white tracking-tight mb-3">
                   SLA REPORT
                 </div>
               )}
 
-              <div className="text-[13pt] font-normal text-white mb-1">
+              <div className="text-[12pt] font-normal text-white mb-1">
                 {data.customerName || 'Customer Name'}
               </div>
 
-              <div className="text-[13pt] font-normal text-white">
-                {data.reportPeriod || 'Period 2026'}
+              <div className="text-[12pt] font-normal text-white">
+                {data.reportPeriod || `Period ${new Date().getFullYear()}`}
               </div>
             </div>
           )}
@@ -271,7 +317,7 @@ export default function LivePreview({
 
               {/* Section Header */}
               <div>
-                <div className="font-heading text-[11.5pt] font-bold text-black border-b-2 border-[#F16614] pb-0.5 inline-block">
+                <div className="font-heading text-[11.5pt] font-bold text-black inline-block">
                   {engineTitle}
                 </div>
               </div>
@@ -338,93 +384,67 @@ export default function LivePreview({
                   className="a4-preview-page bg-white pt-[36mm] pb-[30mm] px-[15mm] flex flex-col text-black"
                   style={{ backgroundImage: `url(${pageBgUrl})` }}
                 >
-                  <div className="text-left text-[11pt] font-bold text-black mb-3.5">
+                  <div className="text-left text-[11pt] font-bold text-black mb-3">
                     {`Document Number : ${data.documentNumber}`}
                   </div>
 
-                  {/* Section 1 */}
+                  {/* Section 1: Summary Report & Service Availability */}
                   <div>
-                    <div className="font-heading text-[11.5pt] font-bold text-black border-b-2 border-[#F16614] pb-0.5 inline-block">
-                      Summary Report
+                    <div className="font-heading text-[11.5pt] font-bold text-black inline-block mt-0.5">
+                      Summary Report &amp; Service Availability
                     </div>
                   </div>
-                  <div className="text-[8.5pt] text-slate-700 mb-1">
-                    {`Summary Report for ${data.customerName} ${data.reportPeriod}`}
+                  <div className="text-[8.5pt] text-slate-700 mb-1 leading-tight">
+                    {`Summary report & detailed service availability for ${data.customerName} ${data.reportPeriod}`}
                   </div>
-                  <table className="w-full border-collapse border border-black text-[8.5pt] mb-1 text-center">
+                  <table className="w-full border-collapse border border-black text-[8.5pt] leading-[1.25] mb-1 text-center">
                     <thead>
                       <tr className="bg-white text-black font-bold">
                         <th className="border border-black py-1 px-1.5 w-[35px]">No</th>
-                        <th className="border border-black py-1 px-1.5 text-left pl-3">Service Total</th>
+                        <th className="border border-black py-1 px-1.5 text-left pl-2 w-[110px]">Service ID</th>
+                        <th className="border border-black py-1 px-1.5 text-left pl-2">Service Name</th>
                         <th className="border border-black py-1 px-1.5 w-[50px]">Node</th>
-                        <th className="border border-black py-1 px-1.5 w-[90px]">SLA Service</th>
+                        <th className="border border-black py-1 px-1.5 w-[85px]">Target SLA</th>
+                        <th className="border border-black py-1 px-1.5 w-[85px]">Availability</th>
                       </tr>
                     </thead>
                     <tbody>
                       <tr>
                         <td className="border border-black py-1">1</td>
-                        <td className="border border-black py-1 text-left pl-3">{data.serviceName}</td>
+                        <td className="border border-black py-1 text-left pl-2">{data.serviceId}</td>
+                        <td className="border border-black py-1 text-left pl-2">{data.serviceName}</td>
                         <td className="border border-black py-1">{data.nodeCount}</td>
                         <td className="border border-black py-1">{data.targetSla > 0 ? `${data.targetSla}%` : '-'}</td>
-                      </tr>
-                      <tr className="bg-white font-bold">
-                        <td colSpan={3} className="border border-black py-1 text-right pr-3.5">Total</td>
-                        <td className="border border-black py-1">{data.targetSla > 0 ? `${data.targetSla}%` : '-'}</td>
-                      </tr>
-                    </tbody>
-                  </table>
-
-                  {/* Section 2 */}
-                  <div className="mt-2">
-                    <div className="font-heading text-[11.5pt] font-bold text-black border-b-2 border-[#F16614] pb-0.5 inline-block">
-                      Service Availability
-                    </div>
-                  </div>
-                  <div className="text-[8.5pt] text-slate-700 mb-1">
-                    {`Detailed service availability for ${data.customerName} ${data.reportPeriod}`}
-                  </div>
-                  <table className="w-full border-collapse border border-black text-[8.5pt] mb-1 text-center">
-                    <thead>
-                      <tr className="bg-white text-black font-bold">
-                        <th className="border border-black py-1 px-1.5 w-[35px]">No</th>
-                        <th className="border border-black py-1 px-1.5 text-left pl-3">Service ID</th>
-                        <th className="border border-black py-1 px-1.5 w-[50px]">Node</th>
-                        <th className="border border-black py-1 px-1.5 w-[90px]">Availability</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr>
-                        <td className="border border-black py-1">1</td>
-                        <td className="border border-black py-1 text-left pl-3">{data.serviceId}</td>
-                        <td className="border border-black py-1">{data.nodeCount}</td>
                         <td className="border border-black py-1">{`${slaCalc.availabilityPercent}%`}</td>
                       </tr>
                       <tr className="bg-white font-bold">
                         <td colSpan={3} className="border border-black py-1 text-right pr-3.5">Total</td>
+                        <td className="border border-black py-1">{data.nodeCount}</td>
+                        <td className="border border-black py-1">{data.targetSla > 0 ? `${data.targetSla}%` : '-'}</td>
                         <td className="border border-black py-1">{`${slaCalc.availabilityPercent}%`}</td>
                       </tr>
                     </tbody>
                   </table>
 
                   {/* Section 3 */}
-                  <div className="mt-2">
-                    <div className="font-heading text-[11.5pt] font-bold text-black border-b-2 border-[#F16614] pb-0.5 inline-block">
+                  <div className="mt-1.5">
+                    <div className="font-heading text-[11.5pt] font-bold text-black inline-block">
                       Ticket & Case Report
                     </div>
                   </div>
-                  <div className="text-[8.5pt] text-slate-700 mb-1">
+                  <div className="text-[8.5pt] text-slate-700 mb-1 leading-tight">
                     {`Detailed ticket & case report for ${data.customerName} ${data.reportPeriod}`}
                   </div>
 
                   {/* Ticket Table */}
-                  <table className="w-full border-collapse border border-black text-[8.5pt] mb-1 text-center">
+                  <table className="w-full table-fixed border-collapse border border-black text-[8.5pt] leading-[1.25] mb-1 text-center">
                     <thead>
                       <tr className="bg-white text-black font-bold">
-                        <th className="border border-black py-1 px-1 w-[100px]">No. Ticket</th>
-                        <th className="border border-black py-1 px-1 w-[75px]">Date</th>
-                        <th className="border border-black py-1 px-1 text-left pl-2">Description</th>
-                        <th className="border border-black py-1 px-1 text-left pl-2 w-[140px]">Action</th>
-                        <th className="border border-black py-1 px-1 w-[70px]">Status</th>
+                        <th className="border border-black py-1 px-1 w-[15%]">No. Ticket</th>
+                        <th className="border border-black py-1 px-1 w-[16%]">Date & Time</th>
+                        <th className="border border-black py-1 px-1 text-left pl-2 w-[37%]">Description</th>
+                        <th className="border border-black py-1 px-1 text-left pl-2 w-[22%]">Action</th>
+                        <th className="border border-black py-1 px-1 w-[10%]">Status</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -437,32 +457,42 @@ export default function LivePreview({
                           <td className="border border-black py-1">-</td>
                         </tr>
                       ) : (
-                        tickets.map((t, idx) => (
-                          <tr key={idx}>
-                            <td className="border border-black py-1">{t.noTicket}</td>
-                            <td className="border border-black py-1">{t.date}</td>
-                            <td className="border border-black py-1 text-left px-2">{t.description}</td>
-                            <td className="border border-black py-1 text-left px-2">{t.action}</td>
-                            <td className="border border-black py-1">{t.status}</td>
-                          </tr>
-                        ))
+                        tickets.map((t, idx) => {
+                          const period = formatPeriodDisplay(t);
+                          return (
+                            <tr key={idx}>
+                              <td className="border border-black py-1 whitespace-nowrap">{t.noTicket}</td>
+                              <td className="border border-black py-1 whitespace-nowrap text-[7.5pt] leading-[1.25]">
+                                <div className="font-semibold">{period.start}</div>
+                                {period.end && (
+                                  <div className="text-[7pt] text-slate-600 mt-0.5">
+                                    {`s/d ${period.end}`}
+                                  </div>
+                                )}
+                              </td>
+                              <td className="border border-black py-1 text-left px-2 leading-[1.25] break-words">{t.description}</td>
+                              <td className="border border-black py-1 text-left px-2 leading-[1.25] break-words">{t.action}</td>
+                              <td className="border border-black py-1">{t.status}</td>
+                            </tr>
+                          );
+                        })
                       )}
                     </tbody>
                   </table>
                   {/* Ticket Summary */}
-                  <div className="text-[8.5pt] font-bold text-black mt-1 mb-2">
+                  <div className="text-[8.5pt] font-bold text-black my-1">
                     <span>{`Number Of Ticket : ${tickets.length === 0 ? '-' : tickets.length}`}</span>
                   </div>
 
                   {/* Case Table */}
-                  <table className="w-full border-collapse border border-black text-[8.5pt] mb-1 text-center">
+                  <table className="w-full table-fixed border-collapse border border-black text-[8.5pt] leading-[1.25] mb-1 text-center">
                     <thead>
                       <tr className="bg-white text-black font-bold">
-                        <th className="border border-black py-1 px-1 w-[100px]">No. Case</th>
-                        <th className="border border-black py-1 px-1 w-[75px]">Date</th>
-                        <th className="border border-black py-1 px-1 text-left pl-2">Description</th>
-                        <th className="border border-black py-1 px-1 text-left pl-2 w-[140px]">Action</th>
-                        <th className="border border-black py-1 px-1 w-[75px]">Downtime</th>
+                        <th className="border border-black py-1 px-1 w-[15%]">No. Case</th>
+                        <th className="border border-black py-1 px-1 w-[16%]">Date & Time</th>
+                        <th className="border border-black py-1 px-1 text-left pl-2 w-[37%]">Description</th>
+                        <th className="border border-black py-1 px-1 text-left pl-2 w-[22%]">Action</th>
+                        <th className="border border-black py-1 px-1 w-[10%]">Downtime</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -475,45 +505,105 @@ export default function LivePreview({
                           <td className="border border-black py-1">-</td>
                         </tr>
                       ) : (
-                        cases.map((c, idx) => (
-                          <tr key={idx}>
-                            <td className="border border-black py-1">{c.noCase}</td>
-                            <td className="border border-black py-1">{c.date}</td>
-                            <td className="border border-black py-1 text-left px-2">{c.description}</td>
-                            <td className="border border-black py-1 text-left px-2">{c.action}</td>
-                            <td className="border border-black py-1">{`${c.downtimeMinutes} Mins`}</td>
-                          </tr>
-                        ))
+                        cases.map((c, idx) => {
+                          const period = formatPeriodDisplay(c);
+                          return (
+                            <tr key={idx}>
+                              <td className="border border-black py-1 whitespace-nowrap">{c.noCase}</td>
+                              <td className="border border-black py-1 whitespace-nowrap text-[7.5pt] leading-[1.25]">
+                                <div className="font-semibold">{period.start}</div>
+                                {period.end && (
+                                  <div className="text-[7pt] text-slate-600 mt-0.5">
+                                    {`s/d ${period.end}`}
+                                  </div>
+                                )}
+                              </td>
+                              <td className="border border-black py-1 text-left px-2 leading-[1.25] break-words">{c.description}</td>
+                              <td className="border border-black py-1 text-left px-2 leading-[1.25] break-words">{c.action}</td>
+                              <td className="border border-black py-1">{`${c.downtimeMinutes} Mins`}</td>
+                            </tr>
+                          );
+                        })
                       )}
                     </tbody>
                   </table>
                   {/* Case Summary & Duration */}
-                  <div className="flex justify-between items-center text-[8.5pt] font-bold text-black mt-1 mb-2">
+                  <div className="flex justify-between items-center text-[8.5pt] font-bold text-black my-1">
                     <span>{`Number Of Case : ${cases.length === 0 ? '-' : cases.length}`}</span>
                     <span>{`Downtime Duration : ${slaCalc.downtimeDurationStr}`}</span>
                   </div>
 
-                  {/* Section 4: SLA Service */}
-                  <div className="mt-2">
-                    <div className="font-heading text-[11.5pt] font-bold text-black border-b-2 border-[#F16614] pb-0.5 inline-block">
+                  {/* Section 4: SLA Service (Dual Progress Bar - Option A) */}
+                  <div className="mt-1.5">
+                    <div className="font-heading text-[11.5pt] font-bold text-black inline-block">
                       SLA Service
                     </div>
                   </div>
-                  <div className="text-[8.5pt] text-slate-700 mb-1.5">
+                  <div className="text-[8.5pt] text-slate-700 mb-1 leading-tight">
                     {`Detailed SLA Service for ${data.customerName} ${data.reportPeriod} :`}
                   </div>
-                  <div className="flex gap-2.5 my-1">
-                    <div className="flex-1 border-[1.5px] border-[#FF9900] rounded-[3px] p-2 text-center bg-white shadow-2xs">
-                      <div className="text-[8.5pt] font-semibold text-slate-600 uppercase tracking-wider">Online</div>
-                      <div className="text-[15pt] font-bold text-black mt-0.5">{`${slaCalc.onlinePercent.toFixed(2)}%`}</div>
+                  <div className="my-2 space-y-2.5">
+                    {/* Bar 1: Actual Availability (Online + Downtime) */}
+                    <div>
+                      <div className="flex justify-between items-center text-[8pt] mb-1">
+                        <div className="font-bold text-slate-900 flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block"></span>
+                          <span>Service Availability</span>
+                        </div>
+                        <div className="font-semibold text-[8pt]">
+                          <span className="text-emerald-700 font-bold">{`Availability ${slaCalc.onlinePercent.toFixed(2)}%`}</span>
+                          <span className="text-slate-300 mx-1.5">|</span>
+                          <span className="text-rose-600 font-bold">{`Downtime ${slaCalc.downtimePercent.toFixed(2)}%`}</span>
+                        </div>
+                      </div>
+                      <div className="w-full h-3 bg-rose-100 rounded overflow-hidden flex">
+                        <div
+                          className="bg-emerald-500 h-full"
+                          style={{ width: `${Math.min(100, Math.max(0, slaCalc.onlinePercent))}%` }}
+                        />
+                        <div
+                          className="bg-rose-500 h-full"
+                          style={{ width: `${Math.min(100, Math.max(0, slaCalc.downtimePercent))}%` }}
+                        />
+                      </div>
                     </div>
-                    <div className="flex-1 border-[1.5px] border-[#FF9900] rounded-[3px] p-2 text-center bg-white shadow-2xs">
-                      <div className="text-[8.5pt] font-semibold text-slate-600 uppercase tracking-wider">Downtime</div>
-                      <div className="text-[15pt] font-bold text-black mt-0.5">{`${slaCalc.downtimePercent.toFixed(2)}%`}</div>
-                    </div>
-                    <div className="flex-1 border-[1.5px] border-[#FF9900] rounded-[3px] p-2 text-center bg-white shadow-2xs">
-                      <div className="text-[8.5pt] font-semibold text-slate-600 uppercase tracking-wider">SLA</div>
-                      <div className="text-[15pt] font-bold text-black mt-0.5">{data.targetSla > 0 ? `${data.targetSla.toFixed(2)}%` : '-'}</div>
+
+                    {/* Bar 2: Target SLA & Status Text */}
+                    <div>
+                      <div className="flex justify-between items-center text-[8pt] mb-1">
+                        <div className="font-bold text-slate-900 flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-sky-600 inline-block"></span>
+                          <span>
+                            Target SLA :{' '}
+                            <strong className="text-sky-600">
+                              {data.targetSla > 0 ? `${data.targetSla.toFixed(2)}%` : '-'}
+                            </strong>
+                          </span>
+                        </div>
+                        <div>
+                          {data.targetSla > 0 ? (
+                            slaCalc.onlinePercent >= data.targetSla ? (
+                              <span className="text-[8pt] font-bold text-emerald-700">
+                                {`SLA Met (+${(slaCalc.onlinePercent - data.targetSla).toFixed(2)}%)`}
+                              </span>
+                            ) : (
+                              <span className="text-[8pt] font-bold text-rose-600">
+                                {`SLA Breached (-${(data.targetSla - slaCalc.onlinePercent).toFixed(2)}%)`}
+                              </span>
+                            )
+                          ) : (
+                            <span className="text-[8pt] font-semibold text-slate-500">-</span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="w-full h-2.5 bg-slate-200 rounded overflow-hidden">
+                        <div
+                          className="bg-sky-600 h-full"
+                          style={{
+                            width: `${Math.min(100, Math.max(0, data.targetSla > 0 ? data.targetSla : 100))}%`,
+                          }}
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -526,7 +616,7 @@ export default function LivePreview({
                   style={{ backgroundImage: `url(${pageBgUrl})` }}
                 >
                   <div>
-                    <div className="font-heading text-[11.5pt] font-bold text-black border-b-2 border-[#F16614] pb-0.5 inline-block">
+                    <div className="font-heading text-[11.5pt] font-bold text-black inline-block">
                       {engineTitle}
                     </div>
                   </div>
@@ -599,65 +689,39 @@ export default function LivePreview({
                     {`Document Number : ${data.documentNumber}`}
                   </div>
 
-                  {/* Section 1 */}
+                  {/* Section 1: Summary Report & Service Availability */}
                   <div>
-                    <div className="font-heading text-[11.5pt] font-bold text-black border-b-2 border-[#F16614] pb-0.5 inline-block">
-                      Summary Report
+                    <div className="font-heading text-[11.5pt] font-bold text-black inline-block">
+                      Summary Report &amp; Service Availability
                     </div>
                   </div>
                   <div className="text-[8.5pt] text-slate-700 mb-1">
-                    {`Summary Report for ${data.customerName} ${data.reportPeriod}`}
+                    {`Summary report & detailed service availability for ${data.customerName} ${data.reportPeriod}`}
                   </div>
                   <table className="w-full border-collapse border border-black text-[8.5pt] mb-1 text-center">
                     <thead>
                       <tr className="bg-white text-black font-bold">
                         <th className="border border-black py-1 px-1.5 w-[35px]">No</th>
-                        <th className="border border-black py-1 px-1.5 text-left pl-3">Service Total</th>
+                        <th className="border border-black py-1 px-1.5 text-left pl-2 w-[110px]">Service ID</th>
+                        <th className="border border-black py-1 px-1.5 text-left pl-2">Service Name</th>
                         <th className="border border-black py-1 px-1.5 w-[50px]">Node</th>
-                        <th className="border border-black py-1 px-1.5 w-[90px]">SLA Service</th>
+                        <th className="border border-black py-1 px-1.5 w-[85px]">Target SLA</th>
+                        <th className="border border-black py-1 px-1.5 w-[85px]">Availability</th>
                       </tr>
                     </thead>
                     <tbody>
                       <tr>
                         <td className="border border-black py-1">1</td>
-                        <td className="border border-black py-1 text-left pl-3">{data.serviceName}</td>
+                        <td className="border border-black py-1 text-left pl-2">{data.serviceId}</td>
+                        <td className="border border-black py-1 text-left pl-2">{data.serviceName}</td>
                         <td className="border border-black py-1">{data.nodeCount}</td>
                         <td className="border border-black py-1">{data.targetSla > 0 ? `${data.targetSla}%` : '-'}</td>
-                      </tr>
-                      <tr className="bg-white font-bold">
-                        <td colSpan={3} className="border border-black py-1 text-right pr-3.5">Total</td>
-                        <td className="border border-black py-1">{data.targetSla > 0 ? `${data.targetSla}%` : '-'}</td>
-                      </tr>
-                    </tbody>
-                  </table>
-
-                  {/* Section 2 */}
-                  <div className="mt-2">
-                    <div className="font-heading text-[11.5pt] font-bold text-black border-b-2 border-[#F16614] pb-0.5 inline-block">
-                      Service Availability
-                    </div>
-                  </div>
-                  <div className="text-[8.5pt] text-slate-700 mb-1">
-                    {`Detailed service availability for ${data.customerName} ${data.reportPeriod}`}
-                  </div>
-                  <table className="w-full border-collapse border border-black text-[8.5pt] mb-1 text-center">
-                    <thead>
-                      <tr className="bg-white text-black font-bold">
-                        <th className="border border-black py-1 px-1.5 w-[35px]">No</th>
-                        <th className="border border-black py-1 px-1.5 text-left pl-3">Service ID</th>
-                        <th className="border border-black py-1 px-1.5 w-[50px]">Node</th>
-                        <th className="border border-black py-1 px-1.5 w-[90px]">Availability</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr>
-                        <td className="border border-black py-1">1</td>
-                        <td className="border border-black py-1 text-left pl-3">{data.serviceId}</td>
-                        <td className="border border-black py-1">{data.nodeCount}</td>
                         <td className="border border-black py-1">{`${slaCalc.availabilityPercent}%`}</td>
                       </tr>
                       <tr className="bg-white font-bold">
                         <td colSpan={3} className="border border-black py-1 text-right pr-3.5">Total</td>
+                        <td className="border border-black py-1">{data.nodeCount}</td>
+                        <td className="border border-black py-1">{data.targetSla > 0 ? `${data.targetSla}%` : '-'}</td>
                         <td className="border border-black py-1">{`${slaCalc.availabilityPercent}%`}</td>
                       </tr>
                     </tbody>
@@ -665,7 +729,7 @@ export default function LivePreview({
 
                   {/* Section 3: Ticket Report */}
                   <div className="mt-2">
-                    <div className="font-heading text-[11.5pt] font-bold text-black border-b-2 border-[#F16614] pb-0.5 inline-block">
+                    <div className="font-heading text-[11.5pt] font-bold text-black inline-block">
                       Ticket Report
                     </div>
                   </div>
@@ -674,14 +738,14 @@ export default function LivePreview({
                   </div>
 
                   {/* Ticket Table */}
-                  <table className="w-full border-collapse border border-black text-[8.5pt] mb-1 text-center">
+                  <table className="w-full table-fixed border-collapse border border-black text-[8.5pt] leading-[1.25] mb-1 text-center">
                     <thead>
                       <tr className="bg-white text-black font-bold">
-                        <th className="border border-black py-1 px-1 w-[100px]">No. Ticket</th>
-                        <th className="border border-black py-1 px-1 w-[75px]">Date</th>
-                        <th className="border border-black py-1 px-1 text-left pl-2">Description</th>
-                        <th className="border border-black py-1 px-1 text-left pl-2 w-[140px]">Action</th>
-                        <th className="border border-black py-1 px-1 w-[70px]">Status</th>
+                        <th className="border border-black py-1 px-1 w-[15%]">No. Ticket</th>
+                        <th className="border border-black py-1 px-1 w-[16%]">Date & Time</th>
+                        <th className="border border-black py-1 px-1 text-left pl-2 w-[37%]">Description</th>
+                        <th className="border border-black py-1 px-1 text-left pl-2 w-[22%]">Action</th>
+                        <th className="border border-black py-1 px-1 w-[10%]">Status</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -694,20 +758,30 @@ export default function LivePreview({
                           <td className="border border-black py-1">-</td>
                         </tr>
                       ) : (
-                        tickets.map((t, idx) => (
-                          <tr key={idx}>
-                            <td className="border border-black py-1">{t.noTicket}</td>
-                            <td className="border border-black py-1">{t.date}</td>
-                            <td className="border border-black py-1 text-left px-2">{t.description}</td>
-                            <td className="border border-black py-1 text-left px-2">{t.action}</td>
-                            <td className="border border-black py-1">{t.status}</td>
-                          </tr>
-                        ))
+                        tickets.map((t, idx) => {
+                          const period = formatPeriodDisplay(t);
+                          return (
+                            <tr key={idx}>
+                              <td className="border border-black py-1 whitespace-nowrap">{t.noTicket}</td>
+                              <td className="border border-black py-1 whitespace-nowrap text-[7.5pt] leading-[1.25]">
+                                <div className="font-semibold">{period.start}</div>
+                                {period.end && (
+                                  <div className="text-[7pt] text-slate-600 mt-0.5">
+                                    {`s/d ${period.end}`}
+                                  </div>
+                                )}
+                              </td>
+                              <td className="border border-black py-1 text-left px-2 leading-[1.25] break-words">{t.description}</td>
+                              <td className="border border-black py-1 text-left px-2 leading-[1.25] break-words">{t.action}</td>
+                              <td className="border border-black py-1">{t.status}</td>
+                            </tr>
+                          );
+                        })
                       )}
                     </tbody>
                   </table>
                   {/* Ticket Summary */}
-                  <div className="text-[8.5pt] font-bold text-black mt-1 mb-2">
+                  <div className="text-[8.5pt] font-bold text-black my-1">
                     <span>{`Number Of Ticket : ${tickets.length === 0 ? '-' : tickets.length}`}</span>
                   </div>
                 </div>
@@ -719,29 +793,29 @@ export default function LivePreview({
                   className="a4-preview-page bg-white pt-[36mm] pb-[30mm] px-[15mm] flex flex-col text-black"
                   style={{ backgroundImage: `url(${pageBgUrl})` }}
                 >
-                  <div className="text-left text-[11pt] font-bold text-black mb-3.5">
+                  <div className="text-left text-[11pt] font-bold text-black mb-3">
                     {`Document Number : ${data.documentNumber} (Continued)`}
                   </div>
 
                   {/* Section: Case Report */}
                   <div>
-                    <div className="font-heading text-[11.5pt] font-bold text-black border-b-2 border-[#F16614] pb-0.5 inline-block">
+                    <div className="font-heading text-[11.5pt] font-bold text-black inline-block mt-0.5">
                       Case Report
                     </div>
                   </div>
-                  <div className="text-[8.5pt] text-slate-700 mb-1">
+                  <div className="text-[8.5pt] text-slate-700 mb-1 leading-tight">
                     {`Detailed case report for ${data.customerName} ${data.reportPeriod}`}
                   </div>
 
                   {/* Case Table */}
-                  <table className="w-full border-collapse border border-black text-[8.5pt] mb-1 text-center">
+                  <table className="w-full table-fixed border-collapse border border-black text-[8.5pt] leading-[1.25] mb-1 text-center">
                     <thead>
                       <tr className="bg-white text-black font-bold">
-                        <th className="border border-black py-1 px-1 w-[100px]">No. Case</th>
-                        <th className="border border-black py-1 px-1 w-[75px]">Date</th>
-                        <th className="border border-black py-1 px-1 text-left pl-2">Description</th>
-                        <th className="border border-black py-1 px-1 text-left pl-2 w-[140px]">Action</th>
-                        <th className="border border-black py-1 px-1 w-[75px]">Downtime</th>
+                        <th className="border border-black py-1 px-1 w-[15%]">No. Case</th>
+                        <th className="border border-black py-1 px-1 w-[16%]">Date & Time</th>
+                        <th className="border border-black py-1 px-1 text-left pl-2 w-[37%]">Description</th>
+                        <th className="border border-black py-1 px-1 text-left pl-2 w-[22%]">Action</th>
+                        <th className="border border-black py-1 px-1 w-[10%]">Downtime</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -754,45 +828,105 @@ export default function LivePreview({
                           <td className="border border-black py-1">-</td>
                         </tr>
                       ) : (
-                        cases.map((c, idx) => (
-                          <tr key={idx}>
-                            <td className="border border-black py-1">{c.noCase}</td>
-                            <td className="border border-black py-1">{c.date}</td>
-                            <td className="border border-black py-1 text-left px-2">{c.description}</td>
-                            <td className="border border-black py-1 text-left px-2">{c.action}</td>
-                            <td className="border border-black py-1">{`${c.downtimeMinutes} Mins`}</td>
-                          </tr>
-                        ))
+                        cases.map((c, idx) => {
+                          const period = formatPeriodDisplay(c);
+                          return (
+                            <tr key={idx}>
+                              <td className="border border-black py-1 whitespace-nowrap">{c.noCase}</td>
+                              <td className="border border-black py-1 whitespace-nowrap text-[7.5pt] leading-[1.25]">
+                                <div className="font-semibold">{period.start}</div>
+                                {period.end && (
+                                  <div className="text-[7pt] text-slate-600 mt-0.5">
+                                    {`s/d ${period.end}`}
+                                  </div>
+                                )}
+                              </td>
+                              <td className="border border-black py-1 text-left px-2 leading-[1.25] break-words">{c.description}</td>
+                              <td className="border border-black py-1 text-left px-2 leading-[1.25] break-words">{c.action}</td>
+                              <td className="border border-black py-1">{`${c.downtimeMinutes} Mins`}</td>
+                            </tr>
+                          );
+                        })
                       )}
                     </tbody>
                   </table>
                   {/* Case Summary & Duration */}
-                  <div className="flex justify-between items-center text-[8.5pt] font-bold text-black mt-1 mb-2">
+                  <div className="flex justify-between items-center text-[8.5pt] font-bold text-black my-1">
                     <span>{`Number Of Case : ${cases.length === 0 ? '-' : cases.length}`}</span>
                     <span>{`Downtime Duration : ${slaCalc.downtimeDurationStr}`}</span>
                   </div>
 
-                  {/* Section: SLA Service */}
-                  <div className="mt-3.5">
-                    <div className="font-heading text-[11.5pt] font-bold text-black border-b-2 border-[#F16614] pb-0.5 inline-block">
+                  {/* Section: SLA Service (Dual Progress Bar - Option A) */}
+                  <div className="mt-2">
+                    <div className="font-heading text-[11.5pt] font-bold text-black inline-block">
                       SLA Service
                     </div>
                   </div>
-                  <div className="text-[8.5pt] text-slate-700 mb-1.5">
+                  <div className="text-[8.5pt] text-slate-700 mb-1 leading-tight">
                     {`Detailed SLA Service for ${data.customerName} ${data.reportPeriod} :`}
                   </div>
-                  <div className="flex gap-2.5 my-1">
-                    <div className="flex-1 border-[1.5px] border-[#FF9900] rounded-[3px] p-2 text-center bg-white shadow-2xs">
-                      <div className="text-[8.5pt] font-semibold text-slate-600 uppercase tracking-wider">Online</div>
-                      <div className="text-[15pt] font-bold text-black mt-0.5">{`${slaCalc.onlinePercent.toFixed(2)}%`}</div>
+                  <div className="my-2 space-y-2.5">
+                    {/* Bar 1: Actual Availability (Online + Downtime) */}
+                    <div>
+                      <div className="flex justify-between items-center text-[8pt] mb-1">
+                        <div className="font-bold text-slate-900 flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block"></span>
+                          <span>Service Availability</span>
+                        </div>
+                        <div className="font-semibold text-[8pt]">
+                          <span className="text-emerald-700 font-bold">{`Availability ${slaCalc.onlinePercent.toFixed(2)}%`}</span>
+                          <span className="text-slate-300 mx-1.5">|</span>
+                          <span className="text-rose-600 font-bold">{`Downtime ${slaCalc.downtimePercent.toFixed(2)}%`}</span>
+                        </div>
+                      </div>
+                      <div className="w-full h-3 bg-rose-100 rounded overflow-hidden flex">
+                        <div
+                          className="bg-emerald-500 h-full"
+                          style={{ width: `${Math.min(100, Math.max(0, slaCalc.onlinePercent))}%` }}
+                        />
+                        <div
+                          className="bg-rose-500 h-full"
+                          style={{ width: `${Math.min(100, Math.max(0, slaCalc.downtimePercent))}%` }}
+                        />
+                      </div>
                     </div>
-                    <div className="flex-1 border-[1.5px] border-[#FF9900] rounded-[3px] p-2 text-center bg-white shadow-2xs">
-                      <div className="text-[8.5pt] font-semibold text-slate-600 uppercase tracking-wider">Downtime</div>
-                      <div className="text-[15pt] font-bold text-black mt-0.5">{`${slaCalc.downtimePercent.toFixed(2)}%`}</div>
-                    </div>
-                    <div className="flex-1 border-[1.5px] border-[#FF9900] rounded-[3px] p-2 text-center bg-white shadow-2xs">
-                      <div className="text-[8.5pt] font-semibold text-slate-600 uppercase tracking-wider">SLA</div>
-                      <div className="text-[15pt] font-bold text-black mt-0.5">{data.targetSla > 0 ? `${data.targetSla.toFixed(2)}%` : '-'}</div>
+
+                    {/* Bar 2: Target SLA & Status Text */}
+                    <div>
+                      <div className="flex justify-between items-center text-[8pt] mb-1">
+                        <div className="font-bold text-slate-900 flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-sky-600 inline-block"></span>
+                          <span>
+                            Target SLA :{' '}
+                            <strong className="text-sky-600">
+                              {data.targetSla > 0 ? `${data.targetSla.toFixed(2)}%` : '-'}
+                            </strong>
+                          </span>
+                        </div>
+                        <div>
+                          {data.targetSla > 0 ? (
+                            slaCalc.onlinePercent >= data.targetSla ? (
+                              <span className="text-[8pt] font-bold text-emerald-700">
+                                {`SLA Met (+${(slaCalc.onlinePercent - data.targetSla).toFixed(2)}%)`}
+                              </span>
+                            ) : (
+                              <span className="text-[8pt] font-bold text-rose-600">
+                                {`SLA Breached (-${(data.targetSla - slaCalc.onlinePercent).toFixed(2)}%)`}
+                              </span>
+                            )
+                          ) : (
+                            <span className="text-[8pt] font-semibold text-slate-500">-</span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="w-full h-2.5 bg-slate-200 rounded overflow-hidden">
+                        <div
+                          className="bg-sky-600 h-full"
+                          style={{
+                            width: `${Math.min(100, Math.max(0, data.targetSla > 0 ? data.targetSla : 100))}%`,
+                          }}
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -805,7 +939,7 @@ export default function LivePreview({
                   style={{ backgroundImage: `url(${pageBgUrl})` }}
                 >
                   <div>
-                    <div className="font-heading text-[11.5pt] font-bold text-black border-b-2 border-[#F16614] pb-0.5 inline-block">
+                    <div className="font-heading text-[11.5pt] font-bold text-black inline-block">
                       {engineTitle}
                     </div>
                   </div>

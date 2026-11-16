@@ -1,23 +1,33 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
-  Settings,
-  Upload,
   Image as ImageIcon,
   Server,
   ShieldCheck,
   CheckCircle,
   AlertCircle,
   Save,
-  RotateCcw,
-  Layers,
   ArrowLeft,
-  KeyRound,
-  FileCode,
   Activity,
+  Upload,
+  Eye,
+  EyeOff,
+  Send,
 } from 'lucide-react';
 import Link from 'next/link';
+import { toast } from 'sonner';
+import {
+  PageHeader,
+  Button,
+  Input,
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+  Spinner,
+} from '@/components/ui';
 
 interface AppConfigState {
   mrtgBaseUrl: string;
@@ -28,34 +38,59 @@ interface AppConfigState {
   prtgUsername: string;
   prtgPassword?: string;
   prtgAuthType: string;
+  prtgBasicUsername?: string;
+  prtgBasicPassword?: string;
   coverMrtgPath: string;
   coverSlaPath: string;
   pageBgPath: string;
   defaultTargetSla: number;
   documentNumberPrefix: string;
+  telegramBotToken: string;
+  telegramChatId: string;
+  telegramThreadId: string;
+  telegramNotificationsEnabled: boolean;
 }
 
+type SettingsTab = 'integrations' | 'templates' | 'defaults';
+
 export default function SettingsPage() {
+  const [activeTab, setActiveTab] = useState<SettingsTab>('integrations');
   const [config, setConfig] = useState<AppConfigState>({
-    mrtgBaseUrl: 'http://cacti.internal.net',
+    mrtgBaseUrl: 'https://mrtg.nexa.net.id',
     mrtgUsername: '',
     mrtgPassword: '',
     mrtgAuthType: 'BASIC',
-    prtgBaseUrl: 'http://prtg.internal.net',
+    prtgBaseUrl: 'http://nms.nexa.net.id',
     prtgUsername: '',
     prtgPassword: '',
     prtgAuthType: 'PASSWORD',
+    prtgBasicUsername: '',
+    prtgBasicPassword: '',
     coverMrtgPath: '/assets/templates/cover_mrtg.png',
     coverSlaPath: '/assets/templates/cover_sla.png',
     pageBgPath: '/assets/templates/page_bg.png',
     defaultTargetSla: 99.5,
     documentNumberPrefix: 'IMUN.01',
+    telegramBotToken: '',
+    telegramChatId: '',
+    telegramThreadId: '',
+    telegramNotificationsEnabled: false,
   });
 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [saveSuccess, setSaveSuccess] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<{ [key: string]: string }>({});
+
+  // Password visibility toggles
+  const [showMrtgPassword, setShowMrtgPassword] = useState(false);
+  const [showPrtgPassword, setShowPrtgPassword] = useState(false);
+  const [showPrtgBasicPassword, setShowPrtgBasicPassword] = useState(false);
+  const [showTelegramToken, setShowTelegramToken] = useState(false);
+
+  // File input refs
+  const mrtgFileRef = useRef<HTMLInputElement>(null);
+  const slaFileRef = useRef<HTMLInputElement>(null);
+  const pageBgFileRef = useRef<HTMLInputElement>(null);
 
   // MRTG Test Connection
   const [testingConnection, setTestingConnection] = useState(false);
@@ -65,7 +100,11 @@ export default function SettingsPage() {
   const [testingPrtgConnection, setTestingPrtgConnection] = useState(false);
   const [prtgTestResult, setPrtgTestResult] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
-  // Timestamps to bypass browser caching when templates are re-uploaded
+  // Telegram Test Connection
+  const [testingTelegram, setTestingTelegram] = useState(false);
+  const [telegramTestResult, setTelegramTestResult] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  // Cache buster for re-uploaded template images
   const [cacheBuster, setCacheBuster] = useState<number | string>('');
 
   useEffect(() => {
@@ -75,7 +114,7 @@ export default function SettingsPage() {
         const res = await fetch('/api/config');
         const data = await res.json();
         if (data.config) {
-          setConfig(prev => ({
+          setConfig((prev) => ({
             ...prev,
             ...data.config,
             prtgBaseUrl: data.config.prtgBaseUrl || 'http://prtg.internal.net',
@@ -91,10 +130,9 @@ export default function SettingsPage() {
     fetchConfig();
   }, []);
 
-  const handleSaveConfig = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSaveConfig = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     setSaving(true);
-    setSaveSuccess(false);
     try {
       const res = await fetch('/api/config', {
         method: 'POST',
@@ -102,19 +140,20 @@ export default function SettingsPage() {
         body: JSON.stringify(config),
       });
       if (res.ok) {
-        setSaveSuccess(true);
-        setTimeout(() => setSaveSuccess(false), 3000);
+        toast.success('Configuration saved successfully.');
+      } else {
+        toast.error('Failed to save settings.');
       }
     } catch (err) {
       console.error(err);
-      alert('Failed to save settings.');
+      toast.error('An unexpected error occurred while saving settings.');
     } finally {
       setSaving(false);
     }
   };
 
   const handleUploadTemplate = async (targetType: string, file: File) => {
-    setUploadStatus(prev => ({ ...prev, [targetType]: 'Uploading...' }));
+    setUploadStatus((prev) => ({ ...prev, [targetType]: 'Uploading...' }));
     try {
       const formData = new FormData();
       formData.append('file', file);
@@ -127,10 +166,11 @@ export default function SettingsPage() {
       const data = await res.json();
 
       if (data.success) {
-        setUploadStatus(prev => ({ ...prev, [targetType]: 'Upload successful!' }));
+        setUploadStatus((prev) => ({ ...prev, [targetType]: 'Upload successful!' }));
         setCacheBuster(Date.now());
+        toast.success(`Template ${targetType} updated.`);
         setTimeout(() => {
-          setUploadStatus(prev => {
+          setUploadStatus((prev) => {
             const next = { ...prev };
             delete next[targetType];
             return next;
@@ -141,13 +181,15 @@ export default function SettingsPage() {
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      setUploadStatus(prev => ({ ...prev, [targetType]: `Failed: ${msg}` }));
+      setUploadStatus((prev) => ({ ...prev, [targetType]: `Failed: ${msg}` }));
+      toast.error(`Upload error: ${msg}`);
     }
   };
 
   const handleTestConnection = async () => {
     setTestingConnection(true);
     setTestResult(null);
+    const startTime = Date.now();
     try {
       const res = await fetch('/api/cacti/graph', {
         method: 'POST',
@@ -160,16 +202,17 @@ export default function SettingsPage() {
         }),
       });
       const data = await res.json();
+      const latency = Date.now() - startTime;
 
       if (res.ok && data.success) {
         setTestResult({
           type: 'success',
-          message: `Connection successful! Reached MRTG/Cacti at ${config.mrtgBaseUrl}.`,
+          message: `Connected successfully (${latency}ms) at ${config.mrtgBaseUrl}`,
         });
       } else {
         setTestResult({
           type: 'error',
-          message: data.error || 'Failed to connect to MRTG/Cacti.',
+          message: data.error || 'Failed to connect to MRTG / Cacti.',
         });
       }
     } catch (err: unknown) {
@@ -186,23 +229,31 @@ export default function SettingsPage() {
   const handleTestPrtgConnection = async () => {
     setTestingPrtgConnection(true);
     setPrtgTestResult(null);
+    const startTime = Date.now();
     try {
+      // Use standard sample sensor ID (e.g. 2063) or test endpoint
       const res = await fetch('/api/prtg/graph', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          sensorId: '1',
+          sensorId: '2063',
           month: 10,
           year: 2026,
           configOverride: config,
         }),
       });
       const data = await res.json();
+      const latency = Date.now() - startTime;
 
-      if (res.ok && data.success) {
+      if (res.ok && data.success && !data.isFallback) {
         setPrtgTestResult({
           type: 'success',
-          message: `Connection successful! Reached PRTG Network Monitor at ${config.prtgBaseUrl}.`,
+          message: `Connected successfully (${latency}ms) at ${config.prtgBaseUrl}`,
+        });
+      } else if (data.isFallback) {
+        setPrtgTestResult({
+          type: 'error',
+          message: data.error || `Server responded but sensor was unreachable or credentials invalid at ${config.prtgBaseUrl}.`,
         });
       } else {
         setPrtgTestResult({
@@ -221,421 +272,657 @@ export default function SettingsPage() {
     }
   };
 
+  const handleTestTelegram = async () => {
+    setTestingTelegram(true);
+    setTelegramTestResult(null);
+    try {
+      const res = await fetch('/api/telegram/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          botToken: config.telegramBotToken,
+          chatId: config.telegramChatId,
+          threadId: config.telegramThreadId,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setTelegramTestResult({
+          type: 'success',
+          message: data.message || 'Test notification sent successfully to Telegram topic!',
+        });
+        toast.success('Test notification sent successfully to Telegram topic!');
+      } else {
+        setTelegramTestResult({
+          type: 'error',
+          message: data.error || 'Failed to send Telegram message. Check bot token and chat ID.',
+        });
+        toast.error(data.error || 'Failed to send Telegram message.');
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setTelegramTestResult({
+        type: 'error',
+        message: `Connection error: ${msg}`,
+      });
+      toast.error(msg);
+    } finally {
+      setTestingTelegram(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
-      {/* Top Header */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center space-x-2 text-xs text-slate-500 mb-1">
-            <Link href="/" className="hover:text-slate-800 flex items-center gap-1 font-medium">
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Back to Generator</span>
-            </Link>
-          </div>
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-            <Settings className="w-6 h-6 text-orange-500" />
-            <span>System Settings & Templates</span>
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-            Configure MRTG/Cacti & PRTG server credentials, default metrics, and report background assets.
-          </p>
-        </div>
-      </div>
+      {/* Standard Page Header */}
+      <PageHeader
+        title="Settings"
+        description="Configure telemetry server credentials, report defaults, and background canvas templates."
+        breadcrumb={
+          <Link href="/" className="hover:text-slate-800 flex items-center gap-1 font-medium text-slate-500">
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Back to Generator</span>
+          </Link>
+        }
+      />
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* ================= LEFT COLUMN: TEMPLATE ASSETS ================= */}
-        <div className="lg:col-span-6 space-y-5">
-          <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="font-semibold text-slate-800 text-sm flex items-center gap-2">
-                <ImageIcon className="w-4 h-4 text-orange-500" />
-                <span>Report Canvas Templates (PNG/JPG)</span>
-              </h3>
-              <span className="text-[11px] text-slate-500 font-medium">A4 High-Res</span>
-            </div>
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+        {/* Left Sub-Navigation */}
+        <div className="md:col-span-3">
+          <nav className="bg-white rounded-lg border border-slate-200 p-2 shadow-xs space-y-1">
+            <Button
+              variant={activeTab === 'integrations' ? 'secondary' : 'ghost'}
+              size="sm"
+              onClick={() => setActiveTab('integrations')}
+              className={`w-full justify-start h-9 px-3 gap-2 text-xs font-semibold ${
+                activeTab === 'integrations'
+                  ? 'bg-orange-50 text-orange-700 font-semibold border border-orange-200/80 shadow-2xs'
+                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+              }`}
+            >
+              <Server className="w-4 h-4 shrink-0" />
+              <span>Integrations</span>
+            </Button>
 
-            <p className="text-xs text-slate-500">
-              Upload high-resolution A4 background assets (full cover pages, headers, watermarks, and footer addresses).
-            </p>
+            <Button
+              variant={activeTab === 'templates' ? 'secondary' : 'ghost'}
+              size="sm"
+              onClick={() => setActiveTab('templates')}
+              className={`w-full justify-start h-9 px-3 gap-2 text-xs font-semibold ${
+                activeTab === 'templates'
+                  ? 'bg-orange-50 text-orange-700 font-semibold border border-orange-200/80 shadow-2xs'
+                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+              }`}
+            >
+              <ImageIcon className="w-4 h-4 shrink-0" />
+              <span>Templates</span>
+            </Button>
 
-            {/* Template Asset 1: Cover MRTG */}
-            <div className="border border-slate-200 rounded-xl p-4 bg-slate-50/50 space-y-3">
-              <div className="flex items-start justify-between">
-                <div>
-                  <h4 className="font-semibold text-xs text-slate-900">1. MRTG Report Cover</h4>
-                  <p className="text-[11px] text-slate-500">Used as Page 1 Cover background for MRTG reports (210mm x 297mm)</p>
-                </div>
-                <span className="text-[10px] px-2 py-0.5 bg-orange-100 text-orange-700 font-mono rounded font-semibold">
-                  cover_mrtg.png
-                </span>
-              </div>
-
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-22 bg-slate-200 border border-slate-300 rounded shadow-xs overflow-hidden shrink-0">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={`/assets/templates/cover_mrtg.png?t=${cacheBuster}`}
-                    alt="Cover MRTG Preview"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <div className="flex-1 space-y-2">
-                  <label className="inline-flex items-center space-x-2 px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer transition shadow-2xs">
-                    <Upload className="w-3.5 h-3.5 text-slate-500" />
-                    <span>Replace MRTG Cover</span>
-                    <input
-                      type="file"
-                      accept="image/png,image/jpeg"
-                      className="hidden"
-                      onChange={(e) => {
-                        if (e.target.files?.[0]) handleUploadTemplate('cover_mrtg', e.target.files[0]);
-                      }}
-                    />
-                  </label>
-                  {uploadStatus['cover_mrtg'] && (
-                    <div className="text-[11px] font-semibold text-orange-600">
-                      {uploadStatus['cover_mrtg']}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Template Asset 2: Cover SLA */}
-            <div className="border border-slate-200 rounded-xl p-4 bg-slate-50/50 space-y-3">
-              <div className="flex items-start justify-between">
-                <div>
-                  <h4 className="font-semibold text-xs text-slate-900">2. SLA Report Cover</h4>
-                  <p className="text-[11px] text-slate-500">Used as Page 1 Cover background for SLA reports (210mm x 297mm)</p>
-                </div>
-                <span className="text-[10px] px-2 py-0.5 bg-blue-100 text-blue-700 font-mono rounded font-semibold">
-                  cover_sla.png
-                </span>
-              </div>
-
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-22 bg-slate-200 border border-slate-300 rounded shadow-xs overflow-hidden shrink-0">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={`/assets/templates/cover_sla.png?t=${cacheBuster}`}
-                    alt="Cover SLA Preview"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <div className="flex-1 space-y-2">
-                  <label className="inline-flex items-center space-x-2 px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer transition shadow-2xs">
-                    <Upload className="w-3.5 h-3.5 text-slate-500" />
-                    <span>Replace SLA Cover</span>
-                    <input
-                      type="file"
-                      accept="image/png,image/jpeg"
-                      className="hidden"
-                      onChange={(e) => {
-                        if (e.target.files?.[0]) handleUploadTemplate('cover_sla', e.target.files[0]);
-                      }}
-                    />
-                  </label>
-                  {uploadStatus['cover_sla'] && (
-                    <div className="text-[11px] font-semibold text-orange-600">
-                      {uploadStatus['cover_sla']}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Template Asset 3: Background Isi (page_bg) */}
-            <div className="border border-slate-200 rounded-xl p-4 bg-slate-50/50 space-y-3">
-              <div className="flex items-start justify-between">
-                <div>
-                  <h4 className="font-semibold text-xs text-slate-900">3. Content Page Background (Header & Footer)</h4>
-                  <p className="text-[11px] text-slate-500">Includes top company header, center watermark, and bottom footer address</p>
-                </div>
-                <span className="text-[10px] px-2 py-0.5 bg-slate-200 text-slate-800 font-mono rounded font-semibold">
-                  page_bg.png
-                </span>
-              </div>
-
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-22 bg-slate-200 border border-slate-300 rounded shadow-xs overflow-hidden shrink-0">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={`/assets/templates/page_bg.png?t=${cacheBuster}`}
-                    alt="Page Background Preview"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <div className="flex-1 space-y-2">
-                  <label className="inline-flex items-center space-x-2 px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer transition shadow-2xs">
-                    <Upload className="w-3.5 h-3.5 text-slate-500" />
-                    <span>Replace Content Background</span>
-                    <input
-                      type="file"
-                      accept="image/png,image/jpeg"
-                      className="hidden"
-                      onChange={(e) => {
-                        if (e.target.files?.[0]) handleUploadTemplate('page_bg', e.target.files[0]);
-                      }}
-                    />
-                  </label>
-                  {uploadStatus['page_bg'] && (
-                    <div className="text-[11px] font-semibold text-orange-600">
-                      {uploadStatus['page_bg']}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
+            <Button
+              variant={activeTab === 'defaults' ? 'secondary' : 'ghost'}
+              size="sm"
+              onClick={() => setActiveTab('defaults')}
+              className={`w-full justify-start h-9 px-3 gap-2 text-xs font-semibold ${
+                activeTab === 'defaults'
+                  ? 'bg-orange-50 text-orange-700 font-semibold border border-orange-200/80 shadow-2xs'
+                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+              }`}
+            >
+              <ShieldCheck className="w-4 h-4 shrink-0" />
+              <span>Report Defaults</span>
+            </Button>
+          </nav>
         </div>
 
-        {/* ================= RIGHT COLUMN: SERVER CONFIGS ================= */}
-        <div className="lg:col-span-6 space-y-5">
-          <form onSubmit={handleSaveConfig} className="space-y-5">
-            {/* 1. MRTG / Cacti Server Configuration */}
-            <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 className="font-semibold text-slate-800 text-sm flex items-center gap-2">
-                  <Server className="w-4 h-4 text-orange-500" />
-                  <span>1. MRTG / Cacti Server</span>
-                </h3>
-                <span className="text-[11px] text-slate-500 font-medium">Cacti API</span>
-              </div>
-
-              <div className="space-y-3 text-xs">
-                <div>
-                  <label className="font-semibold text-slate-700 block mb-1">
-                    MRTG / Cacti Base URL *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={config.mrtgBaseUrl}
-                    onChange={(e) => setConfig({ ...config, mrtgBaseUrl: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-mono font-bold"
-                    placeholder="http://cacti.internal.net or http://192.168.1.10/cacti"
-                  />
-                  <span className="text-[10px] text-slate-500 mt-1 block">
-                    Target endpoints: <code>/graph_image.php</code> and <code>/graph_xport.php</code>
-                  </span>
+        {/* Right Content Column (Max 720px) */}
+        <div className="md:col-span-9 max-w-[720px]">
+          {loading ? (
+            <div className="py-16 text-center text-xs text-slate-500 bg-white rounded-lg border border-slate-200">
+              <Spinner size="md" className="mx-auto text-orange-600 mb-2" />
+              <span>Loading configuration...</span>
+            </div>
+          ) : activeTab === 'integrations' ? (
+            /* ================= INTEGRATIONS TAB ================= */
+            <form onSubmit={handleSaveConfig} className="space-y-6">
+              {/* 1. MRTG / Cacti Server */}
+              <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-xs space-y-4">
+                <div className="border-b border-slate-100 pb-3">
+                  <h3 className="font-heading font-semibold text-slate-900 text-sm flex items-center gap-2">
+                    <Server className="w-4 h-4 text-orange-600" />
+                    <span>MRTG / Cacti Server</span>
+                  </h3>
                 </div>
 
-                <div>
-                  <label className="font-semibold text-slate-700 block mb-1">Authentication Method</label>
-                  <select
-                    value={config.mrtgAuthType}
-                    onChange={(e) => setConfig({ ...config, mrtgAuthType: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-semibold"
-                  >
-                    <option value="BASIC">HTTP Basic Auth</option>
-                    <option value="COOKIE">Session / Web Cookie Login (index.php)</option>
-                    <option value="NONE">No Authentication (Public / Internal IP)</option>
-                  </select>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-3.5 text-xs">
                   <div>
-                    <label className="font-semibold text-slate-700 block mb-1">Username (Optional)</label>
-                    <input
-                      type="text"
-                      value={config.mrtgUsername}
-                      onChange={(e) => setConfig({ ...config, mrtgUsername: e.target.value })}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-mono"
-                      placeholder="cacti_user"
+                    <label className="font-medium text-slate-700 block mb-1">Base URL</label>
+                    <Input
+                      required
+                      value={config.mrtgBaseUrl}
+                      onChange={(e) => setConfig({ ...config, mrtgBaseUrl: e.target.value })}
+                      className="text-xs"
                     />
                   </div>
-                  <div>
-                    <label className="font-semibold text-slate-700 block mb-1">Password (Optional)</label>
-                    <input
-                      type="password"
-                      value={config.mrtgPassword || ''}
-                      onChange={(e) => setConfig({ ...config, mrtgPassword: e.target.value })}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-mono"
-                      placeholder="••••••••"
-                    />
-                  </div>
-                </div>
 
-                {/* MRTG Test Result */}
-                {testResult && (
-                  <div
-                    className={`p-3 rounded-lg text-xs flex items-start gap-2 ${testResult.type === 'success'
-                        ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                        : 'bg-amber-50 text-amber-800 border border-amber-200'
+                  <div>
+                    <label className="font-medium text-slate-700 block mb-1">Authentication Method</label>
+                    <Select
+                      value={config.mrtgAuthType}
+                      onValueChange={(val) => setConfig({ ...config, mrtgAuthType: val })}
+                    >
+                      <SelectTrigger selectSize="sm">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="BASIC">HTTP Basic Auth</SelectItem>
+                        <SelectItem value="COOKIE">Session / Web Cookie Login (index.php)</SelectItem>
+                        <SelectItem value="NONE">No Authentication (Public / Internal IP)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="font-medium text-slate-700 block mb-1">Username (Optional)</label>
+                      <Input
+                        value={config.mrtgUsername}
+                        onChange={(e) => setConfig({ ...config, mrtgUsername: e.target.value })}
+                        className="text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="font-medium text-slate-700 block mb-1">Password (Optional)</label>
+                      <div className="relative">
+                        <Input
+                          type={showMrtgPassword ? 'text' : 'password'}
+                          value={config.mrtgPassword || ''}
+                          onChange={(e) => setConfig({ ...config, mrtgPassword: e.target.value })}
+                          className="text-xs pr-8"
+                        />
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          onClick={() => setShowMrtgPassword(!showMrtgPassword)}
+                          className="absolute right-0.5 top-0.5 h-7 w-7 text-slate-500 hover:text-slate-800"
+                          title={showMrtgPassword ? 'Hide password' : 'Show password'}
+                        >
+                          {showMrtgPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {testResult && (
+                    <div
+                      className={`p-3 rounded-lg text-xs flex items-start gap-2 ${
+                        testResult.type === 'success'
+                          ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                          : 'bg-red-50 text-red-800 border border-red-200'
                       }`}
-                  >
-                    {testResult.type === 'success' ? (
-                      <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                    ) : (
-                      <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                    )}
-                    <span>{testResult.message}</span>
+                    >
+                      {testResult.type === 'success' ? (
+                        <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                      ) : (
+                        <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+                      )}
+                      <span>{testResult.message}</span>
+                    </div>
+                  )}
+
+                  <div className="pt-1">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={handleTestConnection}
+                      loading={testingConnection}
+                    >
+                      <Server className="w-3.5 h-3.5 mr-1.5 text-slate-500" />
+                      <span>Test MRTG Connection</span>
+                    </Button>
                   </div>
-                )}
-
-                <div className="pt-2">
-                  <button
-                    type="button"
-                    onClick={handleTestConnection}
-                    disabled={testingConnection}
-                    className="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
-                  >
-                    <Server className="w-3.5 h-3.5 text-orange-600" />
-                    <span>{testingConnection ? 'Testing...' : 'Test MRTG Connection'}</span>
-                  </button>
                 </div>
               </div>
-            </div>
 
-            {/* 2. PRTG Network Monitor Server Configuration */}
-            <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 className="font-semibold text-slate-800 text-sm flex items-center gap-2">
-                  <Activity className="w-4 h-4 text-blue-600" />
-                  <span>2. PRTG Network Monitor Server</span>
-                </h3>
-                <span className="text-[11px] text-slate-500 font-medium">PRTG API</span>
-              </div>
-
-              <div className="space-y-3 text-xs">
-                <div>
-                  <label className="font-semibold text-slate-700 block mb-1">
-                    PRTG Base URL *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={config.prtgBaseUrl}
-                    onChange={(e) => setConfig({ ...config, prtgBaseUrl: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-mono font-bold"
-                    placeholder="https://prtg.example.com or http://10.10.x.x:8080"
-                  />
-                  <span className="text-[10px] text-slate-500 mt-1 block">
-                    Target endpoints: <code>/chart.png</code> and <code>/api/historicdata.json</code>
-                  </span>
+              {/* 2. PRTG Network Monitor Server */}
+              <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-xs space-y-4">
+                <div className="border-b border-slate-100 pb-3">
+                  <h3 className="font-heading font-semibold text-slate-900 text-sm flex items-center gap-2">
+                    <Activity className="w-4 h-4 text-blue-600" />
+                    <span>PRTG Network Monitor Server</span>
+                  </h3>
                 </div>
 
-                <div>
-                  <label className="font-semibold text-slate-700 block mb-1">Authentication Method</label>
-                  <select
-                    value={config.prtgAuthType}
-                    onChange={(e) => setConfig({ ...config, prtgAuthType: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-semibold"
-                  >
-                    <option value="PASSWORD">Standard Username & Password</option>
-                    <option value="PASSHASH">PRTG Passhash / API Token</option>
-                  </select>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-3.5 text-xs">
                   <div>
-                    <label className="font-semibold text-slate-700 block mb-1">PRTG Username</label>
-                    <input
-                      type="text"
-                      value={config.prtgUsername}
-                      onChange={(e) => setConfig({ ...config, prtgUsername: e.target.value })}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-mono"
-                      placeholder="prtgadmin"
+                    <label className="font-medium text-slate-700 block mb-1">Base URL</label>
+                    <Input
+                      required
+                      value={config.prtgBaseUrl}
+                      onChange={(e) => setConfig({ ...config, prtgBaseUrl: e.target.value })}
+                      className="text-xs"
                     />
                   </div>
+
                   <div>
-                    <label className="font-semibold text-slate-700 block mb-1">
-                      {config.prtgAuthType === 'PASSHASH' ? 'PRTG Passhash' : 'PRTG Password'}
+                    <label className="font-medium text-slate-700 block mb-1">Authentication Method</label>
+                    <Select
+                      value={config.prtgAuthType}
+                      onValueChange={(val) => setConfig({ ...config, prtgAuthType: val })}
+                    >
+                      <SelectTrigger selectSize="sm">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="PASSWORD">Standard Username & Password</SelectItem>
+                        <SelectItem value="PASSHASH">PRTG Passhash / API Token</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="font-medium text-slate-700 block mb-1">PRTG Username</label>
+                      <Input
+                        value={config.prtgUsername}
+                        onChange={(e) => setConfig({ ...config, prtgUsername: e.target.value })}
+                        className="text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="font-medium text-slate-700 block mb-1">
+                        {config.prtgAuthType === 'PASSHASH' ? 'PRTG Passhash' : 'PRTG Password'}
+                      </label>
+                      <div className="relative">
+                        <Input
+                          type={showPrtgPassword ? 'text' : 'password'}
+                          value={config.prtgPassword || ''}
+                          onChange={(e) => setConfig({ ...config, prtgPassword: e.target.value })}
+                          className="text-xs pr-8"
+                        />
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          onClick={() => setShowPrtgPassword(!showPrtgPassword)}
+                          className="absolute right-0.5 top-0.5 h-7 w-7 text-slate-500 hover:text-slate-800"
+                          title={showPrtgPassword ? 'Hide password' : 'Show password'}
+                        >
+                          {showPrtgPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Nginx / HTTP Basic Auth Proxy Credentials */}
+                  <div className="pt-2 border-t border-slate-100">
+                    <label className="font-semibold text-slate-800 block mb-0.5">
+                      Nginx / HTTP Basic Auth Proxy (Optional)
                     </label>
+                    <p className="text-xs text-slate-500 mb-2.5 leading-relaxed">
+                      Kredensial HTTP Basic Auth jika PRTG berada di balik reverse proxy Nginx (terpisah dari login PRTG web). Kosongkan jika direct.
+                    </p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="font-medium text-slate-700 block mb-1">Proxy Username</label>
+                        <Input
+                          placeholder="e.g. appsmg01"
+                          value={config.prtgBasicUsername || ''}
+                          onChange={(e) => setConfig({ ...config, prtgBasicUsername: e.target.value })}
+                          className="text-xs"
+                        />
+                      </div>
+                      <div>
+                        <label className="font-medium text-slate-700 block mb-1">Proxy Password</label>
+                        <div className="relative">
+                          <Input
+                            type={showPrtgBasicPassword ? 'text' : 'password'}
+                            placeholder="Proxy password..."
+                            value={config.prtgBasicPassword || ''}
+                            onChange={(e) => setConfig({ ...config, prtgBasicPassword: e.target.value })}
+                            className="text-xs pr-8"
+                          />
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            type="button"
+                            onClick={() => setShowPrtgBasicPassword(!showPrtgBasicPassword)}
+                            className="absolute right-0.5 top-0.5 h-7 w-7 text-slate-500 hover:text-slate-800"
+                            title={showPrtgBasicPassword ? 'Hide password' : 'Show password'}
+                          >
+                            {showPrtgBasicPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {prtgTestResult && (
+                    <div
+                      className={`p-3 rounded-lg text-xs flex items-start gap-2 ${
+                        prtgTestResult.type === 'success'
+                          ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                          : 'bg-red-50 text-red-800 border border-red-200'
+                      }`}
+                    >
+                      {prtgTestResult.type === 'success' ? (
+                        <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                      ) : (
+                        <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+                      )}
+                      <span>{prtgTestResult.message}</span>
+                    </div>
+                  )}
+
+                  <div className="pt-1">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={handleTestPrtgConnection}
+                      loading={testingPrtgConnection}
+                    >
+                      <Activity className="w-3.5 h-3.5 mr-1.5 text-blue-600" />
+                      <span>Test PRTG Connection</span>
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {/* 3. Telegram Bot Notifications */}
+              <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-xs space-y-4">
+                <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
+                  <h3 className="font-heading font-semibold text-slate-900 text-sm flex items-center gap-2">
+                    <Send className="w-4 h-4 text-[#0088cc]" />
+                    <span>Telegram Bot Notifications</span>
+                  </h3>
+                  <label className="flex items-center gap-2 cursor-pointer text-xs font-medium text-slate-700">
                     <input
-                      type="password"
-                      value={config.prtgPassword || ''}
-                      onChange={(e) => setConfig({ ...config, prtgPassword: e.target.value })}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-mono"
-                      placeholder="••••••••"
+                      type="checkbox"
+                      checked={config.telegramNotificationsEnabled}
+                      onChange={(e) =>
+                        setConfig({ ...config, telegramNotificationsEnabled: e.target.checked })
+                      }
+                      className="rounded border-slate-300 text-orange-600 focus:ring-orange-500 w-4 h-4"
+                    />
+                    <span>Enable Telegram Notifications</span>
+                  </label>
+                </div>
+
+                <div className="space-y-3.5 text-xs">
+                  <div>
+                    <label className="font-medium text-slate-700 block mb-1">
+                      Telegram Bot Token <span className="text-rose-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <Input
+                        type={showTelegramToken ? 'text' : 'password'}
+                        value={config.telegramBotToken}
+                        onChange={(e) => setConfig({ ...config, telegramBotToken: e.target.value })}
+                        className="text-xs pr-8 font-mono"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => setShowTelegramToken(!showTelegramToken)}
+                        className="absolute right-0.5 top-0.5 h-7 w-7 text-slate-500 hover:text-slate-800"
+                        title={showTelegramToken ? 'Hide Token' : 'Show Token'}
+                      >
+                        {showTelegramToken ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="font-medium text-slate-700 block mb-1">
+                        Group Chat ID <span className="text-rose-500">*</span>
+                      </label>
+                      <Input
+                        value={config.telegramChatId}
+                        onChange={(e) => setConfig({ ...config, telegramChatId: e.target.value })}
+                        className="text-xs font-mono"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="font-medium text-slate-700 block mb-1">
+                        Topic Thread ID (Optional)
+                      </label>
+                      <Input
+                        value={config.telegramThreadId}
+                        onChange={(e) => setConfig({ ...config, telegramThreadId: e.target.value })}
+                        className="text-xs font-mono"
+                      />
+                    </div>
+                  </div>
+
+                  {telegramTestResult && (
+                    <div
+                      className={`p-3 rounded-lg text-xs flex items-start gap-2 ${
+                        telegramTestResult.type === 'success'
+                          ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                          : 'bg-red-50 text-red-800 border border-red-200'
+                      }`}
+                    >
+                      {telegramTestResult.type === 'success' ? (
+                        <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                      ) : (
+                        <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+                      )}
+                      <span>{telegramTestResult.message}</span>
+                    </div>
+                  )}
+
+                  <div className="pt-1 flex items-center justify-between">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={handleTestTelegram}
+                      loading={testingTelegram}
+                      disabled={!config.telegramBotToken.trim() || !config.telegramChatId.trim()}
+                    >
+                      <Send className="w-3.5 h-3.5 mr-1.5 text-[#0088cc]" />
+                      <span>Test Telegram Notification</span>
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Single Primary Save Button */}
+              <div className="flex justify-end pt-1">
+                <Button variant="primary" size="md" loading={saving} onClick={handleSaveConfig}>
+                  <Save className="w-4 h-4 mr-1.5" />
+                  <span>Save Integrations</span>
+                </Button>
+              </div>
+            </form>
+          ) : activeTab === 'templates' ? (
+            /* ================= TEMPLATES TAB ================= */
+            <div className="space-y-4">
+              <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-xs space-y-4">
+                <div className="border-b border-slate-100 pb-3">
+                  <h3 className="font-heading font-semibold text-slate-900 text-sm flex items-center gap-2">
+                    <ImageIcon className="w-4 h-4 text-orange-600" />
+                    <span>Report Canvas Templates</span>
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-1">
+                    High-resolution A4 backgrounds (210mm x 297mm) used for rendering PDF report pages.
+                  </p>
+                </div>
+
+                {/* Template Asset 1: Cover MRTG */}
+                <div className="border border-slate-200 rounded-lg p-4 bg-slate-50/50 space-y-3">
+                  <div>
+                    <h4 className="font-semibold text-xs text-slate-900">MRTG Report Cover</h4>
+                    <p className="text-xs text-slate-500">Page 1 cover background for MRTG reports</p>
+                  </div>
+
+                  <div className="flex items-center gap-4">
+                    <div className="w-16 h-22 bg-slate-200 border border-slate-300 rounded shadow-xs overflow-hidden shrink-0">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={`/assets/templates/cover_mrtg.png?t=${cacheBuster}`}
+                        alt="Cover MRTG Preview"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div className="flex-1 space-y-2">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => mrtgFileRef.current?.click()}
+                      >
+                        <Upload className="w-3.5 h-3.5 mr-1.5 text-slate-500" />
+                        <span>Replace Cover</span>
+                      </Button>
+                      <Input
+                        ref={mrtgFileRef}
+                        type="file"
+                        accept="image/png,image/jpeg"
+                        className="hidden"
+                        onChange={(e) => {
+                          if (e.target.files?.[0]) handleUploadTemplate('cover_mrtg', e.target.files[0]);
+                        }}
+                      />
+                      {uploadStatus['cover_mrtg'] && (
+                        <div className="text-xs font-medium text-orange-600">
+                          {uploadStatus['cover_mrtg']}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Template Asset 2: Cover SLA */}
+                <div className="border border-slate-200 rounded-lg p-4 bg-slate-50/50 space-y-3">
+                  <div>
+                    <h4 className="font-semibold text-xs text-slate-900">SLA Report Cover</h4>
+                    <p className="text-xs text-slate-500">Page 1 cover background for SLA reports</p>
+                  </div>
+
+                  <div className="flex items-center gap-4">
+                    <div className="w-16 h-22 bg-slate-200 border border-slate-300 rounded shadow-xs overflow-hidden shrink-0">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={`/assets/templates/cover_sla.png?t=${cacheBuster}`}
+                        alt="Cover SLA Preview"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div className="flex-1 space-y-2">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => slaFileRef.current?.click()}
+                      >
+                        <Upload className="w-3.5 h-3.5 mr-1.5 text-slate-500" />
+                        <span>Replace Cover</span>
+                      </Button>
+                      <Input
+                        ref={slaFileRef}
+                        type="file"
+                        accept="image/png,image/jpeg"
+                        className="hidden"
+                        onChange={(e) => {
+                          if (e.target.files?.[0]) handleUploadTemplate('cover_sla', e.target.files[0]);
+                        }}
+                      />
+                      {uploadStatus['cover_sla'] && (
+                        <div className="text-xs font-medium text-orange-600">
+                          {uploadStatus['cover_sla']}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Template Asset 3: Content Background */}
+                <div className="border border-slate-200 rounded-lg p-4 bg-slate-50/50 space-y-3">
+                  <div>
+                    <h4 className="font-semibold text-xs text-slate-900">Content Page Background</h4>
+                    <p className="text-xs text-slate-500">Header watermark and footer address on report body pages</p>
+                  </div>
+
+                  <div className="flex items-center gap-4">
+                    <div className="w-16 h-22 bg-slate-200 border border-slate-300 rounded shadow-xs overflow-hidden shrink-0">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={`/assets/templates/page_bg.png?t=${cacheBuster}`}
+                        alt="Page Background Preview"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div className="flex-1 space-y-2">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => pageBgFileRef.current?.click()}
+                      >
+                        <Upload className="w-3.5 h-3.5 mr-1.5 text-slate-500" />
+                        <span>Replace Background</span>
+                      </Button>
+                      <Input
+                        ref={pageBgFileRef}
+                        type="file"
+                        accept="image/png,image/jpeg"
+                        className="hidden"
+                        onChange={(e) => {
+                          if (e.target.files?.[0]) handleUploadTemplate('page_bg', e.target.files[0]);
+                        }}
+                      />
+                      {uploadStatus['page_bg'] && (
+                        <div className="text-xs font-medium text-orange-600">
+                          {uploadStatus['page_bg']}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* ================= DEFAULTS TAB ================= */
+            <form onSubmit={handleSaveConfig} className="space-y-6">
+              <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-xs space-y-4">
+                <div className="border-b border-slate-100 pb-3">
+                  <h3 className="font-heading font-semibold text-slate-900 text-sm flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4 text-orange-600" />
+                    <span>Global Report Defaults</span>
+                  </h3>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 text-xs">
+                  <div>
+                    <label className="font-medium text-slate-700 block mb-1">Default SLA Target (%)</label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={config.defaultTargetSla}
+                      onChange={(e) =>
+                        setConfig({ ...config, defaultTargetSla: parseFloat(e.target.value) || 99.5 })
+                      }
+                      className="font-medium"
+                    />
+                  </div>
+                  <div>
+                    <label className="font-medium text-slate-700 block mb-1">Document Number Prefix</label>
+                    <Input
+                      value={config.documentNumberPrefix}
+                      onChange={(e) => setConfig({ ...config, documentNumberPrefix: e.target.value })}
+                      className="font-medium"
                     />
                   </div>
                 </div>
-
-                {/* PRTG Test Result */}
-                {prtgTestResult && (
-                  <div
-                    className={`p-3 rounded-lg text-xs flex items-start gap-2 ${prtgTestResult.type === 'success'
-                        ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                        : 'bg-amber-50 text-amber-800 border border-amber-200'
-                      }`}
-                  >
-                    {prtgTestResult.type === 'success' ? (
-                      <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                    ) : (
-                      <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                    )}
-                    <span>{prtgTestResult.message}</span>
-                  </div>
-                )}
-
-                <div className="pt-2">
-                  <button
-                    type="button"
-                    onClick={handleTestPrtgConnection}
-                    disabled={testingPrtgConnection}
-                    className="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
-                  >
-                    <Activity className="w-3.5 h-3.5 text-blue-600" />
-                    <span>{testingPrtgConnection ? 'Testing...' : 'Test PRTG Connection'}</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* 3. Global Report Parameters & Action */}
-            <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 className="font-semibold text-slate-800 text-sm flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-orange-500" />
-                  <span>3. Global Report Defaults</span>
-                </h3>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 text-xs">
-                <div>
-                  <label className="font-semibold text-slate-700 block mb-1">Default SLA Target (%)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={config.defaultTargetSla}
-                    onChange={(e) => setConfig({ ...config, defaultTargetSla: parseFloat(e.target.value) || 99.5 })}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-bold"
-                  />
-                </div>
-                <div>
-                  <label className="font-semibold text-slate-700 block mb-1">Document Number Prefix</label>
-                  <input
-                    type="text"
-                    value={config.documentNumberPrefix}
-                    onChange={(e) => setConfig({ ...config, documentNumberPrefix: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-mono font-bold"
-                    placeholder="IMUN.01"
-                  />
-                </div>
+              {/* Single Primary Save Button */}
+              <div className="flex justify-end pt-1">
+                <Button variant="primary" size="md" loading={saving} onClick={handleSaveConfig}>
+                  <Save className="w-4 h-4 mr-1.5" />
+                  <span>Save Defaults</span>
+                </Button>
               </div>
-
-              {/* Action Buttons */}
-              <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
-                <span className="text-[11px] text-slate-400">Persisted in SQLite database</span>
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="px-5 py-2.5 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white rounded-xl text-xs font-semibold transition shadow-xs flex items-center gap-2 disabled:opacity-50 cursor-pointer"
-                >
-                  <Save className="w-4 h-4" />
-                  <span>{saving ? 'Saving...' : 'Save All Settings'}</span>
-                </button>
-              </div>
-
-              {saveSuccess && (
-                <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-xs flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>MRTG, PRTG, and template settings saved successfully!</span>
-                </div>
-              )}
-            </div>
-          </form>
+            </form>
+          )}
         </div>
       </div>
     </div>

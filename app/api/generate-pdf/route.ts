@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generatePdfBuffer } from '@/lib/pdf-generator';
 import { ReportData } from '@/lib/pdf-template';
+import { requirePermission } from '@/lib/auth';
 
 export async function POST(req: NextRequest) {
+  const auth = await requirePermission('report:create');
+  if (!auth.authorized) {
+    return NextResponse.json({ error: auth.error }, { status: auth.status });
+  }
+
   try {
     const data: ReportData = await req.json();
 

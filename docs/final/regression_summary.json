@@ -1,0 +1,71 @@
+{
+  "flows": {
+    "Flow 1: Auth Session": true,
+    "Flow 3: Cacti Graph API": true,
+    "Flow 4: PRTG Graph API": true,
+    "Flow 9: PDF Generation (%PDF binary)": true,
+    "Flow 13: Excel Template API": true,
+    "Flow 14: Discovery Tree API": true,
+    "Flow 16: Config Query API": true
+  },
+  "fonts": {
+    "generator": {
+      "h1": "Poppins, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+      "button": "Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif, Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+      "body": "Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif, Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+      "table": "Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif, Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif"
+    },
+    "customers": {
+      "h1": "Poppins, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+      "button": "Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif, Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+      "body": "Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif, Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+      "table": "Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif, Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif"
+    },
+    "history": {
+      "h1": "Poppins, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+      "button": "Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif, Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+      "body": "Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif, Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+      "table": "Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif, Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif"
+    },
+    "discovery": {
+      "h1": "Poppins, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+      "button": "Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif, Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+      "body": "Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif, Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+      "table": null
+    },
+    "users": {
+      "h1": "Poppins, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+      "button": "Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif, Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+      "body": "Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif, Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+      "table": "Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif, Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif"
+    },
+    "settings": {
+      "h1": "Poppins, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+      "button": "Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif, Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+      "body": "Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif, Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+      "table": null
+    },
+    "login": {
+      "h1": "Poppins, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+      "button": "Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif, Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+      "body": "Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif, Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+      "table": null
+    }
+  },
+  "screenshots": [
+    "generator-1440.png",
+    "generator-1920.png",
+    "customers-1440.png",
+    "customers-1920.png",
+    "history-1440.png",
+    "history-1920.png",
+    "discovery-1440.png",
+    "discovery-1920.png",
+    "users-1440.png",
+    "users-1920.png",
+    "settings-1440.png",
+    "settings-1920.png",
+    "login-1440.png",
+    "login-1920.png"
+  ]
+}

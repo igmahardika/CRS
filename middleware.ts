@@ -1,17 +1,19 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { AUTH_COOKIE_NAME, verifyTokenEdge } from '@/lib/token-edge';
+import { canAccessPage, getDefaultLandingRoute } from '@/lib/permissions';
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // 1. Allow static assets, internal Next.js routes, and auth APIs
+  // 1. Allow static assets, internal Next.js routes, auth login/logout, and design preview
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/assets') ||
     pathname.startsWith('/favicon.ico') ||
     pathname.startsWith('/api/auth/login') ||
-    pathname.startsWith('/api/auth/logout')
+    pathname.startsWith('/api/auth/logout') ||
+    pathname.startsWith('/design-preview')
   ) {
     return NextResponse.next();
   }
@@ -23,8 +25,9 @@ export async function middleware(req: NextRequest) {
   // 2. If user is accessing /login
   if (pathname === '/login') {
     if (user) {
-      // Already authenticated, redirect to home
-      return NextResponse.redirect(new URL('/', req.url));
+      // Already authenticated, redirect to user's landing page
+      const landing = getDefaultLandingRoute(user);
+      return NextResponse.redirect(new URL(landing, req.url));
     }
     return NextResponse.next();
   }
@@ -42,13 +45,18 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // 4. Role-based route protection
-  // Only ADMIN can access /users and /settings
-  if (pathname.startsWith('/users') || pathname.startsWith('/settings')) {
-    if (user.role !== 'ADMIN') {
-      const homeUrl = new URL('/', req.url);
-      homeUrl.searchParams.set('access_denied', '1');
-      return NextResponse.redirect(homeUrl);
+  // 4. Redirect standalone /request-report into /requests?new=1 drawer
+  if (pathname.startsWith('/request-report')) {
+    return NextResponse.redirect(new URL('/requests?new=1', req.url));
+  }
+
+  // 5. Role & Department-based page and route protection
+  if (!pathname.startsWith('/api/')) {
+    if (!canAccessPage(user, pathname)) {
+      const defaultLanding = getDefaultLandingRoute(user);
+      const targetUrl = new URL(defaultLanding, req.url);
+      targetUrl.searchParams.set('access_denied', '1');
+      return NextResponse.redirect(targetUrl);
     }
   }
 

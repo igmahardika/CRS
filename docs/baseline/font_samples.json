@@ -1,0 +1,282 @@
+[
+  {
+    "page": "/login",
+    "area": "login-title",
+    "selector": "H1",
+    "fontFamily": "Poppins, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+    "fontSize": "36px",
+    "fontWeight": "800"
+  },
+  {
+    "page": "/login",
+    "area": "label",
+    "selector": "label",
+    "fontFamily": "Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif, Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "fontSize": "12px",
+    "fontWeight": "600"
+  },
+  {
+    "page": "/login",
+    "area": "button",
+    "selector": "button",
+    "fontFamily": "Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif, Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "fontSize": "16px",
+    "fontWeight": "400"
+  },
+  {
+    "page": "/",
+    "area": "navbar-brand",
+    "selector": "A",
+    "fontFamily": "Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif, Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "fontSize": "16px",
+    "fontWeight": "400"
+  },
+  {
+    "page": "/",
+    "area": "navbar-link",
+    "selector": "A",
+    "fontFamily": "Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif, Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "fontSize": "16px",
+    "fontWeight": "400"
+  },
+  {
+    "page": "/",
+    "area": "h1",
+    "selector": "h1",
+    "fontFamily": "Poppins, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+    "fontSize": "24px",
+    "fontWeight": "700"
+  },
+  {
+    "page": "/",
+    "area": "label",
+    "selector": "label",
+    "fontFamily": "Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif, Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "fontSize": "12px",
+    "fontWeight": "700"
+  },
+  {
+    "page": "/",
+    "area": "table-body-td",
+    "selector": "td",
+    "fontFamily": "Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif, Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "fontSize": "11.3333px",
+    "fontWeight": "400"
+  },
+  {
+    "page": "/",
+    "area": "button",
+    "selector": "button",
+    "fontFamily": "Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif, Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "fontSize": "16px",
+    "fontWeight": "400"
+  },
+  {
+    "page": "/customers",
+    "area": "navbar-brand",
+    "selector": "A",
+    "fontFamily": "Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif, Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "fontSize": "16px",
+    "fontWeight": "400"
+  },
+  {
+    "page": "/customers",
+    "area": "navbar-link",
+    "selector": "A",
+    "fontFamily": "Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif, Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "fontSize": "16px",
+    "fontWeight": "400"
+  },
+  {
+    "page": "/customers",
+    "area": "h1",
+    "selector": "h1",
+    "fontFamily": "Poppins, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+    "fontSize": "24px",
+    "fontWeight": "700"
+  },
+  {
+    "page": "/customers",
+    "area": "table-body-td",
+    "selector": "td",
+    "fontFamily": "Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif, Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "fontSize": "12px",
+    "fontWeight": "400"
+  },
+  {
+    "page": "/customers",
+    "area": "button",
+    "selector": "button",
+    "fontFamily": "Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif, Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "fontSize": "16px",
+    "fontWeight": "400"
+  },
+  {
+    "page": "/history",
+    "area": "navbar-brand",
+    "selector": "A",
+    "fontFamily": "Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif, Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "fontSize": "16px",
+    "fontWeight": "400"
+  },
+  {
+    "page": "/history",
+    "area": "navbar-link",
+    "selector": "A",
+    "fontFamily": "Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif, Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "fontSize": "16px",
+    "fontWeight": "400"
+  },
+  {
+    "page": "/history",
+    "area": "h1",
+    "selector": "h1",
+    "fontFamily": "Poppins, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+    "fontSize": "24px",
+    "fontWeight": "700"
+  },
+  {
+    "page": "/history",
+    "area": "button",
+    "selector": "button",
+    "fontFamily": "Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif, Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "fontSize": "16px",
+    "fontWeight": "400"
+  },
+  {
+    "page": "/discovery",
+    "area": "navbar-brand",
+    "selector": "A",
+    "fontFamily": "Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif, Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "fontSize": "16px",
+    "fontWeight": "400"
+  },
+  {
+    "page": "/discovery",
+    "area": "navbar-link",
+    "selector": "A",
+    "fontFamily": "Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif, Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "fontSize": "16px",
+    "fontWeight": "400"
+  },
+  {
+    "page": "/discovery",
+    "area": "h1",
+    "selector": "h1",
+    "fontFamily": "Poppins, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+    "fontSize": "24px",
+    "fontWeight": "700"
+  },
+  {
+    "page": "/discovery",
+    "area": "button",
+    "selector": "button",
+    "fontFamily": "Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif, Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "fontSize": "16px",
+    "fontWeight": "400"
+  },
+  {
+    "page": "/users",
+    "area": "navbar-brand",
+    "selector": "A",
+    "fontFamily": "Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif, Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "fontSize": "16px",
+    "fontWeight": "400"
+  },
+  {
+    "page": "/users",
+    "area": "navbar-link",
+    "selector": "A",
+    "fontFamily": "Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif, Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "fontSize": "16px",
+    "fontWeight": "400"
+  },
+  {
+    "page": "/users",
+    "area": "h1",
+    "selector": "h1",
+    "fontFamily": "Poppins, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+    "fontSize": "24px",
+    "fontWeight": "700"
+  },
+  {
+    "page": "/users",
+    "area": "table-body-td",
+    "selector": "td",
+    "fontFamily": "Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif, Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "fontSize": "12px",
+    "fontWeight": "400"
+  },
+  {
+    "page": "/users",
+    "area": "button",
+    "selector": "button",
+    "fontFamily": "Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif, Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "fontSize": "16px",
+    "fontWeight": "400"
+  },
+  {
+    "page": "/settings",
+    "area": "navbar-brand",
+    "selector": "A",
+    "fontFamily": "Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif, Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "fontSize": "16px",
+    "fontWeight": "400"
+  },
+  {
+    "page": "/settings",
+    "area": "navbar-link",
+    "selector": "A",
+    "fontFamily": "Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif, Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "fontSize": "16px",
+    "fontWeight": "400"
+  },
+  {
+    "page": "/settings",
+    "area": "h1",
+    "selector": "h1",
+    "fontFamily": "Poppins, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+    "fontSize": "24px",
+    "fontWeight": "700"
+  },
+  {
+    "page": "/settings",
+    "area": "label",
+    "selector": "label",
+    "fontFamily": "Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif, Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "fontSize": "12px",
+    "fontWeight": "600"
+  },
+  {
+    "page": "/settings",
+    "area": "button",
+    "selector": "button",
+    "fontFamily": "Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif, Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "fontSize": "16px",
+    "fontWeight": "400"
+  },
+  {
+    "page": "/non-existent-page-404",
+    "area": "navbar-brand",
+    "selector": "A",
+    "fontFamily": "Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif, Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "fontSize": "16px",
+    "fontWeight": "400"
+  },
+  {
+    "page": "/non-existent-page-404",
+    "area": "navbar-link",
+    "selector": "A",
+    "fontFamily": "Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif, Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "fontSize": "16px",
+    "fontWeight": "400"
+  },
+  {
+    "page": "/non-existent-page-404",
+    "area": "button",
+    "selector": "button",
+    "fontFamily": "Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif, Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "fontSize": "16px",
+    "fontWeight": "400"
+  }
+]

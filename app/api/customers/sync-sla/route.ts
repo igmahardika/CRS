@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getSlaByServiceName } from '@/lib/service-sla';
-import { requireOperatorOrAdmin } from '@/lib/auth';
+import { requirePermission } from '@/lib/auth';
 
 export async function POST() {
-  const auth = await requireOperatorOrAdmin();
+  const auth = await requirePermission('customer:write');
   if (!auth.authorized) {
     return NextResponse.json({ error: auth.error }, { status: auth.status });
   }

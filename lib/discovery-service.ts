@@ -63,21 +63,21 @@ function decodeHtmlEntities(str: string): string {
     .trim();
 }
 
-/** Extract Service ID pattern like "01.2180.1" from text */
+/** Extract Service ID pattern like "01.2180.1" or "02.0010.1" from text */
 export function extractServiceId(text: string): string | undefined {
-  const match = text.match(/\b(01\.\d{3,4}\.\d+)\b/);
+  const match = text.match(/\b(\d{2}\.\d{3,4}\.\d+)\b/);
   return match ? match[1] : undefined;
 }
 
-/** Extract Customer ID pattern like "01.2180.1124" */
+/** Extract Customer ID pattern like "01.2180.1124" or "02.0010.0124" */
 export function extractCustomerId(text: string): string | undefined {
-  const match = text.match(/\b(01\.\d{3,4}\.\d{4})\b/);
+  const match = text.match(/\b(\d{2}\.\d{3,4}\.\d{4})\b/);
   return match ? match[1] : undefined;
 }
 
 /** Extract device and interface name from Cacti title */
 function parseCactiGraphTitle(rawTitle: string): { deviceName: string; interfaceName: string; groupName: string } {
-  const title = decodeHtmlEntities(rawTitle);
+  const title = decodeHtmlEntities(rawTitle).trim();
 
   // Determine group category
   let groupName = 'Customers';
@@ -86,8 +86,23 @@ function parseCactiGraphTitle(rawTitle: string): { deviceName: string; interface
   else if (/\[ISOLIR\]/i.test(title)) groupName = 'Isolated';
   else if (/\[NEXA\]|shelter|router|switch|olt|server/i.test(title)) groupName = 'Infrastructure / NOC';
 
-  // Pattern 1: "01.0007.1 Folkafe Coffee & Stories.ether1"
-  const dotSplit = title.match(/^(01\.\d{3,4}\.\d+[^.]*)\.([^.]+)$/);
+  // Pattern 1: Title with " - Traffic - "
+  // e.g. "01.0470.25 Shelter - Gunungpati - Traffic - ether1"
+  // e.g. "[ISOLIR] 01.1846.1 Sentrypark Utama Site Muladi Dome - Traffic - pppoe-out1"
+  const trafficMatch = title.match(/^(.*?)\s+-\s+Traffic\s+-\s+(.*)$/i);
+  if (trafficMatch) {
+    return {
+      deviceName: trafficMatch[1].trim(),
+      interfaceName: trafficMatch[2].trim(),
+      groupName,
+    };
+  }
+
+  // Pattern 2: Title with trailing dot interface name
+  // e.g. "[ISOLIR] 01.1846.1 Sentrypark Utama Site Muladi Dome.pppoe-out1"
+  // e.g. "01.0007.1 Folkafe Coffee & Stories.ether1"
+  // e.g. "[NEXA] - CDR.01.CPU Utilization"
+  const dotSplit = title.match(/^(.*?)\.((?:ether|sfp|pppoe|vlan|cpu|ping|uptime|wlan|lo|eth|gi|fa|te|br|port|mgmt)[^.]*)$/i);
   if (dotSplit) {
     return {
       deviceName: dotSplit[1].trim(),
@@ -96,11 +111,11 @@ function parseCactiGraphTitle(rawTitle: string): { deviceName: string; interface
     };
   }
 
-  // Pattern 2: "01.2285.1 PT. Anugrah Terpercaya Kerja - Traffic - ether1"
+  // Pattern 3: Standard dash split (split by the last dash to preserve hyphenated device names)
   const dashParts = title.split(/\s+-\s+/);
   if (dashParts.length >= 2) {
-    const dev = dashParts[0].trim();
-    const iface = dashParts.slice(1).join(' - ').trim();
+    const dev = dashParts.slice(0, -1).join(' - ').trim();
+    const iface = dashParts[dashParts.length - 1].trim();
     return {
       deviceName: dev,
       interfaceName: iface,
@@ -130,7 +145,7 @@ function createSecureClient(timeout = 25000) {
 // ============================================================
 
 export async function discoverPrtg(config: PrtgAuthConfig): Promise<DiscoverySummary> {
-  const cleanBase = normalizeBaseUrl(config.baseUrl, 'https://');
+  const cleanBase = normalizeBaseUrl(config.baseUrl, 'http://');
   if (!cleanBase) {
     throw new Error('PRTG Base URL is not configured in Server Settings.');
   }
@@ -143,16 +158,24 @@ export async function discoverPrtg(config: PrtgAuthConfig): Promise<DiscoverySum
 
   const client = createSecureClient(30000);
 
+  // Nginx reverse proxy HTTP Basic Auth
+  const bUser = config.basicAuthUsername || (config.authType !== 'PASSHASH' ? config.username : undefined) || 'appsmg01';
+  const bPass = config.basicAuthPassword || (config.authType !== 'PASSHASH' ? config.password : undefined) || 'appsmg01';
+  const reqHeaders: Record<string, string> = {};
+  if (bUser && bPass) {
+    const token = Buffer.from(`${bUser}:${bPass}`).toString('base64');
+    reqHeaders['Authorization'] = `Basic ${token}`;
+  }
+
   const qs = new URLSearchParams({
     ...authParams,
     content: 'sensors',
     columns: 'objid,sensor,device,group,probe,status,lastvalue',
-    filter_type: 'snmptraffic',
-    count: '5000',
+    count: '50000',
   }).toString();
 
   const url = `${cleanBase}/api/table.json?${qs}`;
-  const resp = await client.get(url);
+  const resp = await client.get(url, { headers: reqHeaders });
   const data = resp.data;
 
   if (!data || !Array.isArray(data.sensors)) {
@@ -167,7 +190,7 @@ export async function discoverPrtg(config: PrtgAuthConfig): Promise<DiscoverySum
     const fullTitle = `${deviceName} - ${sensorName}`;
 
     return {
-      engine: 'MRTG' as const, // will be overwritten below
+      engine: 'PRTG' as const,
       groupName,
       subGroupName: probeName,
       deviceName,
@@ -178,7 +201,7 @@ export async function discoverPrtg(config: PrtgAuthConfig): Promise<DiscoverySum
       detectedCid: extractCustomerId(fullTitle),
       status: String(s.status || 'Up'),
     };
-  }).map((i: DiscoveredItemInput) => ({ ...i, engine: 'PRTG' as const }));
+  });
 
   const deviceSet = new Set(items.map((i) => i.deviceName));
 
@@ -198,7 +221,7 @@ export async function discoverPrtg(config: PrtgAuthConfig): Promise<DiscoverySum
 
 export async function discoverMrtg(
   config: MrtgAuthConfig,
-  maxPages = 20
+  maxPages = 60
 ): Promise<DiscoverySummary> {
   const cleanBase = normalizeBaseUrl(config.baseUrl, 'https://');
   if (!cleanBase) {
@@ -217,14 +240,15 @@ export async function discoverMrtg(
     );
   }
 
-  const client = createSecureClient(20000);
+  const client = createSecureClient(25000);
   const headers = {
     Cookie: cookie,
     Referer: `${cleanBase}/graph_view.php`,
   };
 
-  // 2. Fetch first page to verify access and check for total pages
-  const firstUrl = `${cleanBase}/graph_view.php?action=list&header=false&rows=500&page=1`;
+  // 2. Fetch first page with rows=2000 for high-throughput pagination
+  const rowsPerPage = 2000;
+  const firstUrl = `${cleanBase}/graph_view.php?action=list&header=false&rows=${rowsPerPage}&page=1`;
   const firstResp = await client.get(firstUrl, { headers });
   const firstHtml = String(firstResp.data);
 
@@ -240,22 +264,33 @@ export async function discoverMrtg(
   const graphMap = new Map<string, DiscoveredItemInput>();
   firstMatches.forEach((item) => graphMap.set(item.targetId, item));
 
-  // 3. Concurrently fetch subsequent pages up to maxPages
-  // Check if page 1 has "Next"
-  const hasNext = /gotopage\(2\)/i.test(firstHtml) || firstMatches.length === 500;
-  if (hasNext && maxPages > 1) {
+  // 3. Dynamically determine total records and total pages from Cacti pagination HTML
+  // Example matching: "1 to 2000 of 30409" or "Showing 1 to 2000 of 34500"
+  const totalMatch = firstHtml.match(/\b\d+\s+to\s+\d+\s+of\s+([0-9,]+)/i);
+  let totalRecords = 0;
+  if (totalMatch) {
+    totalRecords = parseInt(totalMatch[1].replace(/,/g, ''), 10);
+  }
+
+  const calculatedPages = totalRecords > 0 ? Math.ceil(totalRecords / rowsPerPage) : maxPages;
+  const targetPages = Math.min(calculatedPages, maxPages);
+
+  console.log(`[Discovery MRTG] Found ${firstMatches.length} on Page 1. Cacti total items: ${totalRecords || 'unknown'}. Fetching up to page ${targetPages} (${rowsPerPage} rows/page)...`);
+
+  // 4. Concurrently fetch subsequent pages up to targetPages
+  if (targetPages > 1) {
     const pagesToFetch: number[] = [];
-    for (let p = 2; p <= maxPages; p++) {
+    for (let p = 2; p <= targetPages; p++) {
       pagesToFetch.push(p);
     }
 
-    // Process in batches of 4 parallel requests to avoid overwhelming the Cacti server
+    // Process in batches of 4 parallel requests to prevent overloading the Cacti server
     const batchSize = 4;
     for (let i = 0; i < pagesToFetch.length; i += batchSize) {
       const batch = pagesToFetch.slice(i, i + batchSize);
       const results = await Promise.allSettled(
         batch.map(async (page) => {
-          const pageUrl = `${cleanBase}/graph_view.php?action=list&header=false&rows=500&page=${page}`;
+          const pageUrl = `${cleanBase}/graph_view.php?action=list&header=false&rows=${rowsPerPage}&page=${page}`;
           const res = await client.get(pageUrl, { headers });
           return parseCactiListHtml(String(res.data));
         })
@@ -271,7 +306,7 @@ export async function discoverMrtg(
         }
       }
 
-      // If a full batch returned nothing or empty, stop early
+      // If a full batch returned 0 items, all subsequent pages are empty; break early
       if (!foundAnyInBatch) {
         break;
       }

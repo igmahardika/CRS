@@ -4,27 +4,45 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
-  FileText,
-  Users,
-  History,
-  Settings,
   BarChart3,
+  FileText,
+  FilePlus,
+  History,
+  CheckSquare,
+  Clock,
+  Inbox,
+  Send,
+  CalendarCheck,
+  Server,
+  Users,
+  Radio,
+  ShieldCheck,
+  UserCheck,
+  Settings,
+  ChevronDown,
   Menu,
   X,
-  Radio,
   LogOut,
-  Shield,
-  Sliders,
-  Eye,
-  UserCheck,
 } from 'lucide-react';
+import {
+  ConfirmDialog,
+  Button,
+  Badge,
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from '@/components/ui';
+import { hasPermission } from '@/lib/permissions';
 
 interface CurrentUser {
   id: string;
   username: string;
   name: string;
   email: string | null;
-  role: 'ADMIN' | 'OPERATOR' | 'VIEWER';
+  role: 'ADMIN' | 'SUPERVISOR' | 'STAFF' | 'OPERATOR' | 'VIEWER';
+  department: string;
 }
 
 export default function Navbar() {
@@ -32,8 +50,11 @@ export default function Navbar() {
   const router = useRouter();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [pendingApprovalsCount, setPendingApprovalsCount] = useState<number>(0);
 
-  // Don't show regular navbar on login page
   const isLoginPage = pathname === '/login';
 
   useEffect(() => {
@@ -43,17 +64,48 @@ export default function Navbar() {
         const res = await fetch('/api/auth/me');
         if (res.ok) {
           const data = await res.json();
-          if (data.user) setCurrentUser(data.user);
+          if (data.user) {
+            setCurrentUser(data.user);
+            // If Supervisor or Admin, fetch pending reports count relevant to user
+            if (data.user.role === 'ADMIN' || data.user.role === 'SUPERVISOR') {
+              fetch('/api/reports')
+                .then((r) => (r.ok ? r.json() : null))
+                .then((rData) => {
+                  if (rData?.reports && Array.isArray(rData.reports)) {
+                    const isNoc = data.user.department === 'Network Operation' || data.user.role === 'ADMIN';
+                    const count = rData.reports.filter(
+                      (rep: { status?: string; assignedDepartment?: string }) => {
+                        if (isNoc) {
+                          return rep.status === 'PENDING_APPROVAL' || rep.status === 'PENDING_NOC_APPROVAL';
+                        }
+                        return (
+                          rep.status === 'PENDING_DEPT_APPROVAL' &&
+                          rep.assignedDepartment === data.user.department
+                        );
+                      }
+                    ).length;
+                    setPendingApprovalsCount(count);
+                  }
+                })
+                .catch(() => { });
+            }
+          } else {
+            setCurrentUser(null);
+          }
+        } else {
+          setCurrentUser(null);
         }
       } catch {
-        // Not logged in or error
+        setCurrentUser(null);
+      } finally {
+        setAuthChecked(true);
       }
     };
     fetchMe();
   }, [isLoginPage, pathname]);
 
   const handleLogout = async () => {
-    if (!confirm('Are you sure you want to sign out?')) return;
+    setIsLoggingOut(true);
     try {
       await fetch('/api/auth/logout', { method: 'POST' });
       router.push('/login');
@@ -61,26 +113,30 @@ export default function Navbar() {
     } catch (err) {
       console.error(err);
       window.location.href = '/login';
+    } finally {
+      setIsLoggingOut(false);
+      setShowLogoutConfirm(false);
     }
   };
 
-  // Base navigation items
-  const baseNavItems = [
-    { href: '/', label: 'Report Generator', icon: FileText, roles: ['ADMIN', 'OPERATOR', 'VIEWER'] },
-    { href: '/customers', label: 'Customers', icon: Users, roles: ['ADMIN', 'OPERATOR'] },
-    { href: '/history', label: 'Report History', icon: History, roles: ['ADMIN', 'OPERATOR', 'VIEWER'] },
-    { href: '/discovery', label: 'Network Discovery', icon: Radio, roles: ['ADMIN', 'OPERATOR'] },
-    { href: '/users', label: 'Users', icon: UserCheck, roles: ['ADMIN'] },
-    { href: '/settings', label: 'Settings', icon: Settings, roles: ['ADMIN'] },
-  ];
-
-  // Filter items by user role (default to least privileged VIEWER while loading)
-  const userRole = currentUser?.role || 'VIEWER';
-  const navItems = baseNavItems.filter((item) => item.roles.includes(userRole));
-
   if (isLoginPage) {
-    return null; // Clean login layout
+    return null;
   }
+
+  const userRole = currentUser?.role || 'VIEWER';
+  const isAdmin = userRole === 'ADMIN';
+
+  // Granular RBAC Permissions
+  const canCreateReport = hasPermission(currentUser, 'report:create');
+  const canViewHistory = hasPermission(currentUser, 'report:view_approved') || hasPermission(currentUser, 'report:view_all_status');
+  const canApprove = hasPermission(currentUser, 'report:approve');
+  const canViewQueue = hasPermission(currentUser, 'request:view_dept') || hasPermission(currentUser, 'request:view_all');
+  const canCreateRequest = hasPermission(currentUser, 'request:create');
+  const canViewSchedule = hasPermission(currentUser, 'schedule:view');
+  const canViewCustomers = hasPermission(currentUser, 'customer:read');
+  const canViewDiscovery = hasPermission(currentUser, 'discovery:view');
+  const canViewMaster = canViewCustomers || canViewDiscovery;
+  const canAdminSystem = hasPermission(currentUser, 'system:admin');
 
   const userInitials = (currentUser?.name || 'User')
     .split(' ')
@@ -89,153 +145,576 @@ export default function Navbar() {
     .join('')
     .toUpperCase();
 
+  // Active section flags
+  const isReportsActive = pathname === '/' || pathname === '/history' || pathname === '/approvals';
+  const isQueueActive = pathname === '/requests' || pathname === '/schedule';
+  const isMasterActive = pathname === '/customers' || pathname === '/discovery';
+  const isSystemActive = pathname === '/users' || pathname === '/settings';
+
+  const isGuestOnRequestPage = false;
+
+  const homeHref = canCreateReport
+    ? '/'
+    : canViewQueue
+      ? '/requests'
+      : '/history';
+
+  const getRoleBadge = (role: string) => {
+    switch (role) {
+      case 'ADMIN':
+        return (
+          <Badge variant="neutral" className="bg-slate-900 text-white border-slate-900 font-semibold text-xs px-2 py-0.5 shadow-2xs">
+            Admin
+          </Badge>
+        );
+      case 'SUPERVISOR':
+        return (
+          <Badge variant="info" className="bg-blue-600 text-white border-blue-600 font-semibold text-xs px-2 py-0.5 shadow-2xs">
+            Supervisor
+          </Badge>
+        );
+      case 'STAFF':
+        return (
+          <Badge variant="warning" className="bg-orange-600 text-white border-orange-700 font-semibold text-xs px-2 py-0.5 shadow-2xs">
+            Staff
+          </Badge>
+        );
+      case 'OPERATOR':
+        return (
+          <Badge variant="neutral" className="bg-slate-700 text-white border-slate-800 font-semibold text-xs px-2 py-0.5 shadow-2xs">
+            Operator
+          </Badge>
+        );
+      default:
+        return (
+          <Badge variant="neutral" className="text-xs px-2 py-0.5 font-medium">
+            Viewer
+          </Badge>
+        );
+    }
+  };
+
   return (
-    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-xs">
-      <div className="max-w-[1750px] mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16 items-center">
-          {/* Logo & Brand */}
-          <Link href="/" className="flex items-center space-x-3 group shrink-0">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 via-orange-600 to-amber-600 flex items-center justify-center text-white shadow-md shadow-orange-500/20 group-hover:scale-105 transition">
-              <BarChart3 className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="font-heading text-base sm:text-lg font-bold text-slate-900 tracking-tight flex items-center gap-2">
-                <span>MRTG & SLA</span>
-                <span className="font-heading text-[10px] px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 font-semibold border border-orange-200/80 uppercase tracking-wider">
-                  Enterprise
+    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200">
+      <div className="max-w-[1680px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10">
+        <div className="flex justify-between h-14 items-center">
+          {/* Left: Brand Logo */}
+          <div className="flex items-center space-x-6">
+            <Link href={homeHref} className="flex items-center space-x-2.5 shrink-0 group">
+              <div className="w-8 h-8 rounded-lg bg-orange-600 text-white flex items-center justify-center shadow-xs transition-transform group-hover:scale-105">
+                <BarChart3 className="w-4 h-4 stroke-[2]" />
+              </div>
+              <div className="flex flex-col">
+                <span className="font-heading text-base font-bold text-slate-900 tracking-tight leading-none">
+                  GENRE
+                </span>
+                <span className="text-xs text-slate-500 font-semibold tracking-wider uppercase mt-0.5 leading-none">
+                  Reporting System
                 </span>
               </div>
-              <p className="text-[11px] text-slate-500 hidden sm:block">Automated A4 PDF Reporting System</p>
-            </div>
-          </Link>
+            </Link>
 
-          {/* Desktop Navigation Links */}
-          <div className="hidden lg:flex items-center space-x-1">
-            <nav className="flex space-x-1">
-              {navItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = pathname === item.href;
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={`font-heading flex items-center space-x-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-150 ${isActive
-                        ? 'bg-orange-50 text-orange-600 border border-orange-200/80 shadow-xs'
-                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80'
-                      }`}
-                  >
-                    <Icon className={`w-4 h-4 ${isActive ? 'text-orange-500' : 'text-slate-400'}`} />
-                    <span>{item.label}</span>
-                  </Link>
-                );
-              })}
-            </nav>
-          </div>
-
-          {/* User Profile Pill & Logout */}
-          <div className="hidden sm:flex items-center space-x-3">
-            {currentUser ? (
-              <div className="flex items-center space-x-2.5 pl-3 border-l border-slate-200">
-                <div className="w-8 h-8 rounded-xl bg-slate-900 text-white font-bold flex items-center justify-center text-xs shadow-xs">
-                  {userInitials}
+            {/* Desktop Navigation Groups (Hierarchical Menu with Dropdowns) */}
+            {isGuestOnRequestPage ? (
+              <nav className="flex items-center space-x-1">
+                <div className="px-3.5 py-1.5 rounded-full text-[13px] flex items-center gap-1.5 bg-orange-50 text-orange-700 font-semibold border border-orange-200/80 shadow-2xs">
+                  <Send className="w-4 h-4 text-orange-700 stroke-[2]" />
+                  <span>Request Form</span>
                 </div>
-                <div className="text-left hidden md:block">
-                  <div className="text-xs font-bold text-slate-900 leading-tight truncate max-w-[140px]">
-                    {currentUser.name}
-                  </div>
-                  <div className="flex items-center gap-1 mt-0.5">
-                    <span
-                      className={`text-[9px] px-1.5 py-0.2 rounded font-bold uppercase tracking-wider ${currentUser.role === 'ADMIN'
-                          ? 'bg-purple-100 text-purple-700'
-                          : currentUser.role === 'OPERATOR'
-                            ? 'bg-blue-100 text-blue-700'
-                            : 'bg-slate-100 text-slate-600'
+              </nav>
+            ) : (
+              <nav className="hidden lg:flex items-center space-x-1">
+                {/* 1. Menu: Reports */}
+                {(canCreateReport || canViewHistory || canApprove) && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        type="button"
+                        className={`px-3 py-1.5 rounded-full text-[13px] transition-colors flex items-center gap-1.5 outline-none cursor-pointer ${isReportsActive
+                          ? 'bg-orange-50 text-orange-700 font-semibold'
+                          : 'text-slate-700 hover:text-slate-950 hover:bg-slate-100 font-medium'
+                          }`}
+                      >
+                        <FileText className={`w-4 h-4 stroke-[1.75] ${isReportsActive ? 'text-orange-700' : 'text-slate-500'}`} />
+                        <span>Reports</span>
+                        {canApprove && pendingApprovalsCount > 0 && (
+                          <span className="w-4 h-4 rounded-full bg-amber-500 text-white text-xs font-bold flex items-center justify-center shadow-xs">
+                            {pendingApprovalsCount}
+                          </span>
+                        )}
+                        <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start" className="w-52 p-1">
+                      {canCreateReport && (
+                        <DropdownMenuItem asChild>
+                          <Link
+                            href="/"
+                            className={`flex items-center gap-2.5 px-2.5 py-2 rounded-md cursor-pointer text-xs font-medium ${pathname === '/' ? 'bg-orange-50 text-orange-700 font-semibold' : 'text-slate-700 hover:bg-slate-50'
+                              }`}
+                          >
+                            <FilePlus className="w-4 h-4 text-orange-600" />
+                            <span>Create Report</span>
+                          </Link>
+                        </DropdownMenuItem>
+                      )}
+
+                      {canViewHistory && (
+                        <DropdownMenuItem asChild>
+                          <Link
+                            href="/history"
+                            className={`flex items-center gap-2.5 px-2.5 py-2 rounded-md cursor-pointer text-xs font-medium ${pathname === '/history' ? 'bg-orange-50 text-orange-700 font-semibold' : 'text-slate-700 hover:bg-slate-50'
+                              }`}
+                          >
+                            <History className="w-4 h-4 text-slate-500" />
+                            <span>Report History</span>
+                          </Link>
+                        </DropdownMenuItem>
+                      )}
+
+                      {canApprove && (
+                        <DropdownMenuItem asChild>
+                          <Link
+                            href="/approvals"
+                            className={`flex items-center justify-between px-2.5 py-2 rounded-md cursor-pointer text-xs font-medium ${pathname === '/approvals' ? 'bg-orange-50 text-orange-700 font-semibold' : 'text-slate-700 hover:bg-slate-50'
+                              }`}
+                          >
+                            <div className="flex items-center gap-2.5">
+                              <CheckSquare className="w-4 h-4 text-slate-500" />
+                              <span>Approval Desk</span>
+                            </div>
+                            {pendingApprovalsCount > 0 && (
+                              <Badge variant="warning" className="text-xs px-1.5 py-0 font-bold">
+                                {pendingApprovalsCount}
+                              </Badge>
+                            )}
+                          </Link>
+                        </DropdownMenuItem>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+
+                {/* 2. Menu: Queue & Schedule */}
+                {(canViewQueue || canCreateRequest || canViewSchedule) && (
+                  canViewSchedule ? (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          type="button"
+                          className={`px-3 py-1.5 rounded-full text-[13px] transition-colors flex items-center gap-1.5 outline-none cursor-pointer ${isQueueActive
+                            ? 'bg-orange-50 text-orange-700 font-semibold'
+                            : 'text-slate-700 hover:text-slate-950 hover:bg-slate-100 font-medium'
+                            }`}
+                        >
+                          <Clock className={`w-4 h-4 stroke-[1.75] ${isQueueActive ? 'text-orange-700' : 'text-slate-500'}`} />
+                          <span>Queue &amp; Schedule</span>
+                          <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start" className="w-52 p-1">
+                        <DropdownMenuItem asChild>
+                          <Link
+                            href="/requests"
+                            className={`flex items-center gap-2.5 px-2.5 py-2 rounded-md cursor-pointer text-xs font-medium ${pathname === '/requests' ? 'bg-orange-50 text-orange-700 font-semibold' : 'text-slate-700 hover:bg-slate-50'
+                              }`}
+                          >
+                            <Inbox className="w-4 h-4 text-slate-500" />
+                            <span>Request Queue</span>
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem asChild>
+                          <Link
+                            href="/schedule"
+                            className={`flex items-center gap-2.5 px-2.5 py-2 rounded-md cursor-pointer text-xs font-medium ${pathname === '/schedule' ? 'bg-orange-50 text-orange-700 font-semibold' : 'text-slate-700 hover:bg-slate-50'
+                              }`}
+                          >
+                            <CalendarCheck className="w-4 h-4 text-slate-500" />
+                            <span>Monthly Schedule</span>
+                          </Link>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  ) : (
+                    <Link
+                      href="/requests"
+                      className={`px-3 py-1.5 rounded-full text-[13px] transition-colors flex items-center gap-1.5 ${pathname === '/requests'
+                        ? 'bg-orange-50 text-orange-700 font-semibold'
+                        : 'text-slate-700 hover:text-slate-950 hover:bg-slate-100 font-medium'
                         }`}
                     >
-                      {currentUser.role}
-                    </span>
-                  </div>
-                </div>
+                      <Inbox className={`w-4 h-4 stroke-[1.75] ${pathname === '/requests' ? 'text-orange-700' : 'text-slate-500'}`} />
+                      <span>Request Queue</span>
+                    </Link>
+                  )
+                )}
 
-                <button
-                  type="button"
-                  onClick={handleLogout}
-                  className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition cursor-pointer"
-                  title="Sign out"
-                  aria-label="Logout"
-                >
-                  <LogOut className="w-4 h-4" />
-                </button>
-              </div>
-            ) : (
-              <div className="flex items-center space-x-1.5 px-2.5 py-1 bg-emerald-50 border border-emerald-200/80 rounded-full text-[11px] font-semibold text-emerald-700">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                </span>
-                <span>System Online</span>
-              </div>
+                {/* 3. Menu: Master Data (Only if user has customer or discovery permission) */}
+                {canViewMaster && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        type="button"
+                        className={`px-3 py-1.5 rounded-full text-[13px] transition-colors flex items-center gap-1.5 outline-none cursor-pointer ${isMasterActive
+                          ? 'bg-orange-50 text-orange-700 font-semibold'
+                          : 'text-slate-700 hover:text-slate-950 hover:bg-slate-100 font-medium'
+                          }`}
+                      >
+                        <Server className={`w-4 h-4 stroke-[1.75] ${isMasterActive ? 'text-orange-700' : 'text-slate-500'}`} />
+                        <span>Master Data</span>
+                        <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start" className="w-52 p-1">
+                      {canViewCustomers && (
+                        <DropdownMenuItem asChild>
+                          <Link
+                            href="/customers"
+                            className={`flex items-center gap-2.5 px-2.5 py-2 rounded-md cursor-pointer text-xs font-medium ${pathname === '/customers' ? 'bg-orange-50 text-orange-700 font-semibold' : 'text-slate-700 hover:bg-slate-50'
+                              }`}
+                          >
+                            <Users className="w-4 h-4 text-slate-500" />
+                            <span>Customer Directory</span>
+                          </Link>
+                        </DropdownMenuItem>
+                      )}
+
+                      {canViewDiscovery && (
+                        <DropdownMenuItem asChild>
+                          <Link
+                            href="/discovery"
+                            className={`flex items-center gap-2.5 px-2.5 py-2 rounded-md cursor-pointer text-xs font-medium ${pathname === '/discovery' ? 'bg-orange-50 text-orange-700 font-semibold' : 'text-slate-700 hover:bg-slate-50'
+                              }`}
+                          >
+                            <Radio className="w-4 h-4 text-slate-500" />
+                            <span>Network Discovery</span>
+                          </Link>
+                        </DropdownMenuItem>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+
+                {/* 4. Menu: System Management (Admin Only) */}
+                {canAdminSystem && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        type="button"
+                        className={`px-3 py-1.5 rounded-full text-[13px] transition-colors flex items-center gap-1.5 outline-none cursor-pointer ${isSystemActive
+                          ? 'bg-orange-50 text-orange-700 font-semibold'
+                          : 'text-slate-700 hover:text-slate-950 hover:bg-slate-100 font-medium'
+                          }`}
+                      >
+                        <ShieldCheck className={`w-4 h-4 stroke-[1.75] ${isSystemActive ? 'text-orange-700' : 'text-slate-500'}`} />
+                        <span>System</span>
+                        <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start" className="w-52 p-1">
+                      <DropdownMenuItem asChild>
+                        <Link
+                          href="/users"
+                          className={`flex items-center gap-2.5 px-2.5 py-2 rounded-md cursor-pointer text-xs font-medium ${pathname === '/users' ? 'bg-orange-50 text-orange-700 font-semibold' : 'text-slate-700 hover:bg-slate-50'
+                            }`}
+                        >
+                          <UserCheck className="w-4 h-4 text-slate-500" />
+                          <span>User Management</span>
+                        </Link>
+                      </DropdownMenuItem>
+
+                      <DropdownMenuItem asChild>
+                        <Link
+                          href="/settings"
+                          className={`flex items-center gap-2.5 px-2.5 py-2 rounded-md cursor-pointer text-xs font-medium ${pathname === '/settings' ? 'bg-orange-50 text-orange-700 font-semibold' : 'text-slate-700 hover:bg-slate-50'
+                            }`}
+                        >
+                          <Settings className="w-4 h-4 text-slate-500" />
+                          <span>System Settings</span>
+                        </Link>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+              </nav>
             )}
           </div>
 
+          {/* Right: User Profile & Role Chip */}
+          {isGuestOnRequestPage ? (
+            <div className="flex items-center space-x-2.5">
+              <div className="flex items-center space-x-1.5 px-3 py-1 bg-slate-100 border border-slate-200 rounded-full text-xs font-medium text-slate-700">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span>Public Request Portal</span>
+              </div>
+              <Link
+                href="/login"
+                className="text-xs font-semibold text-slate-600 hover:text-orange-600 px-3 py-1 rounded-md hover:bg-slate-100 transition-colors"
+              >
+                Sign In
+              </Link>
+            </div>
+          ) : (
+            <div className="hidden sm:flex items-center space-x-3">
+              {currentUser ? (
+                <div className="flex items-center space-x-2">
+                  {/* Role Badge Chip */}
+                  {currentUser.role && getRoleBadge(currentUser.role)}
+
+                  {/* User Dropdown */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 px-2 gap-2 text-slate-700 hover:text-slate-900 rounded-full"
+                      >
+                        <div className="w-6 h-6 rounded-full bg-slate-900 text-white font-medium flex items-center justify-center text-xs">
+                          {userInitials}
+                        </div>
+                        <span className="text-[13px] font-medium hidden md:inline-block max-w-[120px] truncate">
+                          {currentUser.name || 'User'}
+                        </span>
+                        <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56 p-1.5">
+                      <div className="px-2.5 py-2">
+                        <p className="text-xs font-bold text-slate-900 truncate">
+                          {currentUser.name || 'User'}
+                        </p>
+                        <p className="text-xs text-slate-500 font-sans truncate">
+                          {currentUser.email || (currentUser.username ? `@${currentUser.username}` : '')}
+                        </p>
+                        <div className="mt-1.5 flex items-center gap-1.5">
+                          <span className="text-xs text-slate-500">Role:</span>
+                          {currentUser.role && getRoleBadge(currentUser.role)}
+                        </div>
+                      </div>
+                      <DropdownMenuSeparator />
+                      {isAdmin && (
+                        <DropdownMenuItem asChild>
+                          <Link href="/settings" className="gap-2 cursor-pointer text-xs">
+                            <Settings className="w-4 h-4 text-slate-500" />
+                            <span>System Settings</span>
+                          </Link>
+                        </DropdownMenuItem>
+                      )}
+                      <DropdownMenuItem
+                        onClick={() => setShowLogoutConfirm(true)}
+                        className="gap-2 text-red-600 focus:text-red-700 focus:bg-red-50 cursor-pointer text-xs"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        <span>Sign out</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              ) : (
+                <div className="flex items-center space-x-1.5 px-2.5 py-1 bg-emerald-50 border border-emerald-200 rounded-full text-xs font-medium text-emerald-700">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  <span>Online</span>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Mobile Menu Toggle Button */}
-          <div className="flex lg:hidden items-center space-x-2">
-            <button
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="p-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200 transition"
-              aria-label="Toggle Navigation Menu"
-            >
-              {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            </button>
-          </div>
+          {!isGuestOnRequestPage && (
+            <div className="flex lg:hidden items-center">
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                aria-label="Toggle Navigation Menu"
+              >
+                {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              </Button>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Mobile Drawer Menu */}
-      {isMobileMenuOpen && (
-        <div className="lg:hidden border-t border-slate-200 bg-white px-4 pt-3 pb-4 space-y-1 shadow-lg">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = pathname === item.href;
-            return (
+      {/* Mobile Drawer Menu (Hierarchically Sectioned) */}
+      {!isGuestOnRequestPage && isMobileMenuOpen && (
+        <div className="lg:hidden border-t border-slate-200 bg-white px-4 pt-3 pb-5 space-y-4 shadow-xl max-h-[calc(100vh-4rem)] overflow-y-auto">
+          {/* Section 1: Reports */}
+          {(canCreateReport || canViewHistory || canApprove) && (
+            <div className="space-y-1">
+              <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-2">
+                Reports
+              </div>
+              {canCreateReport && (
+                <Link
+                  href="/"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition ${pathname === '/' ? 'bg-orange-50 text-orange-700 font-semibold' : 'text-slate-700 hover:bg-slate-100'
+                    }`}
+                >
+                  <FilePlus className="w-4 h-4 text-orange-600" />
+                  <span>Create Report</span>
+                </Link>
+              )}
+              {canViewHistory && (
+                <Link
+                  href="/history"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition ${pathname === '/history' ? 'bg-orange-50 text-orange-700 font-semibold' : 'text-slate-700 hover:bg-slate-100'
+                    }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <History className="w-4 h-4 text-slate-600" />
+                    <span>Report History</span>
+                  </div>
+                </Link>
+              )}
+              {canApprove && (
+                <Link
+                  href="/approvals"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition ${pathname === '/approvals' ? 'bg-orange-50 text-orange-700 font-semibold' : 'text-slate-700 hover:bg-slate-100'
+                    }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <CheckSquare className="w-4 h-4 text-slate-500" />
+                    <span>Approval Desk</span>
+                  </div>
+                  {pendingApprovalsCount > 0 && (
+                    <Badge variant="warning" className="text-xs px-1.5 py-0 font-bold">
+                      {pendingApprovalsCount}
+                    </Badge>
+                  )}
+                </Link>
+              )}
+            </div>
+          )}
+
+          {/* Section 2: Queue & Schedule */}
+          {(canViewQueue || canCreateRequest || canViewSchedule) && (
+            <div className="space-y-1 pt-2 border-t border-slate-100">
+              <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-2">
+                Queue &amp; Schedule
+              </div>
+              {canViewQueue && (
+                <Link
+                  href="/requests"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition ${pathname === '/requests' ? 'bg-orange-50 text-orange-700 font-semibold' : 'text-slate-700 hover:bg-slate-100'
+                    }`}
+                >
+                  <Inbox className="w-4 h-4 text-slate-500" />
+                  <span>Request Queue</span>
+                </Link>
+              )}
+              {canViewSchedule && (
+                <Link
+                  href="/schedule"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition ${pathname === '/schedule' ? 'bg-orange-50 text-orange-700 font-semibold' : 'text-slate-700 hover:bg-slate-100'
+                    }`}
+                >
+                  <CalendarCheck className="w-4 h-4 text-slate-500" />
+                  <span>Monthly Schedule</span>
+                </Link>
+              )}
+            </div>
+          )}
+
+          {/* Section 3: Master Data (Only if user has permission) */}
+          {canViewMaster && (
+            <div className="space-y-1 pt-2 border-t border-slate-100">
+              <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-2">
+                Master Data
+              </div>
+              {canViewCustomers && (
+                <Link
+                  href="/customers"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition ${pathname === '/customers' ? 'bg-orange-50 text-orange-700 font-semibold' : 'text-slate-700 hover:bg-slate-100'
+                    }`}
+                >
+                  <Users className="w-4 h-4 text-slate-500" />
+                  <span>Customer Directory</span>
+                </Link>
+              )}
+              {canViewDiscovery && (
+                <Link
+                  href="/discovery"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition ${pathname === '/discovery' ? 'bg-orange-50 text-orange-700 font-semibold' : 'text-slate-700 hover:bg-slate-100'
+                    }`}
+                >
+                  <Radio className="w-4 h-4 text-slate-500" />
+                  <span>Network Discovery</span>
+                </Link>
+              )}
+            </div>
+          )}
+
+          {/* Section 4: System (Admin Only) */}
+          {canAdminSystem && (
+            <div className="space-y-1 pt-2 border-t border-slate-100">
+              <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-2">
+                System
+              </div>
               <Link
-                key={item.href}
-                href={item.href}
+                href="/users"
                 onClick={() => setIsMobileMenuOpen(false)}
-                className={`font-heading flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-bold transition ${isActive
-                    ? 'bg-orange-50 text-orange-600 border border-orange-200/80'
-                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition ${pathname === '/users' ? 'bg-orange-50 text-orange-700 font-semibold' : 'text-slate-700 hover:bg-slate-100'
                   }`}
               >
-                <Icon className={`w-4 h-4 ${isActive ? 'text-orange-500' : 'text-slate-400'}`} />
-                <span>{item.label}</span>
+                <UserCheck className="w-4 h-4 text-slate-500" />
+                <span>User Management</span>
               </Link>
-            );
-          })}
+              <Link
+                href="/settings"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition ${pathname === '/settings' ? 'bg-orange-50 text-orange-700 font-semibold' : 'text-slate-700 hover:bg-slate-100'
+                  }`}
+              >
+                <Settings className="w-4 h-4 text-slate-500" />
+                <span>System Settings</span>
+              </Link>
+            </div>
+          )}
 
+          {/* User Profile on Mobile */}
           {currentUser && (
-            <div className="pt-3 mt-2 border-t border-slate-100 flex items-center justify-between text-xs px-2">
+            <div className="pt-3 border-t border-slate-200 flex items-center justify-between text-xs px-2">
               <div className="flex items-center space-x-2">
-                <div className="w-7 h-7 rounded-lg bg-slate-800 text-white font-bold flex items-center justify-center text-[10px]">
+                <div className="w-7 h-7 rounded-full bg-slate-900 text-white font-medium flex items-center justify-center text-xs">
                   {userInitials}
                 </div>
                 <div>
-                  <div className="font-bold text-slate-800">{currentUser.name}</div>
-                  <div className="text-[10px] text-slate-400 font-bold uppercase">{currentUser.role}</div>
+                  <div className="font-semibold text-slate-800">{currentUser.name || 'User'}</div>
+                  <div className="mt-0.5">{currentUser.role && getRoleBadge(currentUser.role)}</div>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={handleLogout}
-                className="flex items-center space-x-1 text-xs text-rose-600 font-semibold hover:underline"
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowLogoutConfirm(true)}
+                className="text-red-600 hover:text-red-700 hover:bg-red-50 text-xs gap-1 h-7 px-2"
               >
                 <LogOut className="w-3.5 h-3.5" />
-                <span>Logout</span>
-              </button>
+                <span>Sign out</span>
+              </Button>
             </div>
           )}
         </div>
       )}
+
+      <ConfirmDialog
+        open={showLogoutConfirm}
+        onOpenChange={setShowLogoutConfirm}
+        title="Sign Out"
+        description="Are you sure you want to sign out of your account session?"
+        confirmText="Sign Out"
+        variant="primary"
+        loading={isLoggingOut}
+        onConfirm={handleLogout}
+      />
     </header>
   );
 }

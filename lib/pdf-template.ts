@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { TicketItem, CaseItem, calculateSla } from './sla-calculator';
+import { TicketItem, CaseItem, calculateSla, formatPeriodDisplay } from './sla-calculator';
 
 export interface ReportData {
   reportType: 'MRTG' | 'SLA';
@@ -26,6 +26,7 @@ export interface ReportData {
   trafficDirection?: 'NORMAL' | 'REVERSED';
   tickets?: TicketItem[];
   cases?: CaseItem[];
+  isDraft?: boolean;
 }
 
 function getAssetAsBase64(relativeAssetPath: string): string {
@@ -247,8 +248,6 @@ export function generateReportHtml(data: ReportData): string {
       font-size: 11.5pt;
       font-weight: 700;
       color: #000000;
-      border-bottom: 2px solid #F16614;
-      padding-bottom: 2px;
       margin-top: 10px;
       margin-bottom: 4px;
       display: inline-block;
@@ -263,10 +262,12 @@ export function generateReportHtml(data: ReportData): string {
     /* Tables - Pure Black Borders & Clean Corporate Styling */
     .data-table {
       width: 100%;
+      table-layout: fixed;
       border-collapse: collapse;
       margin-bottom: 4px;
       font-size: 8.5pt;
       border: 1px solid #000000;
+      word-break: break-word;
     }
     .data-table th {
       background-color: #ffffff;
@@ -278,7 +279,7 @@ export function generateReportHtml(data: ReportData): string {
     }
     .data-table td {
       border: 1px solid #000000;
-      padding: 3.5px 6px;
+      padding: 4px 6px;
       color: #000000;
       text-align: center;
     }
@@ -301,7 +302,7 @@ export function generateReportHtml(data: ReportData): string {
       margin-bottom: 8px;
     }
 
-    /* SLA Metric Boxes */
+    /* SLA Metric Boxes & Dual Progress Bars (Option A) */
     .metric-grid {
       display: flex;
       gap: 10px;
@@ -328,6 +329,72 @@ export function generateReportHtml(data: ReportData): string {
       font-weight: 800;
       color: #000000;
       margin-top: 1px;
+    }
+
+    .sla-progress-card {
+      margin-top: 6px;
+      margin-bottom: 6px;
+    }
+    .sla-progress-row {
+      margin-bottom: 8px;
+    }
+    .sla-progress-row:last-child {
+      margin-bottom: 0;
+    }
+    .sla-progress-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 8pt;
+      margin-bottom: 4px;
+    }
+    .sla-progress-title {
+      font-weight: 700;
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .sla-progress-dot {
+      display: inline-block;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+    }
+    .sla-progress-values {
+      font-size: 8pt;
+      font-weight: 600;
+    }
+    .sla-progress-track {
+      width: 100%;
+      height: 11px;
+      background: #fee2e2;
+      border-radius: 3px;
+      overflow: hidden;
+      display: flex;
+    }
+    .sla-progress-online {
+      background: #10b981;
+      height: 100%;
+    }
+    .sla-progress-downtime {
+      background: #ef4444;
+      height: 100%;
+    }
+    .sla-progress-target-track {
+      width: 100%;
+      height: 9px;
+      background: #e2e8f0;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .sla-progress-target-fill {
+      background: #0284c7;
+      height: 100%;
+    }
+    .sla-status-text {
+      font-size: 8pt;
+      font-weight: 700;
     }
 
     /* MRTG Graph Styles */
@@ -368,9 +435,28 @@ export function generateReportHtml(data: ReportData): string {
     .traffic-bullet .bullet-text {
       flex: 1;
     }
+    .draft-watermark {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(-30deg);
+      font-size: 54pt;
+      font-weight: 800;
+      color: rgba(234, 88, 12, 0.14);
+      text-transform: uppercase;
+      letter-spacing: 6px;
+      pointer-events: none;
+      z-index: 100;
+      white-space: nowrap;
+      font-family: 'Poppins', Arial, sans-serif;
+      border: 4px dashed rgba(234, 88, 12, 0.2);
+      padding: 8px 36px;
+      border-radius: 10px;
+    }
   </style>
 </head>
 <body>
+  ${data.isDraft ? '<div class="draft-watermark" style="position: fixed;">DRAFT / PREVIEW</div>' : ''}
 
   <!-- ==================== PAGE 1: COVER ==================== -->
   <div class="page cover-page" style="background-image: url('${coverBg}');">
@@ -459,57 +545,35 @@ export function generateReportHtml(data: ReportData): string {
         Document Number : ${data.documentNumber}
       </div>
 
-      <!-- Section 1: Summary Report -->
+      <!-- Section 1: Summary Report & Service Availability -->
       <div>
-        <div class="section-title">Summary Report</div>
+        <div class="section-title">Summary Report & Service Availability</div>
       </div>
-      <div class="section-desc">Summary Report for ${data.customerName} ${data.reportPeriod}</div>
+      <div class="section-desc">Summary report & detailed service availability for ${data.customerName} ${data.reportPeriod}</div>
       <table class="data-table">
         <thead>
           <tr>
             <th style="width: 35px;">No</th>
-            <th style="text-align: left; padding-left: 10px;">Service Total</th>
+            <th style="width: 110px; text-align: left; padding-left: 8px;">Service ID</th>
+            <th style="text-align: left; padding-left: 8px;">Service Name</th>
             <th style="width: 50px;">Node</th>
-            <th style="width: 90px;">SLA Service</th>
+            <th style="width: 85px;">Target SLA</th>
+            <th style="width: 85px;">Availability</th>
           </tr>
         </thead>
         <tbody>
           <tr>
             <td>1</td>
-            <td style="text-align: left; padding-left: 10px;">${data.serviceName}</td>
+            <td style="text-align: left; padding-left: 8px;">${data.serviceId}</td>
+            <td style="text-align: left; padding-left: 8px;">${data.serviceName}</td>
             <td>${data.nodeCount}</td>
             <td>${data.targetSla > 0 ? `${data.targetSla}%` : '-'}</td>
-          </tr>
-          <tr class="total-row">
-            <td colspan="3" style="text-align: right; padding-right: 14px;">Total</td>
-            <td>${data.targetSla > 0 ? `${data.targetSla}%` : '-'}</td>
-          </tr>
-        </tbody>
-      </table>
-
-      <!-- Section 2: Service Availability -->
-      <div>
-        <div class="section-title">Service Availability</div>
-      </div>
-      <div class="section-desc">Detailed service availability for ${data.customerName} ${data.reportPeriod}</div>
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th style="width: 35px;">No</th>
-            <th style="text-align: left; padding-left: 10px;">Service ID</th>
-            <th style="width: 50px;">Node</th>
-            <th style="width: 90px;">Availability</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>1</td>
-            <td style="text-align: left; padding-left: 10px;">${data.serviceId}</td>
-            <td>${data.nodeCount}</td>
             <td>${slaCalc.availabilityPercent}%</td>
           </tr>
           <tr class="total-row">
             <td colspan="3" style="text-align: right; padding-right: 14px;">Total</td>
+            <td>${data.nodeCount}</td>
+            <td>${data.targetSla > 0 ? `${data.targetSla}%` : '-'}</td>
             <td>${slaCalc.availabilityPercent}%</td>
           </tr>
         </tbody>
@@ -525,11 +589,11 @@ export function generateReportHtml(data: ReportData): string {
       <table class="data-table">
         <thead>
           <tr>
-            <th style="width: 100px;">No. Ticket</th>
-            <th style="width: 75px;">Date</th>
-            <th>Description</th>
-            <th style="width: 140px;">Action</th>
-            <th style="width: 70px;">Status</th>
+            <th style="width: 15%;">No. Ticket</th>
+            <th style="width: 16%;">Date & Time</th>
+            <th style="width: 37%;">Description</th>
+            <th style="width: 22%;">Action</th>
+            <th style="width: 10%;">Status</th>
           </tr>
         </thead>
         <tbody>
@@ -541,15 +605,20 @@ export function generateReportHtml(data: ReportData): string {
               <td>-</td>
               <td>-</td>
             </tr>
-          ` : tickets.map(t => `
+          ` : tickets.map(t => {
+            const period = formatPeriodDisplay(t);
+            return `
             <tr>
-              <td>${t.noTicket}</td>
-              <td>${t.date}</td>
+              <td style="white-space: nowrap;">${t.noTicket}</td>
+              <td style="white-space: nowrap; font-size: 7.5pt; line-height: 1.25;">
+                <div style="font-weight: 600;">${period.start}</div>
+                ${period.end ? `<div style="font-size: 7pt; color: #475569; margin-top: 1px;">s/d ${period.end}</div>` : ''}
+              </td>
               <td style="text-align: left; padding-left: 8px;">${t.description}</td>
               <td style="text-align: left; padding-left: 8px;">${t.action}</td>
               <td>${t.status}</td>
             </tr>
-          `).join('')}
+          `;}).join('')}
         </tbody>
       </table>
 
@@ -562,11 +631,11 @@ export function generateReportHtml(data: ReportData): string {
       <table class="data-table">
         <thead>
           <tr>
-            <th style="width: 100px;">No. Case</th>
-            <th style="width: 75px;">Date</th>
-            <th>Description</th>
-            <th style="width: 140px;">Action</th>
-            <th style="width: 75px;">Downtime</th>
+            <th style="width: 15%;">No. Case</th>
+            <th style="width: 16%;">Date & Time</th>
+            <th style="width: 37%;">Description</th>
+            <th style="width: 22%;">Action</th>
+            <th style="width: 10%;">Downtime</th>
           </tr>
         </thead>
         <tbody>
@@ -578,15 +647,20 @@ export function generateReportHtml(data: ReportData): string {
               <td>-</td>
               <td>-</td>
             </tr>
-          ` : cases.map(c => `
+          ` : cases.map(c => {
+            const period = formatPeriodDisplay(c);
+            return `
             <tr>
               <td>${c.noCase}</td>
-              <td>${c.date}</td>
+              <td style="white-space: nowrap; font-size: 7.5pt; line-height: 1.25;">
+                <div style="font-weight: 600;">${period.start}</div>
+                ${period.end ? `<div style="font-size: 7pt; color: #475569; margin-top: 1px;">s/d ${period.end}</div>` : ''}
+              </td>
               <td style="text-align: left; padding-left: 8px;">${c.description}</td>
               <td style="text-align: left; padding-left: 8px;">${c.action}</td>
               <td>${c.downtimeMinutes} Mins</td>
             </tr>
-          `).join('')}
+          `;}).join('')}
         </tbody>
       </table>
 
@@ -596,23 +670,53 @@ export function generateReportHtml(data: ReportData): string {
         <span>Downtime Duration : ${slaCalc.downtimeDurationStr}</span>
       </div>
 
-      <!-- Section 4: SLA Service -->
+      <!-- Section 4: SLA Service (Dual Progress Bar - Option A) -->
       <div>
         <div class="section-title">SLA Service</div>
       </div>
       <div class="section-desc">Detailed SLA Service for ${data.customerName} ${data.reportPeriod} :</div>
-      <div class="metric-grid">
-        <div class="metric-card">
-          <div class="metric-label">Online</div>
-          <div class="metric-value">${slaCalc.onlinePercent.toFixed(2)}%</div>
+      <div class="sla-progress-card">
+        <!-- Bar 1: Actual Availability (Online + Downtime) -->
+        <div class="sla-progress-row">
+          <div class="sla-progress-header">
+            <div class="sla-progress-title">
+              <span class="sla-progress-dot" style="background-color: #10b981;"></span>
+              <span>Service Availability</span>
+            </div>
+            <div class="sla-progress-values">
+              <span style="color: #047857; font-weight: 700;">Availability ${slaCalc.onlinePercent.toFixed(2)}%</span>
+              <span style="color: #94a3b8; margin: 0 5px;">|</span>
+              <span style="color: #dc2626; font-weight: 700;">Downtime ${slaCalc.downtimePercent.toFixed(2)}%</span>
+            </div>
+          </div>
+          <div class="sla-progress-track">
+            <div class="sla-progress-online" style="width: ${Math.min(100, Math.max(0, slaCalc.onlinePercent))}%;"></div>
+            <div class="sla-progress-downtime" style="width: ${Math.min(100, Math.max(0, slaCalc.downtimePercent))}%;"></div>
+          </div>
         </div>
-        <div class="metric-card">
-          <div class="metric-label">Downtime</div>
-          <div class="metric-value">${slaCalc.downtimePercent.toFixed(2)}%</div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-label">SLA</div>
-          <div class="metric-value">${data.targetSla > 0 ? `${data.targetSla.toFixed(2)}%` : '-'}</div>
+
+        <!-- Bar 2: Target SLA & Status Text -->
+        <div class="sla-progress-row">
+          <div class="sla-progress-header">
+            <div class="sla-progress-title">
+              <span class="sla-progress-dot" style="background-color: #0284c7;"></span>
+              <span>Target SLA : <strong style="color: #0284c7;">${data.targetSla > 0 ? `${data.targetSla.toFixed(2)}%` : '-'}</strong></span>
+            </div>
+            <div>
+              ${data.targetSla > 0 ? (
+                slaCalc.onlinePercent >= data.targetSla ? `
+                  <span class="sla-status-text" style="color: #047857;">SLA Met (+${(slaCalc.onlinePercent - data.targetSla).toFixed(2)}%)</span>
+                ` : `
+                  <span class="sla-status-text" style="color: #dc2626;">SLA Breached (-${(data.targetSla - slaCalc.onlinePercent).toFixed(2)}%)</span>
+                `
+              ) : `
+                <span class="sla-status-text" style="color: #64748b;">-</span>
+              `}
+            </div>
+          </div>
+          <div class="sla-progress-target-track">
+            <div class="sla-progress-target-fill" style="width: ${Math.min(100, Math.max(0, data.targetSla > 0 ? data.targetSla : 100))}%;"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -656,57 +760,35 @@ export function generateReportHtml(data: ReportData): string {
         Document Number : ${data.documentNumber}
       </div>
 
-      <!-- Section 1: Summary Report -->
+      <!-- Section 1: Summary Report & Service Availability -->
       <div>
-        <div class="section-title">Summary Report</div>
+        <div class="section-title">Summary Report & Service Availability</div>
       </div>
-      <div class="section-desc">Summary Report for ${data.customerName} ${data.reportPeriod}</div>
+      <div class="section-desc">Summary report & detailed service availability for ${data.customerName} ${data.reportPeriod}</div>
       <table class="data-table">
         <thead>
           <tr>
             <th style="width: 35px;">No</th>
-            <th style="text-align: left; padding-left: 10px;">Service Total</th>
+            <th style="width: 110px; text-align: left; padding-left: 8px;">Service ID</th>
+            <th style="text-align: left; padding-left: 8px;">Service Name</th>
             <th style="width: 50px;">Node</th>
-            <th style="width: 90px;">SLA Service</th>
+            <th style="width: 85px;">Target SLA</th>
+            <th style="width: 85px;">Availability</th>
           </tr>
         </thead>
         <tbody>
           <tr>
             <td>1</td>
-            <td style="text-align: left; padding-left: 10px;">${data.serviceName}</td>
+            <td style="text-align: left; padding-left: 8px;">${data.serviceId}</td>
+            <td style="text-align: left; padding-left: 8px;">${data.serviceName}</td>
             <td>${data.nodeCount}</td>
             <td>${data.targetSla > 0 ? `${data.targetSla}%` : '-'}</td>
-          </tr>
-          <tr class="total-row">
-            <td colspan="3" style="text-align: right; padding-right: 14px;">Total</td>
-            <td>${data.targetSla > 0 ? `${data.targetSla}%` : '-'}</td>
-          </tr>
-        </tbody>
-      </table>
-
-      <!-- Section 2: Service Availability -->
-      <div>
-        <div class="section-title">Service Availability</div>
-      </div>
-      <div class="section-desc">Detailed service availability for ${data.customerName} ${data.reportPeriod}</div>
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th style="width: 35px;">No</th>
-            <th style="text-align: left; padding-left: 10px;">Service ID</th>
-            <th style="width: 50px;">Node</th>
-            <th style="width: 90px;">Availability</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>1</td>
-            <td style="text-align: left; padding-left: 10px;">${data.serviceId}</td>
-            <td>${data.nodeCount}</td>
             <td>${slaCalc.availabilityPercent}%</td>
           </tr>
           <tr class="total-row">
             <td colspan="3" style="text-align: right; padding-right: 14px;">Total</td>
+            <td>${data.nodeCount}</td>
+            <td>${data.targetSla > 0 ? `${data.targetSla}%` : '-'}</td>
             <td>${slaCalc.availabilityPercent}%</td>
           </tr>
         </tbody>
@@ -722,11 +804,11 @@ export function generateReportHtml(data: ReportData): string {
       <table class="data-table">
         <thead>
           <tr>
-            <th style="width: 100px;">No. Ticket</th>
-            <th style="width: 75px;">Date</th>
-            <th>Description</th>
-            <th style="width: 140px;">Action</th>
-            <th style="width: 70px;">Status</th>
+            <th style="width: 15%;">No. Ticket</th>
+            <th style="width: 16%;">Date & Time</th>
+            <th style="width: 37%;">Description</th>
+            <th style="width: 22%;">Action</th>
+            <th style="width: 10%;">Status</th>
           </tr>
         </thead>
         <tbody>
@@ -738,15 +820,20 @@ export function generateReportHtml(data: ReportData): string {
               <td>-</td>
               <td>-</td>
             </tr>
-          ` : tickets.map(t => `
+          ` : tickets.map(t => {
+            const period = formatPeriodDisplay(t);
+            return `
             <tr>
-              <td>${t.noTicket}</td>
-              <td>${t.date}</td>
+              <td style="white-space: nowrap;">${t.noTicket}</td>
+              <td style="white-space: nowrap; font-size: 7.5pt; line-height: 1.25;">
+                <div style="font-weight: 600;">${period.start}</div>
+                ${period.end ? `<div style="font-size: 7pt; color: #475569; margin-top: 1px;">s/d ${period.end}</div>` : ''}
+              </td>
               <td style="text-align: left; padding-left: 8px;">${t.description}</td>
               <td style="text-align: left; padding-left: 8px;">${t.action}</td>
               <td>${t.status}</td>
             </tr>
-          `).join('')}
+          `;}).join('')}
         </tbody>
       </table>
 
@@ -772,11 +859,11 @@ export function generateReportHtml(data: ReportData): string {
       <table class="data-table">
         <thead>
           <tr>
-            <th style="width: 100px;">No. Case</th>
-            <th style="width: 75px;">Date</th>
-            <th>Description</th>
-            <th style="width: 140px;">Action</th>
-            <th style="width: 75px;">Downtime</th>
+            <th style="width: 15%;">No. Case</th>
+            <th style="width: 16%;">Date & Time</th>
+            <th style="width: 37%;">Description</th>
+            <th style="width: 22%;">Action</th>
+            <th style="width: 10%;">Downtime</th>
           </tr>
         </thead>
         <tbody>
@@ -788,15 +875,20 @@ export function generateReportHtml(data: ReportData): string {
               <td>-</td>
               <td>-</td>
             </tr>
-          ` : cases.map(c => `
+          ` : cases.map(c => {
+            const period = formatPeriodDisplay(c);
+            return `
             <tr>
               <td>${c.noCase}</td>
-              <td>${c.date}</td>
+              <td style="white-space: nowrap; font-size: 7.5pt; line-height: 1.25;">
+                <div style="font-weight: 600;">${period.start}</div>
+                ${period.end ? `<div style="font-size: 7pt; color: #475569; margin-top: 1px;">s/d ${period.end}</div>` : ''}
+              </td>
               <td style="text-align: left; padding-left: 8px;">${c.description}</td>
               <td style="text-align: left; padding-left: 8px;">${c.action}</td>
               <td>${c.downtimeMinutes} Mins</td>
             </tr>
-          `).join('')}
+          `;}).join('')}
         </tbody>
       </table>
 
@@ -806,23 +898,53 @@ export function generateReportHtml(data: ReportData): string {
         <span>Downtime Duration : ${slaCalc.downtimeDurationStr}</span>
       </div>
 
-      <!-- Section: SLA Service -->
+      <!-- Section: SLA Service (Dual Progress Bar - Option A) -->
       <div style="margin-top: 14px;">
         <div class="section-title">SLA Service</div>
       </div>
       <div class="section-desc">Detailed SLA Service for ${data.customerName} ${data.reportPeriod} :</div>
-      <div class="metric-grid">
-        <div class="metric-card">
-          <div class="metric-label">Online</div>
-          <div class="metric-value">${slaCalc.onlinePercent.toFixed(2)}%</div>
+      <div class="sla-progress-card">
+        <!-- Bar 1: Actual Availability (Online + Downtime) -->
+        <div class="sla-progress-row">
+          <div class="sla-progress-header">
+            <div class="sla-progress-title">
+              <span class="sla-progress-dot" style="background-color: #10b981;"></span>
+              <span>Service Availability</span>
+            </div>
+            <div class="sla-progress-values">
+              <span style="color: #047857; font-weight: 700;">Availability ${slaCalc.onlinePercent.toFixed(2)}%</span>
+              <span style="color: #94a3b8; margin: 0 5px;">|</span>
+              <span style="color: #dc2626; font-weight: 700;">Downtime ${slaCalc.downtimePercent.toFixed(2)}%</span>
+            </div>
+          </div>
+          <div class="sla-progress-track">
+            <div class="sla-progress-online" style="width: ${Math.min(100, Math.max(0, slaCalc.onlinePercent))}%;"></div>
+            <div class="sla-progress-downtime" style="width: ${Math.min(100, Math.max(0, slaCalc.downtimePercent))}%;"></div>
+          </div>
         </div>
-        <div class="metric-card">
-          <div class="metric-label">Downtime</div>
-          <div class="metric-value">${slaCalc.downtimePercent.toFixed(2)}%</div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-label">SLA</div>
-          <div class="metric-value">${data.targetSla > 0 ? `${data.targetSla.toFixed(2)}%` : '-'}</div>
+
+        <!-- Bar 2: Target SLA & Status Text -->
+        <div class="sla-progress-row">
+          <div class="sla-progress-header">
+            <div class="sla-progress-title">
+              <span class="sla-progress-dot" style="background-color: #0284c7;"></span>
+              <span>Target SLA : <strong style="color: #0284c7;">${data.targetSla > 0 ? `${data.targetSla.toFixed(2)}%` : '-'}</strong></span>
+            </div>
+            <div>
+              ${data.targetSla > 0 ? (
+                slaCalc.onlinePercent >= data.targetSla ? `
+                  <span class="sla-status-text" style="color: #047857;">SLA Met (+${(slaCalc.onlinePercent - data.targetSla).toFixed(2)}%)</span>
+                ` : `
+                  <span class="sla-status-text" style="color: #dc2626;">SLA Breached (-${(data.targetSla - slaCalc.onlinePercent).toFixed(2)}%)</span>
+                `
+              ) : `
+                <span class="sla-status-text" style="color: #64748b;">-</span>
+              `}
+            </div>
+          </div>
+          <div class="sla-progress-target-track">
+            <div class="sla-progress-target-fill" style="width: ${Math.min(100, Math.max(0, data.targetSla > 0 ? data.targetSla : 100))}%;"></div>
+          </div>
         </div>
       </div>
     </div>

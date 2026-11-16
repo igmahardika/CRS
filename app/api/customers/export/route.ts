@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
 import * as XLSX from 'xlsx';
 import { prisma } from '@/lib/prisma';
-import { requireAuth } from '@/lib/auth';
+import { requirePermission } from '@/lib/auth';
 
 export async function GET() {
-  const auth = await requireAuth();
+  const auth = await requirePermission('customer:export');
   if (!auth.authorized) {
     return NextResponse.json({ error: auth.error }, { status: auth.status });
   }
@@ -22,10 +22,13 @@ export async function GET() {
       'Service Name',
       'Node Count',
       'Target SLA (%)',
-      'Default Engine',
+      'Preferred Engine',
       'Cacti Graph ID',
       'PRTG Sensor ID',
       'Traffic Direction',
+      'Monthly Routine',
+      'Routine Group',
+      'Routine Report Type',
       'Created At',
       'Updated At',
     ];
@@ -42,6 +45,9 @@ export async function GET() {
       c.cactiGraphId || '',
       c.prtgSensorId || '',
       c.trafficDirection || 'NORMAL',
+      c.isMonthlyRoutine ? 'YES' : 'NO',
+      c.routineGroup || 'Customer Experience',
+      c.routineReportType || 'SLA',
       c.createdAt ? new Date(c.createdAt).toISOString() : '',
       c.updatedAt ? new Date(c.updatedAt).toISOString() : '',
     ]);
@@ -58,10 +64,13 @@ export async function GET() {
       { wch: 30 }, // Service Name
       { wch: 12 }, // Node Count
       { wch: 16 }, // Target SLA (%)
-      { wch: 16 }, // Default Engine
+      { wch: 16 }, // Preferred Engine
       { wch: 18 }, // Cacti Graph ID
       { wch: 18 }, // PRTG Sensor ID
       { wch: 18 }, // Traffic Direction
+      { wch: 16 }, // Monthly Routine
+      { wch: 24 }, // Routine Group
+      { wch: 20 }, // Routine Report Type
       { wch: 24 }, // Created At
       { wch: 24 }, // Updated At
     ];
