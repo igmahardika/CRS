@@ -26,6 +26,13 @@ export default function LivePreview({
   const [zoom, setZoom] = useState<number>(65); // Default 65% scale for desktop viewing
   const [activePage, setActivePage] = useState<number | 'all'>('all');
 
+  // Auto-fit zoom on mobile viewport
+  React.useEffect(() => {
+    if (typeof window !== 'undefined' && window.innerWidth < 640) {
+      setZoom(40);
+    }
+  }, []);
+
   const isSla = data.reportType === 'SLA';
 
   const tickets = (data.tickets || []).filter(t => t.noTicket && t.noTicket.trim() !== '');
@@ -44,21 +51,36 @@ export default function LivePreview({
     }
   }, [totalPages, activePage]);
 
-  // SLA calculations
-  const [periodMonthStr, periodYearStr] = (data.reportPeriod || '').split(' ');
-  const monthNames = [
-    'january', 'february', 'march', 'april', 'may', 'june',
-    'july', 'august', 'september', 'october', 'november', 'december'
-  ];
-  let month = 10;
-  let year = 2026;
+  // SLA calculations with bilingual month parsing
+  const [periodMonthStr, periodYearStr] = (data.reportPeriod || '').trim().split(/\s+/);
+  const monthMap: Record<string, number> = {
+    january: 1, jan: 1, february: 2, feb: 2, march: 3, mar: 3,
+    april: 4, apr: 4, may: 5, june: 6, jun: 6,
+    july: 7, jul: 7, august: 8, aug: 8, september: 9, sep: 9, sept: 9,
+    october: 10, oct: 10, november: 11, nov: 11, december: 12, dec: 12,
+    januari: 1, februari: 2, maret: 3, mei: 5, juni: 6, juli: 7,
+    agustus: 8, agt: 8, ags: 8, oktober: 10, okt: 10, nopember: 11,
+    desember: 12, des: 12,
+  };
+
+  const now = new Date();
+  let month = now.getMonth() + 1;
+  let year = now.getFullYear();
+
   if (periodMonthStr) {
-    const foundIdx = monthNames.findIndex(m => m === periodMonthStr.toLowerCase());
-    if (foundIdx !== -1) month = foundIdx + 1;
+    const cleanKey = periodMonthStr.toLowerCase().replace(/[^a-z]/g, '');
+    if (monthMap[cleanKey]) {
+      month = monthMap[cleanKey];
+    } else {
+      const parsedM = parseInt(cleanKey, 10);
+      if (!isNaN(parsedM) && parsedM >= 1 && parsedM <= 12) month = parsedM;
+    }
   }
   if (periodYearStr) {
-    const parsedY = parseInt(periodYearStr, 10);
-    if (!isNaN(parsedY)) year = parsedY;
+    const parsedY = parseInt(periodYearStr.replace(/[^0-9]/g, ''), 10);
+    if (!isNaN(parsedY) && parsedY >= 2000 && parsedY <= 2100) {
+      year = parsedY;
+    }
   }
 
   const slaCalc = calculateSla(data.cases || [], data.tickets || [], year, month);
@@ -78,15 +100,15 @@ export default function LivePreview({
   const coverBg = isSla ? coverSlaUrl : coverMrtgUrl;
 
   return (
-    <div className="flex flex-col h-full bg-slate-100 rounded-lg border border-slate-200 overflow-hidden shadow-sm" suppressHydrationWarning>
+    <div className="flex flex-col h-full bg-slate-100 rounded-xl border border-slate-200 overflow-hidden shadow-sm" suppressHydrationWarning>
       {/* Top Toolbar */}
       <div className="bg-white border-b border-slate-200 px-4 py-2.5 flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center space-x-2">
-          <Layers className="w-4 h-4 text-[#EA580C]" />
+          <Layers className="w-4 h-4 text-orange-600" />
           <span className="font-heading text-sm font-semibold text-slate-900">
             {`Live Preview (${totalPages} A4 Pages)`}
           </span>
-          <Badge variant="neutral" className="text-[11px]">
+          <Badge variant="neutral" className="text-xs">
             {data.reportType}
           </Badge>
         </div>
@@ -101,7 +123,7 @@ export default function LivePreview({
               size="sm"
               onClick={() => setActivePage('all')}
               className={`h-7 px-2.5 text-xs font-medium ${
-                activePage === 'all' ? 'bg-white text-[#C2410C] shadow-xs' : 'text-slate-600'
+                activePage === 'all' ? 'bg-white text-orange-700 shadow-xs' : 'text-slate-600'
               }`}
             >
               All
@@ -114,7 +136,7 @@ export default function LivePreview({
                 size="sm"
                 onClick={() => setActivePage(i + 1)}
                 className={`h-7 px-2.5 text-xs font-medium ${
-                  activePage === i + 1 ? 'bg-white text-[#C2410C] shadow-xs' : 'text-slate-600'
+                  activePage === i + 1 ? 'bg-white text-orange-700 shadow-xs' : 'text-slate-600'
                 }`}
               >
                 {`Page ${i + 1}`}
@@ -134,7 +156,7 @@ export default function LivePreview({
             >
               <ZoomOut className="w-3.5 h-3.5" />
             </Button>
-            <span className="w-10 text-center font-bold text-[11px] tabular-nums text-slate-900">{`${zoom}%`}</span>
+            <span className="w-10 text-center font-bold text-xs tabular-nums text-slate-900">{`${zoom}%`}</span>
             <Button
               type="button"
               variant="ghost"
@@ -151,8 +173,8 @@ export default function LivePreview({
                 variant={zoom === 50 ? 'secondary' : 'ghost'}
                 size="sm"
                 onClick={() => setZoom(50)}
-                className={`h-6 px-1.5 text-[10px] font-medium ${
-                  zoom === 50 ? 'bg-white text-[#C2410C] shadow-xs font-semibold' : 'text-slate-500'
+                className={`h-6 px-1.5 text-xs font-medium ${
+                  zoom === 50 ? 'bg-white text-orange-700 shadow-xs font-semibold' : 'text-slate-500'
                 }`}
                 title="Zoom 50% (Fit)"
               >
@@ -163,8 +185,8 @@ export default function LivePreview({
                 variant={zoom === 65 ? 'secondary' : 'ghost'}
                 size="sm"
                 onClick={() => setZoom(65)}
-                className={`h-6 px-1.5 text-[10px] font-medium ${
-                  zoom === 65 ? 'bg-white text-[#C2410C] shadow-xs font-semibold' : 'text-slate-500'
+                className={`h-6 px-1.5 text-xs font-medium ${
+                  zoom === 65 ? 'bg-white text-orange-700 shadow-xs font-semibold' : 'text-slate-500'
                 }`}
                 title="Zoom 65% (Optimal)"
               >
@@ -175,8 +197,8 @@ export default function LivePreview({
                 variant={zoom === 100 ? 'secondary' : 'ghost'}
                 size="sm"
                 onClick={() => setZoom(100)}
-                className={`h-6 px-1.5 text-[10px] font-medium ${
-                  zoom === 100 ? 'bg-white text-[#C2410C] shadow-xs font-semibold' : 'text-slate-500'
+                className={`h-6 px-1.5 text-xs font-medium ${
+                  zoom === 100 ? 'bg-white text-orange-700 shadow-xs font-semibold' : 'text-slate-500'
                 }`}
                 title="Zoom 100% (Real Size)"
               >
@@ -193,7 +215,7 @@ export default function LivePreview({
               size="sm"
               onClick={onDownloadPdf}
               disabled={isGeneratingPdf}
-              className="text-[#C2410C] border-orange-200 hover:bg-orange-50 font-medium"
+              className="text-orange-700 border-orange-200 hover:bg-orange-50 font-medium"
             >
               {isGeneratingPdf ? (
                 <>
@@ -202,7 +224,7 @@ export default function LivePreview({
                 </>
               ) : (
                 <>
-                  <Download className="w-3.5 h-3.5 mr-1.5 text-[#EA580C]" />
+                  <Download className="w-3.5 h-3.5 mr-1.5 text-orange-600" />
                   <span>Download PDF</span>
                 </>
               )}
@@ -212,7 +234,7 @@ export default function LivePreview({
       </div>
 
       {/* Preview Scrollable Area */}
-      <div className="flex-1 overflow-auto p-4 sm:p-6 flex flex-col items-center gap-8 bg-slate-200/70" suppressHydrationWarning>
+      <div className="flex-1 overflow-x-auto overflow-y-auto max-w-full p-2 sm:p-6 flex flex-col items-center gap-8 bg-slate-200/70" suppressHydrationWarning>
         <div
           style={{
             transform: `scale(${zoom / 100})`,
@@ -236,22 +258,22 @@ export default function LivePreview({
               />
 
               {!isSla ? (
-                <div className="font-heading text-[28pt] font-bold leading-[1.15] text-white tracking-tight mb-3">
+                <div className="font-heading text-[22pt] font-bold leading-[1.15] text-white tracking-tight mb-3">
                   Multi Router Traffic Grapher<br />
                   (MRTG) Report
                 </div>
               ) : (
-                <div className="font-heading text-[40pt] font-bold leading-[1.1] text-white tracking-tight mb-3.5">
+                <div className="font-heading text-[28pt] font-bold leading-[1.1] text-white tracking-tight mb-3">
                   SLA REPORT
                 </div>
               )}
 
-              <div className="text-[13pt] font-normal text-white mb-1">
+              <div className="text-[12pt] font-normal text-white mb-1">
                 {data.customerName || 'Customer Name'}
               </div>
 
-              <div className="text-[13pt] font-normal text-white">
-                {data.reportPeriod || 'Period 2026'}
+              <div className="text-[12pt] font-normal text-white">
+                {data.reportPeriod || `Period ${new Date().getFullYear()}`}
               </div>
             </div>
           )}
@@ -570,7 +592,7 @@ export default function LivePreview({
                               </span>
                             )
                           ) : (
-                            <span className="text-[8pt] font-semibold text-slate-400">-</span>
+                            <span className="text-[8pt] font-semibold text-slate-500">-</span>
                           )}
                         </div>
                       </div>
@@ -893,7 +915,7 @@ export default function LivePreview({
                               </span>
                             )
                           ) : (
-                            <span className="text-[8pt] font-semibold text-slate-400">-</span>
+                            <span className="text-[8pt] font-semibold text-slate-500">-</span>
                           )}
                         </div>
                       </div>

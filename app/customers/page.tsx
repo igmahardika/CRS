@@ -25,6 +25,7 @@ import {
   RotateCcw,
   ChevronDown,
   X,
+  Calendar,
 } from 'lucide-react';
 import Link from 'next/link';
 import { CustomerData } from '@/components/CustomerFormModal';
@@ -526,15 +527,15 @@ export default function CustomersPage() {
       />
 
       {/* Filter & Search Bar Card */}
-      <div className="bg-white rounded-lg border border-slate-200 p-4 shadow-xs space-y-3">
+      <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs space-y-3">
         <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
           {/* Search Box */}
           <div className="relative flex-1">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
+            <Search className="w-4 h-4 text-slate-500 absolute left-3 top-2.5 pointer-events-none" />
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search customers..."
+              placeholder="Cari nama pelanggan, CID, atau service ID..."
               className="pl-9 pr-9 h-9 text-[13px]"
             />
             {search && (
@@ -542,7 +543,7 @@ export default function CustomersPage() {
                 variant="ghost"
                 size="icon-sm"
                 onClick={() => setSearch('')}
-                className="absolute right-1 top-0.5 h-8 w-8 text-slate-400 hover:text-slate-600"
+                className="absolute right-1 top-0.5 h-8 w-8 text-slate-500 hover:text-slate-800"
                 title="Clear search"
               >
                 <X className="w-3.5 h-3.5" />
@@ -556,7 +557,7 @@ export default function CustomersPage() {
             <Select value={serviceFilter} onValueChange={setServiceFilter}>
               <SelectTrigger selectSize="sm" className="w-[190px] h-9">
                 <div className="flex items-center gap-1.5 truncate">
-                  <SlidersHorizontal className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  <SlidersHorizontal className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                   <SelectValue placeholder="All Plans" />
                 </div>
               </SelectTrigger>
@@ -580,7 +581,7 @@ export default function CustomersPage() {
             >
               <SelectTrigger selectSize="sm" className="w-[160px] h-9">
                 <div className="flex items-center gap-1.5 truncate">
-                  <ShieldCheck className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  <ShieldCheck className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                   <SelectValue placeholder="All SLAs" />
                 </div>
               </SelectTrigger>
@@ -614,8 +615,8 @@ export default function CustomersPage() {
                 >
                   <span>{opt.label}</span>
                   <span
-                    className={`ml-1 text-[11px] tabular-nums ${
-                      isActive ? 'text-slate-300' : 'text-slate-400'
+                    className={`ml-1 text-xs tabular-nums ${
+                      isActive ? 'text-slate-300' : 'text-slate-500 font-medium'
                     }`}
                   >
                     ({opt.count})
@@ -631,7 +632,7 @@ export default function CustomersPage() {
               variant="ghost"
               size="sm"
               onClick={handleResetAllFilters}
-              className="text-xs text-[#EA580C] hover:text-[#C2410C] hover:bg-orange-50 h-7 px-2 font-medium"
+              className="text-xs text-orange-600 hover:text-orange-700 hover:bg-orange-50 h-7 px-2 font-medium"
             >
               <RotateCcw className="w-3 h-3 mr-1" />
               <span>Reset Filters</span>
@@ -642,10 +643,10 @@ export default function CustomersPage() {
 
       {/* Batch Selection Action Bar */}
       {selectedIds.size > 0 && (
-        <div className="bg-[#FFF7ED] border border-orange-200 rounded-lg p-3 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3 animate-in fade-in slide-in-from-top-1">
+        <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3 animate-in fade-in slide-in-from-top-1">
           <div className="flex flex-wrap items-center gap-2 text-xs text-orange-950">
             <span className="font-semibold flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-[#EA580C] animate-pulse" />
+              <span className="w-2 h-2 rounded-full bg-orange-600 animate-pulse" />
               {selectedIds.size.toLocaleString()} customer(s) selected
             </span>
             {selectedIds.size < filtered.length && (
@@ -653,7 +654,7 @@ export default function CustomersPage() {
                 variant="ghost"
                 size="sm"
                 onClick={handleSelectAllFiltered}
-                className="text-xs h-6 px-1.5 text-[#C2410C] hover:text-[#EA580C] hover:bg-orange-100 font-semibold underline"
+                className="text-xs h-6 px-1.5 text-orange-700 hover:text-orange-600 hover:bg-orange-100 font-semibold underline"
               >
                 Select all {filtered.length.toLocaleString()} customers in view
               </Button>
@@ -687,7 +688,7 @@ export default function CustomersPage() {
       <div className="bg-white rounded-lg border border-slate-200 shadow-xs overflow-hidden">
         {loading ? (
           <div className="py-16 text-center text-xs text-slate-500">
-            <Spinner size="md" className="mx-auto text-[#EA580C] mb-2" />
+            <Spinner size="md" className="mx-auto text-orange-600 mb-2" />
             <span>Loading customers...</span>
           </div>
         ) : customers.length === 0 ? (
@@ -756,9 +757,9 @@ export default function CustomersPage() {
                       <span>Customer Name</span>
                       {sortColumn === 'customerName' ? (
                         sortDirection === 'asc' ? (
-                          <ArrowUp className="w-3.5 h-3.5 text-[#EA580C] shrink-0" />
+                          <ArrowUp className="w-3.5 h-3.5 text-orange-600 shrink-0" />
                         ) : (
-                          <ArrowDown className="w-3.5 h-3.5 text-[#EA580C] shrink-0" />
+                          <ArrowDown className="w-3.5 h-3.5 text-orange-600 shrink-0" />
                         )
                       ) : (
                         <ArrowUpDown className="w-3 h-3 text-slate-300 opacity-0 group-hover:opacity-100 transition shrink-0" />
@@ -774,9 +775,9 @@ export default function CustomersPage() {
                       <span>Customer ID</span>
                       {sortColumn === 'customerId' ? (
                         sortDirection === 'asc' ? (
-                          <ArrowUp className="w-3.5 h-3.5 text-[#EA580C] shrink-0" />
+                          <ArrowUp className="w-3.5 h-3.5 text-orange-600 shrink-0" />
                         ) : (
-                          <ArrowDown className="w-3.5 h-3.5 text-[#EA580C] shrink-0" />
+                          <ArrowDown className="w-3.5 h-3.5 text-orange-600 shrink-0" />
                         )
                       ) : (
                         <ArrowUpDown className="w-3 h-3 text-slate-300 opacity-0 group-hover:opacity-100 transition shrink-0" />
@@ -792,9 +793,9 @@ export default function CustomersPage() {
                       <span>Service ID</span>
                       {sortColumn === 'serviceId' ? (
                         sortDirection === 'asc' ? (
-                          <ArrowUp className="w-3.5 h-3.5 text-[#EA580C] shrink-0" />
+                          <ArrowUp className="w-3.5 h-3.5 text-orange-600 shrink-0" />
                         ) : (
-                          <ArrowDown className="w-3.5 h-3.5 text-[#EA580C] shrink-0" />
+                          <ArrowDown className="w-3.5 h-3.5 text-orange-600 shrink-0" />
                         )
                       ) : (
                         <ArrowUpDown className="w-3 h-3 text-slate-300 opacity-0 group-hover:opacity-100 transition shrink-0" />
@@ -810,9 +811,9 @@ export default function CustomersPage() {
                       <span>Service Plan</span>
                       {sortColumn === 'serviceName' ? (
                         sortDirection === 'asc' ? (
-                          <ArrowUp className="w-3.5 h-3.5 text-[#EA580C] shrink-0" />
+                          <ArrowUp className="w-3.5 h-3.5 text-orange-600 shrink-0" />
                         ) : (
-                          <ArrowDown className="w-3.5 h-3.5 text-[#EA580C] shrink-0" />
+                          <ArrowDown className="w-3.5 h-3.5 text-orange-600 shrink-0" />
                         )
                       ) : (
                         <ArrowUpDown className="w-3 h-3 text-slate-300 opacity-0 group-hover:opacity-100 transition shrink-0" />
@@ -828,9 +829,9 @@ export default function CustomersPage() {
                       <span>Nodes</span>
                       {sortColumn === 'nodeCount' ? (
                         sortDirection === 'asc' ? (
-                          <ArrowUp className="w-3.5 h-3.5 text-[#EA580C] shrink-0" />
+                          <ArrowUp className="w-3.5 h-3.5 text-orange-600 shrink-0" />
                         ) : (
-                          <ArrowDown className="w-3.5 h-3.5 text-[#EA580C] shrink-0" />
+                          <ArrowDown className="w-3.5 h-3.5 text-orange-600 shrink-0" />
                         )
                       ) : (
                         <ArrowUpDown className="w-3 h-3 text-slate-300 opacity-0 group-hover:opacity-100 transition shrink-0" />
@@ -846,9 +847,9 @@ export default function CustomersPage() {
                       <span>Target SLA</span>
                       {sortColumn === 'targetSla' ? (
                         sortDirection === 'asc' ? (
-                          <ArrowUp className="w-3.5 h-3.5 text-[#EA580C] shrink-0" />
+                          <ArrowUp className="w-3.5 h-3.5 text-orange-600 shrink-0" />
                         ) : (
-                          <ArrowDown className="w-3.5 h-3.5 text-[#EA580C] shrink-0" />
+                          <ArrowDown className="w-3.5 h-3.5 text-orange-600 shrink-0" />
                         )
                       ) : (
                         <ArrowUpDown className="w-3 h-3 text-slate-300 opacity-0 group-hover:opacity-100 transition shrink-0" />
@@ -878,7 +879,7 @@ export default function CustomersPage() {
                           />
                         </div>
                       </TableCell>
-                      <TableCell className="text-center text-slate-400 text-[11px] tabular-nums">
+                      <TableCell className="text-center text-slate-500 font-medium text-xs tabular-nums">
                         {startIndex + idx + 1}
                       </TableCell>
                       <TableCell className="font-semibold text-slate-900">
@@ -886,24 +887,25 @@ export default function CustomersPage() {
                           <span>{c.customerName}</span>
                           {c.isMonthlyRoutine && (
                             <span
-                              className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-orange-100 text-[#EA580C] border border-orange-200"
+                              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-semibold bg-orange-100 text-orange-600 border border-orange-200"
                               title={`Monthly Routine Report (${c.routineReportType || 'SLA'})`}
                             >
-                              📅 {c.routineReportType || 'SLA'}
+                              <Calendar className="w-3 h-3 text-orange-600 shrink-0" />
+                              <span>{c.routineReportType || 'SLA'}</span>
                             </span>
                           )}
                         </div>
                       </TableCell>
-                      <TableCell className="text-slate-600 text-xs tabular-nums">{c.customerId}</TableCell>
-                      <TableCell className="text-slate-600 text-xs tabular-nums">{c.serviceId}</TableCell>
+                      <TableCell className="text-slate-600 text-xs font-mono tabular-nums">{c.customerId}</TableCell>
+                      <TableCell className="text-slate-600 text-xs font-mono tabular-nums">{c.serviceId}</TableCell>
                       <TableCell className="text-slate-700">
-                        <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-medium text-[11px]">
+                        <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-medium text-xs">
                           {c.serviceName}
                         </span>
                       </TableCell>
                       <TableCell className="text-center">
                         <span
-                          className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-blue-50 text-blue-700 font-semibold text-[11px] tabular-nums"
+                          className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-blue-50 text-blue-700 font-semibold text-xs tabular-nums"
                           title={`Node from Service ID: ${c.nodeCount}`}
                         >
                           {c.nodeCount}
@@ -922,20 +924,20 @@ export default function CustomersPage() {
                       </TableCell>
                       <TableCell>
                         {c.cactiGraphId || (c.graphType === 'MRTG' && c.graphId) ? (
-                          <span className="px-1.5 py-0.5 rounded font-medium text-[11px] bg-orange-50 text-orange-700 border border-orange-200">
+                          <span className="px-1.5 py-0.5 rounded font-medium text-xs font-mono bg-orange-50 text-orange-700 border border-orange-200">
                             {c.cactiGraphId || c.graphId}
                           </span>
                         ) : (
-                          <span className="text-slate-300 ">-</span>
+                          <span className="text-slate-500">-</span>
                         )}
                       </TableCell>
                       <TableCell>
                         {c.prtgSensorId || (c.graphType === 'PRTG' && c.graphId) ? (
-                          <span className="px-1.5 py-0.5 rounded font-medium text-[11px] bg-blue-50 text-blue-700 border border-blue-200">
+                          <span className="px-1.5 py-0.5 rounded font-medium text-xs font-mono bg-blue-50 text-blue-700 border border-blue-200">
                             {c.prtgSensorId || c.graphId}
                           </span>
                         ) : (
-                          <span className="text-slate-300 ">-</span>
+                          <span className="text-slate-500">-</span>
                         )}
                       </TableCell>
                       <TableCell>
@@ -950,12 +952,12 @@ export default function CustomersPage() {
                           <Link
                             href={`/?serviceId=${encodeURIComponent(c.serviceId)}&customerId=${encodeURIComponent(
                               c.customerId
-                            )}`}
-                            className="inline-flex items-center gap-1 px-2 py-1 bg-white hover:bg-orange-50 text-slate-700 hover:text-orange-700 border border-slate-200 hover:border-orange-200 rounded-md text-[11px] font-medium transition-colors"
-                            title="Use customer service in Report Generator"
+                            )}&customerName=${encodeURIComponent(c.customerName)}`}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-white hover:bg-orange-50 text-slate-700 hover:text-orange-700 border border-slate-200 hover:border-orange-300 rounded-md text-xs font-semibold transition-colors shadow-2xs"
+                            title="Buat Laporan untuk Pelanggan Ini di Generator"
                           >
-                            <span>Select</span>
-                            <ExternalLink className="w-3 h-3" />
+                            <span>Buat Laporan</span>
+                            <ExternalLink className="w-3 h-3 text-orange-600" />
                           </Link>
                           <Button
                             variant="ghost"

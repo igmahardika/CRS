@@ -47,13 +47,23 @@ import {
   TableCell,
   Spinner,
 } from '@/components/ui';
+import { DEPARTMENTS, Department, USER_ROLES, UserRole } from '@/lib/permissions';
+
+const ROLE_LABELS: Record<UserRole, string> = {
+  ADMIN: 'Administrator',
+  SUPERVISOR: 'Supervisor',
+  OPERATOR: 'Operator',
+  STAFF: 'Staff',
+  VIEWER: 'Viewer',
+};
 
 interface UserData {
   id: string;
   username: string;
   name: string;
   email: string | null;
-  role: 'ADMIN' | 'SUPERVISOR' | 'STAFF' | 'REQUESTER' | 'OPERATOR' | 'VIEWER';
+  role: 'ADMIN' | 'SUPERVISOR' | 'STAFF' | 'OPERATOR' | 'VIEWER';
+  department: string;
   isActive: boolean;
   lastLogin: string | null;
   createdAt: string;
@@ -63,7 +73,8 @@ export default function UsersManagementPage() {
   const [users, setUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
-  const [roleFilter, setRoleFilter] = useState<'ALL' | 'ADMIN' | 'SUPERVISOR' | 'STAFF' | 'REQUESTER' | 'VIEWER' | 'OPERATOR'>('ALL');
+  const [deptFilter, setDeptFilter] = useState<'ALL' | Department>('ALL');
+  const [roleFilter, setRoleFilter] = useState<'ALL' | 'ADMIN' | 'SUPERVISOR' | 'STAFF' | 'VIEWER' | 'OPERATOR'>('ALL');
 
   // Modal States
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -80,7 +91,8 @@ export default function UsersManagementPage() {
     name: '',
     email: '',
     password: '',
-    role: 'STAFF' as 'ADMIN' | 'SUPERVISOR' | 'STAFF' | 'REQUESTER' | 'OPERATOR' | 'VIEWER',
+    role: 'STAFF' as 'ADMIN' | 'SUPERVISOR' | 'STAFF' | 'OPERATOR' | 'VIEWER',
+    department: 'Network Operation' as Department,
     isActive: true,
   });
   const [newPassword, setNewPassword] = useState('');
@@ -117,18 +129,19 @@ export default function UsersManagementPage() {
         !q ||
         u.name.toLowerCase().includes(q) ||
         u.username.toLowerCase().includes(q) ||
-        (u.email && u.email.toLowerCase().includes(q));
+        (u.email && u.email.toLowerCase().includes(q)) ||
+        (u.department && u.department.toLowerCase().includes(q));
 
       const matchesRole = roleFilter === 'ALL' || u.role === roleFilter;
-      return matchesSearch && matchesRole;
+      const matchesDept = deptFilter === 'ALL' || u.department === deptFilter;
+      return matchesSearch && matchesRole && matchesDept;
     });
-  }, [users, search, roleFilter]);
+  }, [users, search, roleFilter, deptFilter]);
 
   // Role counters
   const adminCount = users.filter((u) => u.role === 'ADMIN').length;
   const supervisorCount = users.filter((u) => u.role === 'SUPERVISOR').length;
   const staffCount = users.filter((u) => u.role === 'STAFF').length;
-  const requesterCount = users.filter((u) => u.role === 'REQUESTER').length;
   const operatorCount = users.filter((u) => u.role === 'OPERATOR').length;
   const viewerCount = users.filter((u) => u.role === 'VIEWER').length;
 
@@ -153,7 +166,8 @@ export default function UsersManagementPage() {
         name: '',
         email: '',
         password: '',
-        role: 'OPERATOR',
+        role: 'STAFF',
+        department: 'Network Operation',
         isActive: true,
       });
       fetchUsers();
@@ -178,6 +192,7 @@ export default function UsersManagementPage() {
           name: editingUser.name,
           email: editingUser.email,
           role: editingUser.role,
+          department: editingUser.department,
           isActive: editingUser.isActive,
         }),
       });
@@ -269,13 +284,26 @@ export default function UsersManagementPage() {
         return <Badge variant="info">Supervisor</Badge>;
       case 'STAFF':
         return <Badge variant="warning">Staff</Badge>;
-      case 'REQUESTER':
-        return <Badge variant="soft">Requester</Badge>;
       case 'OPERATOR':
         return <Badge variant="soft">Operator</Badge>;
       case 'VIEWER':
       default:
         return <Badge variant="neutral">Viewer</Badge>;
+    }
+  };
+
+  const getDeptBadge = (dept: string) => {
+    switch (dept) {
+      case 'Network Operation':
+        return <Badge variant="success">NOC</Badge>;
+      case 'Customer Experience':
+        return <Badge variant="info">CX</Badge>;
+      case 'Account Executive':
+        return <Badge variant="warning">AE</Badge>;
+      case 'Finance':
+        return <Badge variant="neutral">Finance</Badge>;
+      default:
+        return <Badge variant="neutral">{dept || 'NOC'}</Badge>;
     }
   };
 
@@ -332,7 +360,7 @@ export default function UsersManagementPage() {
             variant="ghost"
             size="icon-sm"
             onClick={() => setFeedback(null)}
-            className="h-6 w-6 text-slate-400 hover:text-slate-700"
+            className="h-6 w-6 text-slate-500 hover:text-slate-800"
           >
             <X className="w-3.5 h-3.5" />
           </Button>
@@ -340,14 +368,14 @@ export default function UsersManagementPage() {
       )}
 
       {/* Filter & Search Bar */}
-      <div className="bg-white rounded-lg border border-slate-200 p-4 shadow-xs flex flex-col md:flex-row items-center justify-between gap-3">
+      <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs flex flex-col md:flex-row items-center justify-between gap-3">
         {/* Search */}
         <div className="relative w-full md:max-w-md">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
+          <Search className="w-4 h-4 text-slate-500 absolute left-3 top-2.5 pointer-events-none" />
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search name, username, or email..."
+            placeholder="Cari nama user, username, atau email..."
             className="pl-9 pr-9 h-9 text-[13px]"
           />
           {search && (
@@ -355,7 +383,7 @@ export default function UsersManagementPage() {
               variant="ghost"
               size="icon-sm"
               onClick={() => setSearch('')}
-              className="absolute right-1 top-0.5 h-8 w-8 text-slate-400 hover:text-slate-600"
+              className="absolute right-1 top-0.5 h-8 w-8 text-slate-500 hover:text-slate-800"
               title="Clear search"
             >
               <X className="w-3.5 h-3.5" />
@@ -373,7 +401,7 @@ export default function UsersManagementPage() {
                 setSearch('');
                 setRoleFilter('ALL');
               }}
-              className="text-xs text-[#EA580C] hover:text-[#C2410C] hover:bg-orange-50 h-8 px-2.5 font-medium mr-1"
+              className="text-xs text-orange-600 hover:text-orange-700 hover:bg-orange-50 h-8 px-2.5 font-medium mr-1"
             >
               <RotateCcw className="w-3.5 h-3.5 mr-1" />
               <span>Reset</span>
@@ -428,18 +456,45 @@ export default function UsersManagementPage() {
           >
             <span>Admin ({adminCount})</span>
           </Button>
+        </div>
+
+        {/* Department Filter Bar */}
+        <div className="flex items-center gap-1.5 pt-2 border-t border-slate-100 flex-wrap">
+          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider mr-1">
+            Departemen:
+          </span>
           <Button
-            variant={roleFilter === 'REQUESTER' ? 'secondary' : 'ghost'}
+            variant={deptFilter === 'ALL' ? 'secondary' : 'ghost'}
             size="sm"
-            onClick={() => setRoleFilter('REQUESTER')}
+            onClick={() => setDeptFilter('ALL')}
             className={
-              roleFilter === 'REQUESTER'
-                ? 'bg-slate-900 text-white hover:bg-slate-800 hover:text-white border-slate-900 h-8 px-2.5 text-xs font-semibold'
-                : 'text-slate-600 hover:bg-slate-100 h-8 px-2.5 text-xs'
+              deptFilter === 'ALL'
+                ? 'bg-orange-50 text-orange-700 border-orange-200 h-7 px-2.5 text-xs font-semibold'
+                : 'text-slate-600 hover:bg-slate-100 h-7 px-2.5 text-xs'
             }
           >
-            <span>Requester ({requesterCount})</span>
+            Semua
           </Button>
+          {DEPARTMENTS.map((dept) => {
+            const count = users.filter((u) => u.department === dept).length;
+            const isActive = deptFilter === dept;
+            return (
+              <Button
+                key={dept}
+                variant={isActive ? 'secondary' : 'ghost'}
+                size="sm"
+                onClick={() => setDeptFilter(dept)}
+                className={
+                  isActive
+                    ? 'bg-orange-50 text-orange-700 border-orange-200 h-7 px-2.5 text-xs font-semibold'
+                    : 'text-slate-600 hover:bg-slate-100 h-7 px-2.5 text-xs'
+                }
+              >
+                <span>{dept}</span>
+                <span className="ml-1 text-xs opacity-75">({count})</span>
+              </Button>
+            );
+          })}
         </div>
       </div>
 
@@ -447,7 +502,7 @@ export default function UsersManagementPage() {
       <div className="bg-white rounded-lg border border-slate-200 shadow-xs overflow-hidden">
         {loading ? (
           <div className="py-16 text-center text-xs text-slate-500">
-            <Spinner size="md" className="mx-auto text-[#EA580C] mb-2" />
+            <Spinner size="md" className="mx-auto text-orange-600 mb-2" />
             <span>Loading user accounts...</span>
           </div>
         ) : filteredUsers.length === 0 ? (
@@ -458,10 +513,11 @@ export default function UsersManagementPage() {
               description={
                 search ? 'No accounts match the specified search query.' : 'No registered accounts available.'
               }
-              actionLabel={search || roleFilter !== 'ALL' ? 'Reset Filters' : undefined}
+              actionLabel={search || roleFilter !== 'ALL' || deptFilter !== 'ALL' ? 'Reset Filters' : undefined}
               onAction={() => {
                 setSearch('');
                 setRoleFilter('ALL');
+                setDeptFilter('ALL');
               }}
             />
           </div>
@@ -472,6 +528,7 @@ export default function UsersManagementPage() {
                 <TableRow>
                   <TableHead>User</TableHead>
                   <TableHead>Email</TableHead>
+                  <TableHead>Department</TableHead>
                   <TableHead>Role</TableHead>
                   <TableHead className="text-center">Status</TableHead>
                   <TableHead>Last Sign In</TableHead>
@@ -497,7 +554,7 @@ export default function UsersManagementPage() {
                           </div>
                           <div>
                             <div className="font-semibold text-slate-900">{user.name}</div>
-                            <div className="text-slate-400 text-[11px]">@{user.username}</div>
+                            <div className="text-slate-500 text-xs">@{user.username}</div>
                           </div>
                         </div>
                       </TableCell>
@@ -505,6 +562,11 @@ export default function UsersManagementPage() {
                       {/* Email */}
                       <TableCell className="text-slate-600 font-medium">
                         {user.email || <span className="text-slate-300 ">-</span>}
+                      </TableCell>
+
+                      {/* Department Badge */}
+                      <TableCell>
+                        {getDeptBadge(user.department)}
                       </TableCell>
 
                       {/* Role Badge */}
@@ -534,7 +596,7 @@ export default function UsersManagementPage() {
                             year: 'numeric',
                           })
                         ) : (
-                          <span className="text-slate-400">Never</span>
+                          <span className="text-slate-500">Never</span>
                         )}
                       </TableCell>
 
@@ -620,26 +682,47 @@ export default function UsersManagementPage() {
               />
             </FormField>
 
-            <FormField label="User Role">
-              <Select
-                value={formData.role}
-                onValueChange={(val) =>
-                  setFormData({ ...formData, role: val as 'ADMIN' | 'SUPERVISOR' | 'STAFF' | 'REQUESTER' | 'OPERATOR' | 'VIEWER' })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="STAFF">Staff</SelectItem>
-                  <SelectItem value="SUPERVISOR">Supervisor</SelectItem>
-                  <SelectItem value="ADMIN">Administrator</SelectItem>
-                  <SelectItem value="REQUESTER">Requester</SelectItem>
-                  <SelectItem value="OPERATOR">Operator</SelectItem>
-                  <SelectItem value="VIEWER">Viewer</SelectItem>
-                </SelectContent>
-              </Select>
-            </FormField>
+            <div className="grid grid-cols-2 gap-3">
+              <FormField label="Department / Division" required>
+                <Select
+                  value={formData.department}
+                  onValueChange={(val) =>
+                    setFormData({ ...formData, department: val as Department })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DEPARTMENTS.map((dept) => (
+                      <SelectItem key={dept} value={dept}>
+                        {dept}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </FormField>
+
+              <FormField label="User Role" required>
+                <Select
+                  value={formData.role}
+                  onValueChange={(val) =>
+                    setFormData({ ...formData, role: val as UserRole })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {USER_ROLES.map((role) => (
+                      <SelectItem key={role} value={role}>
+                        {ROLE_LABELS[role]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </FormField>
+            </div>
 
             <DialogFooter className="pt-3 border-t border-slate-100">
               <Button variant="secondary" onClick={() => setIsCreateModalOpen(false)}>
@@ -677,29 +760,53 @@ export default function UsersManagementPage() {
                 />
               </FormField>
 
-              <FormField label="User Role">
-                <Select
-                  value={editingUser.role}
-                  onValueChange={(val) =>
-                    setEditingUser({
-                      ...editingUser,
-                      role: val as 'ADMIN' | 'SUPERVISOR' | 'STAFF' | 'REQUESTER' | 'OPERATOR' | 'VIEWER',
-                    })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="STAFF">Staff</SelectItem>
-                    <SelectItem value="SUPERVISOR">Supervisor</SelectItem>
-                    <SelectItem value="ADMIN">Administrator</SelectItem>
-                    <SelectItem value="REQUESTER">Requester</SelectItem>
-                    <SelectItem value="OPERATOR">Operator</SelectItem>
-                    <SelectItem value="VIEWER">Viewer</SelectItem>
-                  </SelectContent>
-                </Select>
-              </FormField>
+              <div className="grid grid-cols-2 gap-3">
+                <FormField label="Department / Division" required>
+                  <Select
+                    value={editingUser.department || 'Network Operation'}
+                    onValueChange={(val) =>
+                      setEditingUser({
+                        ...editingUser,
+                        department: val,
+                      })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {DEPARTMENTS.map((dept) => (
+                        <SelectItem key={dept} value={dept}>
+                          {dept}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FormField>
+
+                <FormField label="User Role" required>
+                  <Select
+                    value={editingUser.role}
+                    onValueChange={(val) =>
+                      setEditingUser({
+                        ...editingUser,
+                        role: val as UserRole,
+                      })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {USER_ROLES.map((role) => (
+                        <SelectItem key={role} value={role}>
+                          {ROLE_LABELS[role]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FormField>
+              </div>
 
               <div className="flex items-center space-x-2 pt-1">
                 <Checkbox

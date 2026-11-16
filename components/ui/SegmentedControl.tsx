@@ -59,7 +59,7 @@ export function SegmentedControl<T extends string = string>({
             {option.badge !== undefined && (
               <span
                 className={cn(
-                  'ml-1 px-1.5 py-0.5 rounded-full text-[11px] tabular-nums leading-none',
+                  'ml-1 px-1.5 py-0.5 rounded-full text-xs tabular-nums leading-none',
                   isSelected
                     ? 'bg-slate-100 text-slate-800'
                     : 'bg-slate-200/70 text-slate-600'

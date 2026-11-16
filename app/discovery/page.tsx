@@ -102,7 +102,7 @@ function CopyButton({ value, label }: { value: string; label?: string }) {
       size="icon-sm"
       onClick={handleCopy}
       title={`Copy ${label || value}`}
-      className="h-7 w-7 text-slate-400 hover:text-slate-700"
+      className="h-7 w-7 text-slate-500 hover:text-slate-800"
     >
       {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
     </Button>
@@ -368,7 +368,7 @@ export default function DiscoveryPage() {
             <Network className="w-3.5 h-3.5" />
             <span>MRTG / Cacti</span>
             {summary.mrtgCount > 0 && (
-              <span className="bg-slate-700 text-slate-200 px-1.5 py-0.5 rounded-full text-[10px]">
+              <span className="bg-slate-700 text-slate-200 px-1.5 py-0.5 rounded-full text-xs">
                 {summary.mrtgCount}
               </span>
             )}
@@ -390,7 +390,7 @@ export default function DiscoveryPage() {
             <Activity className="w-3.5 h-3.5" />
             <span>PRTG Monitor</span>
             {summary.prtgCount > 0 && (
-              <span className="bg-slate-700 text-slate-200 px-1.5 py-0.5 rounded-full text-[10px]">
+              <span className="bg-slate-700 text-slate-200 px-1.5 py-0.5 rounded-full text-xs">
                 {summary.prtgCount}
               </span>
             )}
@@ -400,7 +400,7 @@ export default function DiscoveryPage() {
         {/* Right Info & Expand Controls */}
         <div className="flex flex-wrap items-center gap-2">
           {currentSync && (
-            <span className="text-xs text-slate-400 hidden sm:block mr-2 ">
+            <span className="text-xs text-slate-500 font-medium hidden sm:block mr-2">
               Synced: {formatRelative(currentSync)}
             </span>
           )}
@@ -416,11 +416,10 @@ export default function DiscoveryPage() {
       {/* Sync Result Banner */}
       {syncResult && (
         <div
-          className={`flex items-start gap-3 p-4 rounded-lg border text-xs font-medium shadow-xs ${
-            syncResult.success
+          className={`flex items-start gap-3 p-4 rounded-lg border text-xs font-medium shadow-xs ${syncResult.success
               ? 'bg-emerald-50 border-emerald-200 text-emerald-900'
               : 'bg-red-50 border-red-200 text-red-900'
-          }`}
+            }`}
         >
           {syncResult.success ? (
             <CheckCircle2 className="w-5 h-5 shrink-0 text-emerald-600 mt-0.5" />
@@ -430,7 +429,7 @@ export default function DiscoveryPage() {
           <div className="flex-1 space-y-1">
             <p className="font-semibold">{syncResult.msg}</p>
             {!syncResult.success && (
-              <p className="text-[11px] text-red-700">
+              <p className="text-xs text-red-700">
                 Please verify server URLs and credentials in{' '}
                 <Link href="/settings" className="font-semibold underline hover:text-red-950">
                   Settings
@@ -443,7 +442,7 @@ export default function DiscoveryPage() {
             variant="ghost"
             size="icon-sm"
             onClick={() => setSyncResult(null)}
-            className="h-6 w-6 text-slate-400 hover:text-slate-700"
+            className="h-6 w-6 text-slate-500 hover:text-slate-800"
           >
             <X className="w-3.5 h-3.5" />
           </Button>
@@ -453,11 +452,10 @@ export default function DiscoveryPage() {
       {/* Mapping Status Banner */}
       {mappingStatus && (
         <div
-          className={`flex items-center gap-3 p-3.5 rounded-lg border text-xs font-medium shadow-xs ${
-            mappingStatus.success
+          className={`flex items-center gap-3 p-3.5 rounded-lg border text-xs font-medium shadow-xs ${mappingStatus.success
               ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
               : 'bg-red-50 border-red-200 text-red-800'
-          }`}
+            }`}
         >
           {mappingStatus.success ? (
             <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
@@ -469,7 +467,7 @@ export default function DiscoveryPage() {
             variant="ghost"
             size="icon-sm"
             onClick={() => setMappingStatus(null)}
-            className="h-6 w-6 text-slate-400 hover:text-slate-700"
+            className="h-6 w-6 text-slate-500 hover:text-slate-800"
           >
             <X className="w-3.5 h-3.5" />
           </Button>
@@ -477,13 +475,13 @@ export default function DiscoveryPage() {
       )}
 
       {/* Search Input Bar */}
-      <div className="bg-white rounded-lg border border-slate-200 p-4 shadow-xs flex flex-col sm:flex-row gap-3 items-center">
+      <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs flex flex-col sm:flex-row gap-3 items-center">
         <div className="relative flex-1 w-full">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
+          <Search className="w-4 h-4 text-slate-500 absolute left-3 top-2.5 pointer-events-none" />
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search discovery..."
+            placeholder="Cari perangkat, interface, SID, atau nama pelanggan..."
             className="pl-9 pr-9 h-9 text-[13px]"
           />
           {search && (
@@ -491,7 +489,7 @@ export default function DiscoveryPage() {
               variant="ghost"
               size="icon-sm"
               onClick={() => setSearch('')}
-              className="absolute right-1 top-0.5 h-8 w-8 text-slate-400 hover:text-slate-600"
+              className="absolute right-1 top-0.5 h-8 w-8 text-slate-500 hover:text-slate-800"
             >
               <X className="w-3.5 h-3.5" />
             </Button>
@@ -503,10 +501,10 @@ export default function DiscoveryPage() {
       </div>
 
       {/* Structured Tree View Card */}
-      <div className="bg-white rounded-lg border border-slate-200 shadow-xs overflow-hidden">
+      <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
         {loading ? (
           <div className="py-20 text-center text-xs text-slate-500">
-            <Spinner size="md" className="mx-auto text-[#EA580C] mb-2" />
+            <Spinner size="md" className="mx-auto text-orange-600 mb-2" />
             <p>Loading discovery data...</p>
           </div>
         ) : tree.length === 0 ? (
@@ -535,23 +533,23 @@ export default function DiscoveryPage() {
                     className="w-full justify-between h-auto px-5 py-3 hover:bg-slate-50 text-left rounded-none font-sans"
                   >
                     <div className="flex items-center gap-3">
-                      <span className="text-slate-400">
+                      <span className="text-slate-500">
                         {isGroupOpen ? (
-                          <FolderOpen className="w-4 h-4 text-[#EA580C]" />
+                          <FolderOpen className="w-4 h-4 text-orange-600" />
                         ) : (
                           <Folder className="w-4 h-4 text-slate-500" />
                         )}
                       </span>
                       <span className="text-xs font-semibold text-slate-900">{groupKey}</span>
                     </div>
-                    <div className="flex items-center gap-3 text-slate-400">
-                      <span className="text-[11px] tabular-nums">
+                    <div className="flex items-center gap-3 text-slate-500">
+                      <span className="text-xs tabular-nums">
                         {group.devices.length} devices • {groupInterfaces} interfaces
                       </span>
                       {isGroupOpen ? (
-                        <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                        <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
                       ) : (
-                        <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                        <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
                       )}
                     </div>
                   </Button>
@@ -573,19 +571,19 @@ export default function DiscoveryPage() {
                               <Server className="w-3.5 h-3.5 text-blue-500 shrink-0" />
                               <span className="text-xs font-medium text-slate-800">{device.deviceName}</span>
                               {device.deviceIp && (
-                                <span className="text-[11px] text-slate-400 hidden sm:inline tabular-nums">
+                                <span className="text-xs text-slate-500 font-mono hidden sm:inline tabular-nums">
                                   ({device.deviceIp})
                                 </span>
                               )}
                             </div>
-                            <div className="flex items-center gap-3 text-slate-400">
-                              <span className="text-[11px] tabular-nums">
+                            <div className="flex items-center gap-3 text-slate-500">
+                              <span className="text-xs tabular-nums font-medium">
                                 {device.interfaces.length} interfaces
                               </span>
                               {isDeviceOpen ? (
-                                <ChevronDown className="w-3 h-3 text-slate-400" />
+                                <ChevronDown className="w-3 h-3 text-slate-500" />
                               ) : (
-                                <ChevronRight className="w-3 h-3 text-slate-400" />
+                                <ChevronRight className="w-3 h-3 text-slate-500" />
                               )}
                             </div>
                           </Button>
@@ -598,9 +596,9 @@ export default function DiscoveryPage() {
                                 className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pl-14 pr-4 py-2.5 border-t border-slate-100 bg-white hover:bg-orange-50/30 transition-colors"
                               >
                                 <div className="flex items-center gap-2 flex-1 min-w-0">
-                                  <Network className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                  <Network className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                                   <span
-                                    className="text-xs text-slate-800 font-medium truncate max-w-[280px]"
+                                    className="text-xs text-slate-800 font-mono font-medium truncate max-w-[280px]"
                                     title={iface.fullTitle}
                                   >
                                     {iface.interfaceName}
@@ -610,8 +608,8 @@ export default function DiscoveryPage() {
                                       iface.status.toLowerCase().includes('up')
                                         ? 'success'
                                         : iface.status.toLowerCase().includes('down')
-                                        ? 'destructive'
-                                        : 'neutral'
+                                          ? 'destructive'
+                                          : 'neutral'
                                     }
                                     dot={true}
                                   >
@@ -620,12 +618,12 @@ export default function DiscoveryPage() {
                                 </div>
 
                                 <div className="flex flex-wrap items-center gap-2 shrink-0">
-                                  <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 tabular-nums">
+                                  <span className="text-xs font-mono font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 tabular-nums">
                                     ID: {iface.targetId}
                                   </span>
 
                                   {iface.detectedSid && (
-                                    <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 tabular-nums">
+                                    <span className="text-xs font-mono font-semibold px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 tabular-nums">
                                       SID: {iface.detectedSid}
                                     </span>
                                   )}
@@ -634,7 +632,7 @@ export default function DiscoveryPage() {
                                     <CopyButton value={iface.targetId} label={`${activeEngine} ID`} />
                                     <Link
                                       href={`/?graphId=${iface.targetId}&engine=${activeEngine}`}
-                                      className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-medium bg-white hover:bg-orange-50 text-slate-700 hover:text-orange-700 border border-slate-200 hover:border-orange-200 rounded-md transition-colors"
+                                      className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-white hover:bg-orange-50 text-slate-700 hover:text-orange-700 border border-slate-200 hover:border-orange-200 rounded-md transition-colors"
                                       title="Use this ID in Report Generator"
                                     >
                                       <span>Generator</span>
@@ -644,7 +642,7 @@ export default function DiscoveryPage() {
                                       variant="secondary"
                                       size="sm"
                                       onClick={() => openMapping(iface, activeEngine)}
-                                      className="h-6 px-2 text-[11px] gap-1"
+                                      className="h-6 px-2 text-xs gap-1"
                                       title="Map to Customer Record"
                                     >
                                       <Link2 className="w-3 h-3" />
@@ -683,11 +681,11 @@ export default function DiscoveryPage() {
                   <span className="font-semibold text-slate-900 truncate">{mapping.fullTitle}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Badge variant="soft" className="text-[11px]">
+                  <Badge variant="soft" className="text-xs">
                     {mapping.engine} ID: {mapping.targetId}
                   </Badge>
                   {mapping.detectedSid && (
-                    <Badge variant="success" className="text-[11px]">
+                    <Badge variant="success" className="text-xs">
                       Detected SID: {mapping.detectedSid}
                     </Badge>
                   )}
@@ -706,13 +704,13 @@ export default function DiscoveryPage() {
                   </div>
                   <div className="text-emerald-700">
                     <strong>{mapping.matched.customerName}</strong>
-                    <div className="text-[11px] text-emerald-600 mt-0.5">
+                    <div className="text-xs text-emerald-600 mt-0.5">
                       SID: <span className="font-semibold">{mapping.matched.serviceId}</span> | CID: {mapping.matched.customerId}
                     </div>
                   </div>
                 </div>
               ) : (
-                <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-[11px]">
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-xs">
                   <span>No customer with this Service ID found in directory. Enter a valid Service ID (SID) to map.</span>
                 </div>
               )}

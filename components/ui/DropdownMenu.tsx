@@ -19,7 +19,7 @@ export const DropdownMenuSubTrigger = React.forwardRef<
   <DropdownMenuPrimitive.SubTrigger
     ref={ref}
     className={cn(
-      'flex cursor-default select-none items-center rounded-md px-2.5 py-1.5 text-[13px] font-sans outline-none focus:bg-[#FFF7ED] focus:text-[#C2410C]',
+      'flex cursor-default select-none items-center rounded-md px-2.5 py-1.5 text-[13px] font-sans outline-none focus:bg-orange-50 focus:text-orange-700',
       inset && 'pl-8',
       className
     )}
@@ -78,7 +78,7 @@ export const DropdownMenuItem = React.forwardRef<
     className={cn(
       'relative flex cursor-pointer select-none items-center gap-2 rounded-md px-2.5 py-1.5 text-[13px] font-sans outline-none transition-colors duration-100',
       variant === 'default'
-        ? 'text-slate-700 focus:bg-[#FFF7ED] focus:text-[#C2410C]'
+        ? 'text-slate-700 focus:bg-orange-50 focus:text-orange-700'
         : 'text-red-600 focus:bg-red-50 focus:text-red-700',
       'data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
       inset && 'pl-8',
@@ -98,7 +98,7 @@ export const DropdownMenuLabel = React.forwardRef<
   <DropdownMenuPrimitive.Label
     ref={ref}
     className={cn(
-      'px-2.5 py-1.5 text-[11px] font-medium uppercase tracking-wider text-slate-400 select-none',
+      'px-2.5 py-1.5 text-xs font-semibold uppercase tracking-wider text-slate-500 select-none',
       inset && 'pl-8',
       className
     )}

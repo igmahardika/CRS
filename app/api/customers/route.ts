@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getSlaByServiceName } from '@/lib/service-sla';
-import { requireAuth, requireOperatorOrAdmin } from '@/lib/auth';
+import { requirePermission } from '@/lib/auth';
 
 export async function GET(req: NextRequest) {
-  const auth = await requireAuth();
+  const auth = await requirePermission('customer:read');
   if (!auth.authorized) {
     return NextResponse.json({ error: auth.error }, { status: auth.status });
   }
@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const auth = await requireOperatorOrAdmin();
+  const auth = await requirePermission('customer:write');
   if (!auth.authorized) {
     return NextResponse.json({ error: auth.error }, { status: auth.status });
   }
@@ -90,8 +90,9 @@ export async function POST(req: NextRequest) {
         prtgSensorId: effectivePrtgId || null,
         trafficDirection: trafficDirection || 'NORMAL',
         isMonthlyRoutine: Boolean(body.isMonthlyRoutine),
+        routineGroup: body.routineGroup || 'Customer Experience',
         routineReportType: body.routineReportType || 'SLA',
-      },
+      } as any,
     });
 
     return NextResponse.json({ customer: newCustomer });
@@ -102,7 +103,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PUT(req: NextRequest) {
-  const auth = await requireOperatorOrAdmin();
+  const auth = await requirePermission('customer:write');
   if (!auth.authorized) {
     return NextResponse.json({ error: auth.error }, { status: auth.status });
   }
@@ -127,8 +128,9 @@ export async function PUT(req: NextRequest) {
           ? parseFloat(data.targetSla)
           : (data.serviceName ? getSlaByServiceName(data.serviceName).targetSla : undefined),
         isMonthlyRoutine: data.isMonthlyRoutine !== undefined ? Boolean(data.isMonthlyRoutine) : undefined,
+        routineGroup: data.routineGroup !== undefined ? String(data.routineGroup) : undefined,
         routineReportType: data.routineReportType !== undefined ? String(data.routineReportType) : undefined,
-      },
+      } as any,
     });
 
     return NextResponse.json({ customer: updated });
@@ -139,7 +141,7 @@ export async function PUT(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
-  const auth = await requireOperatorOrAdmin();
+  const auth = await requirePermission('customer:write');
   if (!auth.authorized) {
     return NextResponse.json({ error: auth.error }, { status: auth.status });
   }
@@ -184,7 +186,7 @@ export async function PATCH(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const auth = await requireOperatorOrAdmin();
+  const auth = await requirePermission('customer:write');
   if (!auth.authorized) {
     return NextResponse.json({ error: auth.error }, { status: auth.status });
   }

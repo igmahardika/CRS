@@ -38,6 +38,8 @@ interface AppConfigState {
   prtgUsername: string;
   prtgPassword?: string;
   prtgAuthType: string;
+  prtgBasicUsername?: string;
+  prtgBasicPassword?: string;
   coverMrtgPath: string;
   coverSlaPath: string;
   pageBgPath: string;
@@ -62,6 +64,8 @@ export default function SettingsPage() {
     prtgUsername: '',
     prtgPassword: '',
     prtgAuthType: 'PASSWORD',
+    prtgBasicUsername: '',
+    prtgBasicPassword: '',
     coverMrtgPath: '/assets/templates/cover_mrtg.png',
     coverSlaPath: '/assets/templates/cover_sla.png',
     pageBgPath: '/assets/templates/page_bg.png',
@@ -80,6 +84,7 @@ export default function SettingsPage() {
   // Password visibility toggles
   const [showMrtgPassword, setShowMrtgPassword] = useState(false);
   const [showPrtgPassword, setShowPrtgPassword] = useState(false);
+  const [showPrtgBasicPassword, setShowPrtgBasicPassword] = useState(false);
   const [showTelegramToken, setShowTelegramToken] = useState(false);
 
   // File input refs
@@ -330,8 +335,8 @@ export default function SettingsPage() {
               onClick={() => setActiveTab('integrations')}
               className={`w-full justify-start h-9 px-3 gap-2 text-xs font-semibold ${
                 activeTab === 'integrations'
-                  ? 'bg-slate-900 text-white hover:bg-slate-800 hover:text-white border-slate-900'
-                  : 'text-slate-600 hover:bg-slate-100'
+                  ? 'bg-orange-50 text-orange-700 font-semibold border border-orange-200/80 shadow-2xs'
+                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
               }`}
             >
               <Server className="w-4 h-4 shrink-0" />
@@ -344,8 +349,8 @@ export default function SettingsPage() {
               onClick={() => setActiveTab('templates')}
               className={`w-full justify-start h-9 px-3 gap-2 text-xs font-semibold ${
                 activeTab === 'templates'
-                  ? 'bg-slate-900 text-white hover:bg-slate-800 hover:text-white border-slate-900'
-                  : 'text-slate-600 hover:bg-slate-100'
+                  ? 'bg-orange-50 text-orange-700 font-semibold border border-orange-200/80 shadow-2xs'
+                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
               }`}
             >
               <ImageIcon className="w-4 h-4 shrink-0" />
@@ -358,8 +363,8 @@ export default function SettingsPage() {
               onClick={() => setActiveTab('defaults')}
               className={`w-full justify-start h-9 px-3 gap-2 text-xs font-semibold ${
                 activeTab === 'defaults'
-                  ? 'bg-slate-900 text-white hover:bg-slate-800 hover:text-white border-slate-900'
-                  : 'text-slate-600 hover:bg-slate-100'
+                  ? 'bg-orange-50 text-orange-700 font-semibold border border-orange-200/80 shadow-2xs'
+                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
               }`}
             >
               <ShieldCheck className="w-4 h-4 shrink-0" />
@@ -372,7 +377,7 @@ export default function SettingsPage() {
         <div className="md:col-span-9 max-w-[720px]">
           {loading ? (
             <div className="py-16 text-center text-xs text-slate-500 bg-white rounded-lg border border-slate-200">
-              <Spinner size="md" className="mx-auto text-[#EA580C] mb-2" />
+              <Spinner size="md" className="mx-auto text-orange-600 mb-2" />
               <span>Loading configuration...</span>
             </div>
           ) : activeTab === 'integrations' ? (
@@ -382,7 +387,7 @@ export default function SettingsPage() {
               <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-xs space-y-4">
                 <div className="border-b border-slate-100 pb-3">
                   <h3 className="font-heading font-semibold text-slate-900 text-sm flex items-center gap-2">
-                    <Server className="w-4 h-4 text-[#EA580C]" />
+                    <Server className="w-4 h-4 text-orange-600" />
                     <span>MRTG / Cacti Server</span>
                   </h3>
                 </div>
@@ -437,7 +442,7 @@ export default function SettingsPage() {
                           variant="ghost"
                           size="icon-sm"
                           onClick={() => setShowMrtgPassword(!showMrtgPassword)}
-                          className="absolute right-0.5 top-0.5 h-7 w-7 text-slate-400 hover:text-slate-600"
+                          className="absolute right-0.5 top-0.5 h-7 w-7 text-slate-500 hover:text-slate-800"
                           title={showMrtgPassword ? 'Hide password' : 'Show password'}
                         >
                           {showMrtgPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
@@ -537,11 +542,54 @@ export default function SettingsPage() {
                           variant="ghost"
                           size="icon-sm"
                           onClick={() => setShowPrtgPassword(!showPrtgPassword)}
-                          className="absolute right-0.5 top-0.5 h-7 w-7 text-slate-400 hover:text-slate-600"
+                          className="absolute right-0.5 top-0.5 h-7 w-7 text-slate-500 hover:text-slate-800"
                           title={showPrtgPassword ? 'Hide password' : 'Show password'}
                         >
                           {showPrtgPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                         </Button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Nginx / HTTP Basic Auth Proxy Credentials */}
+                  <div className="pt-2 border-t border-slate-100">
+                    <label className="font-semibold text-slate-800 block mb-0.5">
+                      Nginx / HTTP Basic Auth Proxy (Optional)
+                    </label>
+                    <p className="text-xs text-slate-500 mb-2.5 leading-relaxed">
+                      Kredensial HTTP Basic Auth jika PRTG berada di balik reverse proxy Nginx (terpisah dari login PRTG web). Kosongkan jika direct.
+                    </p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="font-medium text-slate-700 block mb-1">Proxy Username</label>
+                        <Input
+                          placeholder="e.g. appsmg01"
+                          value={config.prtgBasicUsername || ''}
+                          onChange={(e) => setConfig({ ...config, prtgBasicUsername: e.target.value })}
+                          className="text-xs"
+                        />
+                      </div>
+                      <div>
+                        <label className="font-medium text-slate-700 block mb-1">Proxy Password</label>
+                        <div className="relative">
+                          <Input
+                            type={showPrtgBasicPassword ? 'text' : 'password'}
+                            placeholder="Proxy password..."
+                            value={config.prtgBasicPassword || ''}
+                            onChange={(e) => setConfig({ ...config, prtgBasicPassword: e.target.value })}
+                            className="text-xs pr-8"
+                          />
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            type="button"
+                            onClick={() => setShowPrtgBasicPassword(!showPrtgBasicPassword)}
+                            className="absolute right-0.5 top-0.5 h-7 w-7 text-slate-500 hover:text-slate-800"
+                            title={showPrtgBasicPassword ? 'Hide password' : 'Show password'}
+                          >
+                            {showPrtgBasicPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -591,7 +639,7 @@ export default function SettingsPage() {
                       onChange={(e) =>
                         setConfig({ ...config, telegramNotificationsEnabled: e.target.checked })
                       }
-                      className="rounded border-slate-300 text-[#EA580C] focus:ring-[#EA580C] w-4 h-4"
+                      className="rounded border-slate-300 text-orange-600 focus:ring-orange-500 w-4 h-4"
                     />
                     <span>Enable Telegram Notifications</span>
                   </label>
@@ -614,7 +662,7 @@ export default function SettingsPage() {
                         variant="ghost"
                         size="icon-sm"
                         onClick={() => setShowTelegramToken(!showTelegramToken)}
-                        className="absolute right-0.5 top-0.5 h-7 w-7 text-slate-400 hover:text-slate-600"
+                        className="absolute right-0.5 top-0.5 h-7 w-7 text-slate-500 hover:text-slate-800"
                         title={showTelegramToken ? 'Hide Token' : 'Show Token'}
                       >
                         {showTelegramToken ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
@@ -693,7 +741,7 @@ export default function SettingsPage() {
               <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-xs space-y-4">
                 <div className="border-b border-slate-100 pb-3">
                   <h3 className="font-heading font-semibold text-slate-900 text-sm flex items-center gap-2">
-                    <ImageIcon className="w-4 h-4 text-[#EA580C]" />
+                    <ImageIcon className="w-4 h-4 text-orange-600" />
                     <span>Report Canvas Templates</span>
                   </h3>
                   <p className="text-xs text-slate-500 mt-1">
@@ -705,7 +753,7 @@ export default function SettingsPage() {
                 <div className="border border-slate-200 rounded-lg p-4 bg-slate-50/50 space-y-3">
                   <div>
                     <h4 className="font-semibold text-xs text-slate-900">MRTG Report Cover</h4>
-                    <p className="text-[11px] text-slate-500">Page 1 cover background for MRTG reports</p>
+                    <p className="text-xs text-slate-500">Page 1 cover background for MRTG reports</p>
                   </div>
 
                   <div className="flex items-center gap-4">
@@ -736,7 +784,7 @@ export default function SettingsPage() {
                         }}
                       />
                       {uploadStatus['cover_mrtg'] && (
-                        <div className="text-[11px] font-medium text-orange-600">
+                        <div className="text-xs font-medium text-orange-600">
                           {uploadStatus['cover_mrtg']}
                         </div>
                       )}
@@ -748,7 +796,7 @@ export default function SettingsPage() {
                 <div className="border border-slate-200 rounded-lg p-4 bg-slate-50/50 space-y-3">
                   <div>
                     <h4 className="font-semibold text-xs text-slate-900">SLA Report Cover</h4>
-                    <p className="text-[11px] text-slate-500">Page 1 cover background for SLA reports</p>
+                    <p className="text-xs text-slate-500">Page 1 cover background for SLA reports</p>
                   </div>
 
                   <div className="flex items-center gap-4">
@@ -779,7 +827,7 @@ export default function SettingsPage() {
                         }}
                       />
                       {uploadStatus['cover_sla'] && (
-                        <div className="text-[11px] font-medium text-orange-600">
+                        <div className="text-xs font-medium text-orange-600">
                           {uploadStatus['cover_sla']}
                         </div>
                       )}
@@ -791,7 +839,7 @@ export default function SettingsPage() {
                 <div className="border border-slate-200 rounded-lg p-4 bg-slate-50/50 space-y-3">
                   <div>
                     <h4 className="font-semibold text-xs text-slate-900">Content Page Background</h4>
-                    <p className="text-[11px] text-slate-500">Header watermark and footer address on report body pages</p>
+                    <p className="text-xs text-slate-500">Header watermark and footer address on report body pages</p>
                   </div>
 
                   <div className="flex items-center gap-4">
@@ -822,7 +870,7 @@ export default function SettingsPage() {
                         }}
                       />
                       {uploadStatus['page_bg'] && (
-                        <div className="text-[11px] font-medium text-orange-600">
+                        <div className="text-xs font-medium text-orange-600">
                           {uploadStatus['page_bg']}
                         </div>
                       )}
@@ -837,7 +885,7 @@ export default function SettingsPage() {
               <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-xs space-y-4">
                 <div className="border-b border-slate-100 pb-3">
                   <h3 className="font-heading font-semibold text-slate-900 text-sm flex items-center gap-2">
-                    <ShieldCheck className="w-4 h-4 text-[#EA580C]" />
+                    <ShieldCheck className="w-4 h-4 text-orange-600" />
                     <span>Global Report Defaults</span>
                   </h3>
                 </div>

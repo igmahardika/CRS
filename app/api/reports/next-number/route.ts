@@ -1,50 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { generateDocumentNumber, parseDocumentNumber } from '@/lib/doc-number';
+import { requirePermission } from '@/lib/auth';
+import { getNextUniqueDocumentNumber } from '@/lib/doc-number-server';
 
 export async function GET(req: NextRequest) {
+  const auth = await requirePermission('report:create');
+  if (!auth.authorized) {
+    return NextResponse.json({ error: auth.error }, { status: auth.status });
+  }
+
   try {
     const { searchParams } = new URL(req.url);
-    const month = parseInt(searchParams.get('month') || '10', 10);
-    const year = parseInt(searchParams.get('year') || '2026', 10);
     const reportType = (searchParams.get('type') || 'SLA').toUpperCase() as 'MRTG' | 'SLA';
 
-    const dbConfig = await prisma.appConfig.findUnique({
-      where: { id: 'default' },
-    });
-    const prefix = dbConfig?.documentNumberPrefix || 'IMUN.01';
-
-    // Find all existing reports for this month, year, and type
-    const existingReports = await prisma.report.findMany({
-      where: {
-        periodMonth: month,
-        periodYear: year,
-        reportType: reportType,
-      },
-      select: {
-        documentNumber: true,
-      },
-    });
-
-    let maxSeq = 0;
-    for (const r of existingReports) {
-      const parsed = parseDocumentNumber(r.documentNumber);
-      if (parsed.seq && parsed.seq > maxSeq) {
-        maxSeq = parsed.seq;
-      }
-    }
-
-    const nextSeq = maxSeq + 1;
-    const documentNumber = generateDocumentNumber(nextSeq, reportType, month, year, prefix);
+    // Nomor urut dan bulan/tahun dokumen mencerminkan WAKTU PEMBUATAN (creation time)
+    const allocated = await getNextUniqueDocumentNumber(reportType);
 
     return NextResponse.json({
-      seq: nextSeq,
-      month,
-      year,
+      seq: allocated.seq,
+      month: allocated.createdMonth,
+      year: allocated.createdYear,
       reportType,
-      prefix,
-      documentNumber,
-      totalExistingInPeriod: existingReports.length,
+      prefix: allocated.prefix,
+      documentNumber: allocated.documentNumber,
     });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);

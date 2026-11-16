@@ -26,7 +26,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
     const variantClasses = {
       primary:
-        'bg-[#EA580C] text-white hover:bg-[#C2410C] focus-visible:ring-orange-500/40 focus-visible:ring-offset-white border border-transparent shadow-sm',
+        'bg-orange-600 text-white hover:bg-orange-700 focus-visible:ring-orange-500/40 focus-visible:ring-offset-white border border-transparent shadow-sm',
       secondary:
         'bg-white text-slate-800 border border-slate-200 hover:bg-slate-50 hover:border-slate-300 hover:text-slate-900 focus-visible:ring-orange-500/40 focus-visible:ring-offset-white shadow-sm',
       ghost:
@@ -42,10 +42,13 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       'icon-md': 'h-9 w-9 p-0',
     };
 
+    const accessibleLabel = props['aria-label'] || props.title;
+
     return (
       <button
         ref={ref}
         type={props.type || 'button'}
+        aria-label={accessibleLabel}
         disabled={disabled || loading}
         className={cn(baseClasses, variantClasses[variant], sizeClasses[size], className)}
         {...props}

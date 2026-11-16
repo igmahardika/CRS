@@ -9,7 +9,6 @@ import {
   Play,
   CheckCircle2,
   AlertTriangle,
-  Flame,
   Search,
   ExternalLink,
   RotateCcw,
@@ -20,6 +19,14 @@ import {
   FileText,
   AlertCircle,
   TrendingUp,
+  Activity,
+  Building2,
+  SlidersHorizontal,
+  X,
+  Layers,
+  UserPlus,
+  Trash2,
+  Plus,
 } from 'lucide-react';
 import {
   PageHeader,
@@ -49,6 +56,7 @@ import {
   Checkbox,
 } from '@/components/ui';
 import { toast } from 'sonner';
+import { DEPARTMENTS as SYSTEM_DEPARTMENTS } from '@/lib/permissions';
 
 interface ScheduleTask {
   id: string;
@@ -58,20 +66,35 @@ interface ScheduleTask {
   serviceName: string;
   periodMonth: number;
   periodYear: number;
-  reportType: string;
+  reportType: 'SLA' | 'MRTG' | 'BOTH';
+  assignedDepartment: string;
+  executionType: 'AUTO_SCHEDULED' | 'MANUAL';
   kickoffTime: string;
   deadlineTime: string;
-  status: 'PENDING' | 'COMPLETED' | 'BREACHED';
+  status: 'PENDING' | 'COMPLETED' | 'BREACHED' | 'FAILED_MANUAL_REQUIRED';
+  errorMessage?: string | null;
   completedAt?: string | null;
   completedReportId?: string | null;
   processedByName?: string | null;
   createdAt: string;
 }
 
+interface RoutineCustomer {
+  id: string;
+  customerId: string;
+  customerName: string;
+  serviceId: string;
+  serviceName: string;
+  isMonthlyRoutine: boolean;
+  routineGroup: string;
+  routineReportType: string;
+}
+
 interface ScheduleStats {
   total: number;
   completed: number;
   pending: number;
+  failed: number;
   breached: number;
   completionRate: number;
 }
@@ -81,40 +104,47 @@ const monthNames = [
   'July', 'August', 'September', 'October', 'November', 'December'
 ];
 
-export default function SchedulePage() {
-  const now = new Date();
-  // Default to previous month
-  const defaultPrevMonth = now.getMonth() === 0 ? 12 : now.getMonth();
-  const defaultPrevYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+const DEPARTMENTS = SYSTEM_DEPARTMENTS.filter((d) => d !== 'Network Operation');
 
-  const [selectedMonth, setSelectedMonth] = useState<number>(defaultPrevMonth);
-  const [selectedYear, setSelectedYear] = useState<number>(defaultPrevYear);
-  const [statusFilter, setStatusFilter] = useState<'ALL' | 'PENDING' | 'COMPLETED' | 'BREACHED'>('ALL');
+export default function SchedulePage() {
+  const currentYear = new Date().getFullYear();
+  const currentMonth = new Date().getMonth() + 1;
+
+  // Target period: default to current month and year
+  const [selectedMonth, setSelectedMonth] = useState<number>(currentMonth);
+  const [selectedYear, setSelectedYear] = useState<number>(currentYear);
+  const [selectedDepartment, setSelectedDepartment] = useState<string>('ALL');
+  const [selectedCategory, setSelectedCategory] = useState<'ALL' | 'MRTG' | 'SLA'>('ALL');
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'PENDING' | 'COMPLETED' | 'FAILED' | 'BREACHED'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
 
   const [tasks, setTasks] = useState<ScheduleTask[]>([]);
+  const [routineCustomers, setRoutineCustomers] = useState<RoutineCustomer[]>([]);
   const [stats, setStats] = useState<ScheduleStats>({
     total: 0,
     completed: 0,
     pending: 0,
+    failed: 0,
     breached: 0,
     completionRate: 0,
   });
   const [loading, setLoading] = useState(true);
 
-  // Kickoff Modal
-  const [isKickoffModalOpen, setIsKickoffModalOpen] = useState(false);
-  const [kickoffMonth, setKickoffMonth] = useState<number>(defaultPrevMonth);
-  const [kickoffYear, setKickoffYear] = useState<number>(defaultPrevYear);
-  const [includeAllCustomers, setIncludeAllCustomers] = useState(false);
-  const [isSubmittingKickoff, setIsSubmittingKickoff] = useState(false);
+  // Auto-MRTG Batch trigger state
+  const [isRunningMrtgBatch, setIsRunningMrtgBatch] = useState(false);
 
-  // SLA 24H Countdown Timer state
-  const [timeRemainingStr, setTimeRemainingStr] = useState<string>('--:--:--');
-  const [slaUrgency, setSlaUrgency] = useState<'SAFE' | 'WARNING' | 'CRITICAL' | 'EXPIRED' | 'COMPLETED' | 'IDLE'>('IDLE');
-  const [slaProgressPercent, setSlaProgressPercent] = useState<number>(0);
+  // Routine Management Modal state
+  const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
+  const [modalActiveDept, setModalActiveDept] = useState<string>('Customer Experience');
+  const [allMasterCustomers, setAllMasterCustomers] = useState<RoutineCustomer[]>([]);
+  const [loadingMasterCustomers, setLoadingMasterCustomers] = useState(false);
+  const [isAddPickerOpen, setIsAddPickerOpen] = useState(false);
+  const [pickerSearchQuery, setPickerSearchQuery] = useState<string>('');
+  const [selectedCustomerIdsToAdd, setSelectedCustomerIdsToAdd] = useState<string[]>([]);
+  const [selectedReportTypeToAdd, setSelectedReportTypeToAdd] = useState<string>('MRTG');
+  const [isSavingRoutineAction, setIsSavingRoutineAction] = useState(false);
 
-  // Fetch tasks
+  // Fetch tasks and enrolled routine list
   const fetchTasks = useCallback(async () => {
     setLoading(true);
     try {
@@ -122,15 +152,16 @@ export default function SchedulePage() {
       const data = await res.json();
       if (res.ok) {
         setTasks(data.tasks || []);
+        setRoutineCustomers(data.routineCustomers || []);
         if (data.stats) {
           setStats(data.stats);
         }
       } else {
-        toast.error(data.error || 'Gagal memuat daftar jadwal rutin.');
+        toast.error(data.error || 'Failed to load routine schedule tasks.');
       }
     } catch (err) {
       console.error(err);
-      toast.error('Gagal menghubungi server jadwal.');
+      toast.error('Failed to communicate with schedule server.');
     } finally {
       setLoading(false);
     }
@@ -140,94 +171,168 @@ export default function SchedulePage() {
     fetchTasks();
   }, [fetchTasks]);
 
-  // SLA 24-Hour Countdown ticker
-  useEffect(() => {
-    // Find active kickoff deadline (the earliest deadline among pending tasks)
-    const pendingTasks = tasks.filter((t) => t.status === 'PENDING');
-
-    if (tasks.length === 0) {
-      setSlaUrgency('IDLE');
-      setTimeRemainingStr('Not Started');
-      setSlaProgressPercent(0);
-      return;
-    }
-
-    if (pendingTasks.length === 0 && tasks.length > 0) {
-      setSlaUrgency('COMPLETED');
-      setTimeRemainingStr('All Tasks Completed 🎉');
-      setSlaProgressPercent(100);
-      return;
-    }
-
-    const updateCountdown = () => {
-      const targetDeadline = new Date(pendingTasks[0].deadlineTime).getTime();
-      const kickoffTime = new Date(pendingTasks[0].kickoffTime).getTime();
-      const current = Date.now();
-      const diffMs = targetDeadline - current;
-      const totalDuration = targetDeadline - kickoffTime || 24 * 60 * 60 * 1000;
-
-      // Elapsed percentage (0 to 100%)
-      const elapsed = current - kickoffTime;
-      const pct = Math.min(100, Math.max(0, Math.round((elapsed / totalDuration) * 100)));
-      setSlaProgressPercent(pct);
-
-      if (diffMs <= 0) {
-        setSlaUrgency('EXPIRED');
-        const overdueHours = Math.floor(Math.abs(diffMs) / (1000 * 60 * 60));
-        const overdueMins = Math.floor((Math.abs(diffMs) % (1000 * 60 * 60)) / (1000 * 60));
-        setTimeRemainingStr(`${overdueHours}h ${overdueMins}m Overdue`);
-        return;
-      }
-
-      const hours = Math.floor(diffMs / (1000 * 60 * 60));
-      const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-      const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
-
-      const formatted = `${String(hours).padStart(2, '0')}h ${String(minutes).padStart(2, '0')}m ${String(seconds).padStart(2, '0')}s`;
-      setTimeRemainingStr(formatted);
-
-      if (hours >= 12) {
-        setSlaUrgency('SAFE');
-      } else if (hours >= 6) {
-        setSlaUrgency('WARNING');
-      } else {
-        setSlaUrgency('CRITICAL');
-      }
-    };
-
-    updateCountdown();
-    const interval = setInterval(updateCountdown, 1000);
-    return () => clearInterval(interval);
-  }, [tasks]);
-
-  // Handle Trigger Kickoff
-  const handleKickoffSubmit = async () => {
-    setIsSubmittingKickoff(true);
+  // Fetch master customer catalog
+  const fetchMasterCustomers = async () => {
+    setLoadingMasterCustomers(true);
     try {
-      const res = await fetch('/api/schedule/kickoff', {
+      const res = await fetch('/api/customers');
+      const data = await res.json();
+      if (res.ok) {
+        setAllMasterCustomers(data.customers || []);
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to load master customers.');
+    } finally {
+      setLoadingMasterCustomers(false);
+    }
+  };
+
+  const handleOpenCustomerModal = () => {
+    setIsCustomerModalOpen(true);
+    fetchMasterCustomers();
+  };
+
+  // Reset picker selection when closed or dept changes
+  useEffect(() => {
+    if (!isAddPickerOpen) {
+      setSelectedCustomerIdsToAdd([]);
+      setPickerSearchQuery('');
+    }
+  }, [isAddPickerOpen, modalActiveDept]);
+
+  // Toggle selection for a single customer
+  const handleToggleCustomerSelection = (id: string) => {
+    setSelectedCustomerIdsToAdd((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  // Add customer(s) to routine list (Single or Batch)
+  const handleAddCustomersToRoutine = async () => {
+    if (selectedCustomerIdsToAdd.length === 0) {
+      toast.error('Pilih minimal satu customer untuk didaftarkan.');
+      return;
+    }
+
+    setIsSavingRoutineAction(true);
+    try {
+      const res = await fetch('/api/schedule', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          periodMonth: kickoffMonth,
-          periodYear: kickoffYear,
-          includeAll: includeAllCustomers,
+          action: 'batch_add_to_routine',
+          customerIds: selectedCustomerIdsToAdd,
+          routineGroup: modalActiveDept,
+          routineReportType: selectedReportTypeToAdd,
+          periodMonth: selectedMonth,
+          periodYear: selectedYear,
         }),
       });
       const data = await res.json();
       if (res.ok) {
-        toast.success(data.message || 'Kickoff berhasil dimulai!');
-        setIsKickoffModalOpen(false);
-        setSelectedMonth(kickoffMonth);
-        setSelectedYear(kickoffYear);
+        toast.success(data.message || `${selectedCustomerIdsToAdd.length} customer berhasil ditambahkan ke ${modalActiveDept}.`);
+        setIsAddPickerOpen(false);
+        setSelectedCustomerIdsToAdd([]);
+        setPickerSearchQuery('');
         fetchTasks();
+        fetchMasterCustomers();
       } else {
-        toast.error(data.error || 'Gagal memulai kickoff.');
+        toast.error(data.error || 'Gagal menambahkan customer ke antrean rutin.');
       }
     } catch (err) {
       console.error(err);
-      toast.error('Terjadi kesalahan saat memulai kickoff.');
+      toast.error('Terjadi kesalahan saat menambahkan customer.');
     } finally {
-      setIsSubmittingKickoff(false);
+      setIsSavingRoutineAction(false);
+    }
+  };
+
+  // Remove customer from routine list
+  const handleRemoveCustomerFromRoutine = async (cust: RoutineCustomer) => {
+    if (!confirm(`Are you sure you want to remove "${cust.customerName}" from monthly routine reporting?`)) {
+      return;
+    }
+
+    setIsSavingRoutineAction(true);
+    try {
+      const res = await fetch('/api/schedule', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'remove_from_routine',
+          customerId: cust.id,
+          periodMonth: selectedMonth,
+          periodYear: selectedYear,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success(data.message || 'Customer removed from routine list.');
+        fetchTasks();
+        fetchMasterCustomers();
+      } else {
+        toast.error(data.error || 'Failed to remove customer.');
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Error removing customer.');
+    } finally {
+      setIsSavingRoutineAction(false);
+    }
+  };
+
+  // Update routine report type directly
+  const handleUpdateReportType = async (cust: RoutineCustomer, newType: string) => {
+    try {
+      const res = await fetch('/api/schedule', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'update_enrollment',
+          customerId: cust.id,
+          routineReportType: newType,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success(`Updated ${cust.customerName} report type to ${newType}.`);
+        fetchTasks();
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to update report type.');
+    }
+  };
+
+  // Trigger manual MRTG batch generation
+  const handleRunMrtgBatch = async () => {
+    setIsRunningMrtgBatch(true);
+    const toastId = toast.loading('Running automated MRTG batch generation (pacing 1.5s per item)...');
+    try {
+      const res = await fetch('/api/schedule/auto-mrtg', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          month: selectedMonth,
+          year: selectedYear,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success(
+          `MRTG Batch completed: ${data.processed} generated, ${data.failed} manual required.`,
+          { id: toastId }
+        );
+        fetchTasks();
+      } else {
+        toast.error(data.error || 'Failed to run MRTG batch.', { id: toastId });
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('MRTG batch execution failed.', { id: toastId });
+    } finally {
+      setIsRunningMrtgBatch(false);
     }
   };
 
@@ -244,21 +349,118 @@ export default function SchedulePage() {
       });
       const data = await res.json();
       if (res.ok) {
-        toast.success(`Status ${task.customerName} diubah ke ${newStatus}.`);
+        toast.success(`Task status updated to ${newStatus}.`);
         fetchTasks();
       } else {
-        toast.error(data.error || 'Gagal mengubah status tugas.');
+        toast.error(data.error || 'Failed to update task status.');
       }
     } catch (err) {
       console.error(err);
-      toast.error('Gagal memperbarui status.');
+      toast.error('Failed to update task.');
     }
   };
 
-  // Filtered tasks
+  // Calculate task counts per department
+  const deptCounts = useMemo(() => {
+    const counts: Record<string, number> = {
+      'ALL': tasks.length,
+      'Customer Experience': 0,
+      'Account Executive': 0,
+      'Finance': 0,
+    };
+    tasks.forEach((t) => {
+      const dept = t.assignedDepartment || 'Customer Experience';
+      if (counts[dept] !== undefined) {
+        counts[dept]++;
+      }
+    });
+    return counts;
+  }, [tasks]);
+
+  // Enrolled customers grouped by department
+  const routineCustomersByDept = useMemo(() => {
+    const map: Record<string, RoutineCustomer[]> = {
+      'Customer Experience': [],
+      'Account Executive': [],
+      'Finance': [],
+    };
+    routineCustomers.forEach((c) => {
+      const dept = c.routineGroup || 'Customer Experience';
+      if (map[dept]) {
+        map[dept].push(c);
+      } else {
+        map['Customer Experience'].push(c);
+      }
+    });
+    return map;
+  }, [routineCustomers]);
+
+  // Available master customers not enrolled in routine
+  const availableToAdd = useMemo(() => {
+    const enrolledIds = new Set(routineCustomers.map((c) => c.id));
+    return allMasterCustomers.filter((c) => !enrolledIds.has(c.id));
+  }, [allMasterCustomers, routineCustomers]);
+
+  // Filtered available customers based on search query in the picker
+  const filteredAvailableToAdd = useMemo(() => {
+    if (!pickerSearchQuery.trim()) return availableToAdd;
+    const q = pickerSearchQuery.toLowerCase().trim();
+    return availableToAdd.filter(
+      (c) =>
+        (c.customerName && c.customerName.toLowerCase().includes(q)) ||
+        (c.customerId && c.customerId.toLowerCase().includes(q)) ||
+        (c.serviceId && c.serviceId.toLowerCase().includes(q)) ||
+        (c.serviceName && c.serviceName.toLowerCase().includes(q))
+    );
+  }, [availableToAdd, pickerSearchQuery]);
+
+  // Toggle select all visible/filtered items
+  const handleToggleSelectAllFiltered = () => {
+    const filteredIds = filteredAvailableToAdd.map((c) => c.id);
+    const areAllSelected =
+      filteredIds.length > 0 && filteredIds.every((id) => selectedCustomerIdsToAdd.includes(id));
+
+    if (areAllSelected) {
+      setSelectedCustomerIdsToAdd((prev) => prev.filter((id) => !filteredIds.includes(id)));
+    } else {
+      setSelectedCustomerIdsToAdd((prev) => Array.from(new Set([...prev, ...filteredIds])));
+    }
+  };
+
+  // Calculate category counts
+  const categoryCounts = useMemo(() => {
+    let baseTasks = tasks;
+    if (selectedDepartment !== 'ALL') {
+      baseTasks = baseTasks.filter((t) => (t.assignedDepartment || 'Customer Experience') === selectedDepartment);
+    }
+    return {
+      ALL: baseTasks.length,
+      MRTG: baseTasks.filter((t) => t.reportType === 'MRTG').length,
+      SLA: baseTasks.filter((t) => t.reportType === 'SLA').length,
+    };
+  }, [tasks, selectedDepartment]);
+
+  // Filtered tasks based on department, category, status, search
   const filteredTasks = useMemo(() => {
     return tasks.filter((t) => {
-      if (statusFilter !== 'ALL' && t.status !== statusFilter) return false;
+      // 1. Department Filter
+      if (selectedDepartment !== 'ALL') {
+        const dept = t.assignedDepartment || 'Customer Experience';
+        if (dept !== selectedDepartment) return false;
+      }
+
+      // 2. Category Filter (MRTG vs SLA)
+      if (selectedCategory !== 'ALL') {
+        if (t.reportType !== selectedCategory) return false;
+      }
+
+      // 3. Status Filter
+      if (statusFilter !== 'ALL') {
+        if (statusFilter === 'FAILED' && t.status !== 'FAILED_MANUAL_REQUIRED') return false;
+        if (statusFilter !== 'FAILED' && t.status !== statusFilter) return false;
+      }
+
+      // 4. Search Query
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         const matches =
@@ -270,13 +472,45 @@ export default function SchedulePage() {
       }
       return true;
     });
-  }, [tasks, statusFilter, searchQuery]);
+  }, [tasks, selectedDepartment, selectedCategory, statusFilter, searchQuery]);
+
+  const getDepartmentBadge = (dept: string) => {
+    switch (dept) {
+      case 'Customer Experience':
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-sky-50 text-sky-700 border border-sky-200">
+            <Building2 className="w-3 h-3 text-sky-600" />
+            <span>Customer Experience</span>
+          </span>
+        );
+      case 'Account Executive':
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
+            <Building2 className="w-3 h-3 text-indigo-600" />
+            <span>Account Executive</span>
+          </span>
+        );
+      case 'Finance':
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+            <Building2 className="w-3 h-3 text-emerald-600" />
+            <span>Finance</span>
+          </span>
+        );
+      default:
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+            <span>{dept}</span>
+          </span>
+        );
+    }
+  };
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Monthly Routine Schedule & 24h SLA"
-        description="Track and monitor routine monthly customer reports within 24-hour SLA."
+        title="Monthly Schedule"
+        description="Antrean pelaporan rutin bulanan dan pemantauan SLA 24 jam departemen. Otomatis ter-kickoff setiap tanggal 1 pukul 08:00 WIB."
         breadcrumb={
           <Link href="/" className="hover:text-slate-800 flex items-center gap-1 font-medium text-slate-500">
             <ArrowLeft className="w-3.5 h-3.5" />
@@ -284,127 +518,53 @@ export default function SchedulePage() {
           </Link>
         }
         actions={
-          <div className="flex items-center gap-2">
-            <Link href="/customers">
-              <Button variant="secondary" size="sm">
-                <Users className="w-3.5 h-3.5 mr-1.5" />
-                <span>Manage Routine Customers</span>
-              </Button>
-            </Link>
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-50 text-emerald-800 border border-emerald-200">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span>Auto-Trigger: Tanggal 1, 08:00 WIB</span>
+            </div>
             <Button
               variant="primary"
               size="sm"
-              onClick={() => setIsKickoffModalOpen(true)}
-              className="bg-[#EA580C] hover:bg-[#C2410C]"
+              onClick={handleOpenCustomerModal}
+              className="bg-orange-600 hover:bg-orange-700"
             >
-              <Play className="w-3.5 h-3.5 mr-1.5 fill-current" />
-              <span>Trigger Monthly Kickoff</span>
+              <Users className="w-3.5 h-3.5 mr-1.5" />
+              <span>Manage Routine Customers ({routineCustomers.length})</span>
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleRunMrtgBatch}
+              disabled={isRunningMrtgBatch || tasks.filter((t) => t.reportType === 'MRTG' && t.status === 'PENDING').length === 0}
+              className="bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100 hover:text-indigo-800 font-semibold"
+              title="Execute MRTG batch generation immediately for this period"
+            >
+              {isRunningMrtgBatch ? (
+                <Spinner size="sm" className="mr-1.5 text-indigo-600" />
+              ) : (
+                <Play className="w-3.5 h-3.5 mr-1.5 text-indigo-600 fill-indigo-600" />
+              )}
+              <span>Run MRTG Batch Now</span>
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={fetchTasks}
+              className="text-slate-700 border-slate-300"
+              title="Re-sync tasks with enrolled routine customers"
+            >
+              <RefreshCw className="w-3.5 h-3.5 mr-1.5 text-slate-500" />
+              <span>Re-sync Tasks</span>
             </Button>
           </div>
         }
       />
 
-      {/* SLA 24 Jam Countdown Countdown Widget Banner */}
-      <div
-        className={`p-5 rounded-xl border transition-all ${
-          slaUrgency === 'COMPLETED'
-            ? 'bg-emerald-50/80 border-emerald-200 text-emerald-950'
-            : slaUrgency === 'EXPIRED'
-            ? 'bg-rose-50/80 border-rose-200 text-rose-950'
-            : slaUrgency === 'CRITICAL'
-            ? 'bg-rose-50/90 border-rose-300 text-rose-950 animate-pulse'
-            : slaUrgency === 'WARNING'
-            ? 'bg-amber-50/80 border-amber-200 text-amber-950'
-            : slaUrgency === 'SAFE'
-            ? 'bg-emerald-50/60 border-emerald-200 text-emerald-950'
-            : 'bg-slate-50 border-slate-200 text-slate-800'
-        }`}
-      >
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <Clock
-                className={`w-5 h-5 ${
-                  slaUrgency === 'EXPIRED' || slaUrgency === 'CRITICAL'
-                    ? 'text-rose-600'
-                    : slaUrgency === 'WARNING'
-                    ? 'text-amber-600'
-                    : slaUrgency === 'COMPLETED'
-                    ? 'text-emerald-600'
-                    : 'text-[#EA580C]'
-                }`}
-              />
-              <span className="font-bold text-sm tracking-tight">
-                24-HOUR SLA COUNTDOWN
-              </span>
-              <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-white/80 border border-current/20">
-                Period {monthNames[selectedMonth - 1]} {selectedYear}
-              </span>
-            </div>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              {slaUrgency === 'COMPLETED'
-                ? 'All routine contract reports for this period have been completed and archived.'
-                : slaUrgency === 'EXPIRED'
-                ? 'The 24-hour SLA window has expired. Please process remaining pending reports.'
-                : slaUrgency === 'IDLE'
-                ? 'No routine kickoff triggered for this period. Click "Trigger Monthly Kickoff" to start.'
-                : 'Reports must be completed within 24 hours of routine kickoff. Telegram alerts are active.'}
-            </p>
-          </div>
-
-          <div className="flex flex-col items-start md:items-end shrink-0">
-            <span className="text-[11px] uppercase tracking-wider font-semibold text-slate-500">
-              {slaUrgency === 'EXPIRED' ? 'SLA Status' : 'Time Remaining'}
-            </span>
-            <div
-              className={`font-mono font-bold text-lg md:text-xl tracking-tight flex items-center gap-2 ${
-                slaUrgency === 'EXPIRED' || slaUrgency === 'CRITICAL'
-                  ? 'text-rose-700'
-                  : slaUrgency === 'WARNING'
-                  ? 'text-amber-700'
-                  : slaUrgency === 'COMPLETED'
-                  ? 'text-emerald-700'
-                  : 'text-[#EA580C]'
-              }`}
-            >
-              {slaUrgency === 'CRITICAL' && <Flame className="w-5 h-5 text-rose-600 animate-bounce" />}
-              {slaUrgency === 'COMPLETED' && <CheckCircle2 className="w-5 h-5 text-emerald-600" />}
-              <span>{timeRemainingStr}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* SLA Progress Bar */}
-        {slaUrgency !== 'IDLE' && (
-          <div className="mt-4 pt-3 border-t border-current/10">
-            <div className="flex justify-between text-[11px] font-medium mb-1.5">
-              <span>24-Hour Window ({slaProgressPercent}% elapsed)</span>
-              <span>
-                {stats.completed} of {stats.total} Reports Completed ({stats.completionRate}%)
-              </span>
-            </div>
-            <div className="w-full bg-black/10 rounded-full h-2 overflow-hidden">
-              <div
-                className={`h-full transition-all duration-500 ${
-                  slaUrgency === 'COMPLETED'
-                    ? 'bg-emerald-600'
-                    : slaUrgency === 'EXPIRED' || slaUrgency === 'CRITICAL'
-                    ? 'bg-rose-600'
-                    : slaUrgency === 'WARNING'
-                    ? 'bg-amber-500'
-                    : 'bg-[#EA580C]'
-                }`}
-                style={{ width: `${stats.completionRate}%` }}
-              />
-            </div>
-          </div>
-        )}
-      </div>
-
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard
-          label="Total Routine Customers"
+          label="Total Routine Tasks"
           value={stats.total}
           icon={Users}
           subtext={`Period ${monthNames[selectedMonth - 1]} ${selectedYear}`}
@@ -424,20 +584,24 @@ export default function SchedulePage() {
           badge={stats.pending > 0 ? <Badge variant="warning">{stats.pending}</Badge> : undefined}
         />
         <StatCard
-          label="SLA Breached"
-          value={stats.breached}
+          label="Manual Action Needed"
+          value={stats.failed + stats.breached}
           icon={AlertTriangle}
-          subtext="Exceeded 24-hour SLA"
-          badge={stats.breached > 0 ? <Badge variant="destructive">{stats.breached}</Badge> : undefined}
+          subtext={`${stats.failed} failed, ${stats.breached} breached`}
+          badge={
+            stats.failed + stats.breached > 0 ? (
+              <Badge variant="destructive">{stats.failed + stats.breached}</Badge>
+            ) : undefined
+          }
         />
       </div>
 
-      {/* Filter and Search Bar */}
-      <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-xs space-y-3">
+      {/* Filter and Tab Section */}
+      <div className="bg-white rounded-xl border border-slate-200 shadow-xs space-y-4 p-4">
+        {/* Top Controls: Period selector + Search */}
         <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
-          {/* Period selector */}
           <div className="flex items-center gap-2">
-            <div className="w-36">
+            <div className="w-40">
               <Select
                 value={String(selectedMonth)}
                 onValueChange={(val) => setSelectedMonth(parseInt(val, 10))}
@@ -463,7 +627,7 @@ export default function SchedulePage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {[2024, 2025, 2026, 2027].map((y) => (
+                  {[currentYear - 1, currentYear, currentYear + 1, currentYear + 2].map((y) => (
                     <SelectItem key={y} value={String(y)}>
                       {y}
                     </SelectItem>
@@ -471,65 +635,168 @@ export default function SchedulePage() {
                 </SelectContent>
               </Select>
             </div>
-            <Button variant="secondary" size="icon-sm" onClick={fetchTasks} title="Refresh Data">
+            <Button variant="secondary" size="icon-sm" onClick={fetchTasks} title="Refresh Tasks">
               <RefreshCw className="w-3.5 h-3.5" />
             </Button>
           </div>
 
-          {/* Search box */}
           <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
             <Input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search customer or Service ID..."
+              placeholder="Cari nama pelanggan atau Service ID..."
               className="pl-9 text-xs"
             />
           </div>
         </div>
 
-        {/* Status filter tabs */}
-        <div className="flex items-center gap-1.5 pt-2 border-t border-slate-100 flex-wrap">
-          <Button
-            variant={statusFilter === 'ALL' ? 'secondary' : 'ghost'}
-            size="sm"
-            onClick={() => setStatusFilter('ALL')}
-            className={statusFilter === 'ALL' ? 'bg-slate-900 text-white hover:bg-slate-800 hover:text-white h-7 px-2.5 text-xs' : 'text-slate-600 h-7 px-2.5 text-xs'}
-          >
-            All ({stats.total})
-          </Button>
-          <Button
-            variant={statusFilter === 'PENDING' ? 'secondary' : 'ghost'}
-            size="sm"
-            onClick={() => setStatusFilter('PENDING')}
-            className={statusFilter === 'PENDING' ? 'bg-amber-600 text-white hover:bg-amber-700 hover:text-white h-7 px-2.5 text-xs' : 'text-slate-600 h-7 px-2.5 text-xs'}
-          >
-            Pending ({stats.pending})
-          </Button>
-          <Button
-            variant={statusFilter === 'COMPLETED' ? 'secondary' : 'ghost'}
-            size="sm"
-            onClick={() => setStatusFilter('COMPLETED')}
-            className={statusFilter === 'COMPLETED' ? 'bg-emerald-600 text-white hover:bg-emerald-700 hover:text-white h-7 px-2.5 text-xs' : 'text-slate-600 h-7 px-2.5 text-xs'}
-          >
-            Completed ({stats.completed})
-          </Button>
-          <Button
-            variant={statusFilter === 'BREACHED' ? 'secondary' : 'ghost'}
-            size="sm"
-            onClick={() => setStatusFilter('BREACHED')}
-            className={statusFilter === 'BREACHED' ? 'bg-rose-600 text-white hover:bg-rose-700 hover:text-white h-7 px-2.5 text-xs' : 'text-slate-600 h-7 px-2.5 text-xs'}
-          >
-            SLA Breached ({stats.breached})
-          </Button>
+        {/* Level 1: Department Group Tabs (NOC Grouping) */}
+        <div className="border-b border-slate-200">
+          <div className="flex items-center gap-1 overflow-x-auto pb-px">
+            <button
+              type="button"
+              onClick={() => setSelectedDepartment('ALL')}
+              className={`flex items-center gap-2 px-4 py-2.5 text-xs font-semibold border-b-2 transition-colors whitespace-nowrap ${
+                selectedDepartment === 'ALL'
+                  ? 'border-orange-600 text-orange-600'
+                  : 'border-transparent text-slate-600 hover:text-slate-900 hover:border-slate-300'
+              }`}
+            >
+              <Layers className="w-3.5 h-3.5" />
+              <span>All Departments</span>
+              <span className="px-1.5 py-0.2 rounded-full text-xs bg-slate-100 text-slate-700 font-bold">
+                {deptCounts['ALL']}
+              </span>
+            </button>
+
+            {DEPARTMENTS.map((dept) => {
+              const active = selectedDepartment === dept;
+              return (
+                <button
+                  key={dept}
+                  type="button"
+                  onClick={() => setSelectedDepartment(dept)}
+                  className={`flex items-center gap-2 px-4 py-2.5 text-xs font-semibold border-b-2 transition-colors whitespace-nowrap ${
+                    active
+                      ? 'border-orange-600 text-orange-600'
+                      : 'border-transparent text-slate-600 hover:text-slate-900 hover:border-slate-300'
+                  }`}
+                >
+                  <Building2 className="w-3.5 h-3.5" />
+                  <span>{dept}</span>
+                  <span
+                    className={`px-1.5 py-0.2 rounded-full text-xs font-bold ${
+                      active ? 'bg-orange-100 text-orange-600' : 'bg-slate-100 text-slate-700'
+                    }`}
+                  >
+                    {deptCounts[dept] || 0}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Level 2: Sub-category Tabs (MRTG vs SLA) + Status Filters */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
+          {/* Sub-Category Pill Switcher */}
+          <div className="inline-flex items-center p-1 bg-slate-100 rounded-lg text-xs">
+            <button
+              type="button"
+              onClick={() => setSelectedCategory('ALL')}
+              className={`px-3 py-1.5 rounded-md font-semibold transition-all flex items-center gap-1.5 ${
+                selectedCategory === 'ALL'
+                  ? 'bg-white text-slate-900 shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <span>All Reports</span>
+              <span className="text-xs opacity-75">({categoryCounts.ALL})</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setSelectedCategory('MRTG')}
+              className={`px-3 py-1.5 rounded-md font-semibold transition-all flex items-center gap-1.5 ${
+                selectedCategory === 'MRTG'
+                  ? 'bg-white text-indigo-700 shadow-xs'
+                  : 'text-slate-600 hover:text-indigo-700'
+              }`}
+            >
+              <Activity className="w-3 h-3 text-indigo-600" />
+              <span>MRTG (Auto 02:00-05:00)</span>
+              <span className="text-xs opacity-75">({categoryCounts.MRTG})</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setSelectedCategory('SLA')}
+              className={`px-3 py-1.5 rounded-md font-semibold transition-all flex items-center gap-1.5 ${
+                selectedCategory === 'SLA'
+                  ? 'bg-white text-amber-700 shadow-xs'
+                  : 'text-slate-600 hover:text-amber-700'
+              }`}
+            >
+              <ShieldCheck className="w-3 h-3 text-amber-600" />
+              <span>SLA (Manual NOC)</span>
+              <span className="text-xs opacity-75">({categoryCounts.SLA})</span>
+            </button>
+          </div>
+
+          {/* Status filter pills */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <Button
+              variant={statusFilter === 'ALL' ? 'secondary' : 'ghost'}
+              size="sm"
+              onClick={() => setStatusFilter('ALL')}
+              className={statusFilter === 'ALL' ? 'bg-slate-900 text-white hover:bg-slate-800 hover:text-white h-7 px-2.5 text-xs' : 'text-slate-600 h-7 px-2.5 text-xs'}
+            >
+              All
+            </Button>
+            <Button
+              variant={statusFilter === 'PENDING' ? 'secondary' : 'ghost'}
+              size="sm"
+              onClick={() => setStatusFilter('PENDING')}
+              className={statusFilter === 'PENDING' ? 'bg-amber-600 text-white hover:bg-amber-700 hover:text-white h-7 px-2.5 text-xs' : 'text-slate-600 h-7 px-2.5 text-xs'}
+            >
+              Pending ({stats.pending})
+            </Button>
+            <Button
+              variant={statusFilter === 'COMPLETED' ? 'secondary' : 'ghost'}
+              size="sm"
+              onClick={() => setStatusFilter('COMPLETED')}
+              className={statusFilter === 'COMPLETED' ? 'bg-emerald-600 text-white hover:bg-emerald-700 hover:text-white h-7 px-2.5 text-xs' : 'text-slate-600 h-7 px-2.5 text-xs'}
+            >
+              Completed ({stats.completed})
+            </Button>
+            {stats.failed > 0 && (
+              <Button
+                variant={statusFilter === 'FAILED' ? 'secondary' : 'ghost'}
+                size="sm"
+                onClick={() => setStatusFilter('FAILED')}
+                className={statusFilter === 'FAILED' ? 'bg-rose-600 text-white hover:bg-rose-700 hover:text-white h-7 px-2.5 text-xs' : 'text-rose-600 h-7 px-2.5 text-xs'}
+              >
+                Failed ({stats.failed})
+              </Button>
+            )}
+            <Button
+              variant={statusFilter === 'BREACHED' ? 'secondary' : 'ghost'}
+              size="sm"
+              onClick={() => setStatusFilter('BREACHED')}
+              className={statusFilter === 'BREACHED' ? 'bg-rose-600 text-white hover:bg-rose-700 hover:text-white h-7 px-2.5 text-xs' : 'text-slate-600 h-7 px-2.5 text-xs'}
+            >
+              Breached ({stats.breached})
+            </Button>
+          </div>
         </div>
       </div>
 
       {/* Task List Table */}
-      <div className="bg-white rounded-lg border border-slate-200 shadow-xs overflow-hidden">
+      <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
         {loading ? (
           <div className="py-16 text-center text-xs text-slate-500">
-            <Spinner size="md" className="mx-auto text-[#EA580C] mb-2" />
+            <Spinner size="md" className="mx-auto text-orange-600 mb-2" />
             <span>Loading routine schedule tasks...</span>
           </div>
         ) : tasks.length === 0 ? (
@@ -537,23 +804,21 @@ export default function SchedulePage() {
             <EmptyState
               icon={CalendarCheck}
               title={`No Tasks Generated for ${monthNames[selectedMonth - 1]} ${selectedYear}`}
-              description="Click 'Trigger Monthly Kickoff' to compile routine tasks and initiate the 24-hour SLA countdown."
-              actionLabel="Trigger Kickoff Now"
-              onAction={() => {
-                setKickoffMonth(selectedMonth);
-                setKickoffYear(selectedYear);
-                setIsKickoffModalOpen(true);
-              }}
+              description="Tasks auto-compile from enrolled routine customers. Click 'Manage Routine Customers' to enroll accounts into Customer Experience, Account Executive, or Finance."
+              actionLabel="Manage Routine Customers"
+              onAction={handleOpenCustomerModal}
             />
           </div>
         ) : filteredTasks.length === 0 ? (
           <div className="p-8">
             <EmptyState
               icon={Search}
-              title="No Tasks Found"
-              description="Try adjusting your search query or status filter."
-              actionLabel="Reset Filter"
+              title="No Tasks Matching Criteria"
+              description="Try adjusting your department tab, report type filter, or search keywords."
+              actionLabel="Reset Filters"
               onAction={() => {
+                setSelectedDepartment('ALL');
+                setSelectedCategory('ALL');
                 setStatusFilter('ALL');
                 setSearchQuery('');
               }}
@@ -565,9 +830,9 @@ export default function SchedulePage() {
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-12 text-center">No</TableHead>
-                  <TableHead>Customer</TableHead>
+                  <TableHead>Customer &amp; Department</TableHead>
                   <TableHead>Service ID &amp; Plan</TableHead>
-                  <TableHead>Report Type</TableHead>
+                  <TableHead>Report Type &amp; Engine</TableHead>
                   <TableHead>Kickoff &amp; SLA Deadline</TableHead>
                   <TableHead className="text-center">Status</TableHead>
                   <TableHead className="text-right">Action</TableHead>
@@ -580,29 +845,47 @@ export default function SchedulePage() {
 
                   return (
                     <TableRow key={t.id} className="hover:bg-slate-50/70">
-                      <TableCell className="text-center text-slate-400 text-xs tabular-nums">
+                      <TableCell className="text-center text-slate-500 font-medium text-xs tabular-nums">
                         {idx + 1}
                       </TableCell>
 
-                      {/* Customer */}
+                      {/* Customer & Department Group */}
                       <TableCell>
                         <div className="font-semibold text-slate-900 text-xs">{t.customerName}</div>
-                        <div className="text-[11px] text-slate-500 font-mono">{t.customerId}</div>
+                        <div className="text-xs text-slate-500 font-mono mb-1">{t.customerId}</div>
+                        <div>{getDepartmentBadge(t.assignedDepartment || 'Customer Experience')}</div>
                       </TableCell>
 
                       {/* Service ID & Plan */}
                       <TableCell>
                         <div className="text-xs font-mono font-medium text-slate-800">{t.serviceId}</div>
-                        <div className="text-[11px] text-slate-500">{t.serviceName}</div>
+                        <div className="text-xs text-slate-500">{t.serviceName}</div>
                       </TableCell>
 
-                      {/* Report Type */}
+                      {/* Report Type & Execution Engine */}
                       <TableCell>
-                        <Badge
-                          variant={t.reportType === 'SLA' ? 'info' : t.reportType === 'MRTG' ? 'warning' : 'neutral'}
-                        >
-                          {t.reportType === 'BOTH' ? 'SLA & MRTG' : t.reportType}
-                        </Badge>
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-1.5">
+                            <Badge
+                              variant={t.reportType === 'SLA' ? 'info' : t.reportType === 'MRTG' ? 'warning' : 'neutral'}
+                            >
+                              {t.reportType}
+                            </Badge>
+                          </div>
+                          <div>
+                            {t.reportType === 'MRTG' ? (
+                              <span className="inline-flex items-center gap-1 text-xs text-indigo-700 font-semibold bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-200">
+                                <Activity className="w-2.5 h-2.5" />
+                                <span>Auto-Scheduled (02:00)</span>
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 text-xs text-amber-800 font-semibold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
+                                <ShieldCheck className="w-2.5 h-2.5" />
+                                <span>Manual NOC Action</span>
+                              </span>
+                            )}
+                          </div>
+                        </div>
                       </TableCell>
 
                       {/* Kickoff & SLA */}
@@ -611,7 +894,7 @@ export default function SchedulePage() {
                           {kickoffDate.toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}{' '}
                           {kickoffDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                         </div>
-                        <div className="text-[11px] text-slate-500 flex items-center gap-1">
+                        <div className="text-xs text-slate-500 flex items-center gap-1">
                           <span>Deadline:</span>
                           <span className="font-semibold text-rose-700">
                             {deadlineDate.toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}{' '}
@@ -624,22 +907,34 @@ export default function SchedulePage() {
                       <TableCell className="text-center">
                         {t.status === 'COMPLETED' ? (
                           <div className="inline-flex flex-col items-center">
-                            <Badge variant="success">✓ Completed</Badge>
+                            <Badge variant="success" dot>Completed</Badge>
                             {t.processedByName && (
-                              <span className="text-[10px] text-slate-500 mt-0.5">
+                              <span className="text-xs text-slate-500 mt-0.5">
                                 by {t.processedByName}
+                              </span>
+                            )}
+                          </div>
+                        ) : t.status === 'FAILED_MANUAL_REQUIRED' ? (
+                          <div className="inline-flex flex-col items-center">
+                            <Badge variant="destructive" dot>Failed (Manual)</Badge>
+                            {t.errorMessage && (
+                              <span
+                                className="text-xs text-rose-600 mt-0.5 max-w-[150px] truncate"
+                                title={t.errorMessage}
+                              >
+                                {t.errorMessage}
                               </span>
                             )}
                           </div>
                         ) : t.status === 'BREACHED' ? (
                           <div className="inline-flex flex-col items-center">
-                            <Badge variant="destructive">⚠️ SLA Breached</Badge>
-                            <span className="text-[10px] text-rose-600 mt-0.5">Pending</span>
+                            <Badge variant="destructive" dot>SLA Breached</Badge>
+                            <span className="text-xs text-rose-600 mt-0.5">Pending</span>
                           </div>
                         ) : (
                           <div className="inline-flex flex-col items-center">
-                            <Badge variant="warning">⏳ Pending</Badge>
-                            <span className="text-[10px] text-amber-700 mt-0.5">Within 24h</span>
+                            <Badge variant="warning" dot>Pending</Badge>
+                            <span className="text-xs text-amber-700 mt-0.5">Within 24h</span>
                           </div>
                         )}
                       </TableCell>
@@ -653,23 +948,26 @@ export default function SchedulePage() {
                                 t.customerName
                               )}&serviceId=${encodeURIComponent(t.serviceId)}&month=${t.periodMonth}&year=${
                                 t.periodYear
-                              }&type=${t.reportType === 'MRTG' ? 'MRTG' : 'SLA'}&scheduleTaskId=${t.id}`}
-                              className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-[#EA580C] hover:bg-[#C2410C] text-white rounded-md text-xs font-semibold shadow-xs transition-colors"
+                              }&type=${t.reportType === 'MRTG' ? 'MRTG' : 'SLA'}&scheduleTaskId=${t.id}${t.assignedDepartment ? `&dept=${encodeURIComponent(t.assignedDepartment)}` : ''}`}
+                              className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-orange-600 hover:bg-orange-700 text-white rounded-md text-xs font-semibold shadow-xs transition-colors"
                               title="Process in Report Generator"
                             >
-                              <span>Process Task</span>
+                              <span>Process in Generator</span>
                               <ExternalLink className="w-3 h-3" />
                             </Link>
                           ) : (
                             <div className="flex items-center gap-1">
-                              <span className="text-xs text-emerald-600 font-medium px-2 py-1">
-                                Done
-                              </span>
+                              <Link
+                                href={`/history?search=${encodeURIComponent(t.customerName)}`}
+                                className="text-xs text-emerald-600 font-semibold hover:underline px-2 py-1"
+                              >
+                                View Report
+                              </Link>
                               <Button
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => handleToggleTaskStatus(t, 'PENDING')}
-                                className="text-[11px] h-7 px-2 text-slate-500 hover:text-slate-800"
+                                className="text-xs h-7 px-2 text-slate-500 hover:text-slate-800"
                                 title="Reopen task"
                               >
                                 Reopen
@@ -687,91 +985,354 @@ export default function SchedulePage() {
         )}
       </div>
 
-      {/* Kickoff Confirmation Modal */}
-      <Dialog open={isKickoffModalOpen} onOpenChange={setIsKickoffModalOpen}>
-        <DialogContent className="max-w-md">
+      {/* Routine Customers Management Modal with Add / Remove per Department */}
+      <Dialog open={isCustomerModalOpen} onOpenChange={setIsCustomerModalOpen}>
+        <DialogContent className="max-w-4xl max-h-[85vh] flex flex-col">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Play className="w-4 h-4 text-[#EA580C] fill-current" />
-              <span>Initiate Monthly Kickoff</span>
+            <DialogTitle className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Users className="w-5 h-5 text-orange-600" />
+                <span>Manage Routine Monthly Subscriptions &amp; Grouping</span>
+              </div>
+              <Badge variant="neutral" className="text-xs">
+                {routineCustomers.length} Total Enrolled
+              </Badge>
             </DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-4 py-2">
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Starting kickoff compiles all customers marked with <b>Monthly Routine Report</b>, sets the 24-hour SLA deadline, and broadcasts an alert to Telegram.
+          <div className="space-y-4 py-2 flex-1 overflow-hidden flex flex-col">
+            <p className="text-xs text-slate-600">
+              Only the NOC team has authority to enroll or remove customers from the permanent routine list and assign them to recipient department groups.
             </p>
 
-            <div className="grid grid-cols-2 gap-3">
-              <FormField label="Report Month">
-                <Select
-                  value={String(kickoffMonth)}
-                  onValueChange={(val) => setKickoffMonth(parseInt(val, 10))}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {monthNames.map((m, idx) => (
-                      <SelectItem key={idx + 1} value={String(idx + 1)}>
-                        {m}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </FormField>
+            {/* Department Selector Tabs inside Modal */}
+            <div className="flex items-center justify-between border-b border-slate-200 pb-2 flex-wrap gap-2">
+              <div className="flex items-center gap-1.5">
+                {DEPARTMENTS.map((dept) => {
+                  const active = modalActiveDept === dept;
+                  const count = (routineCustomersByDept[dept] || []).length;
+                  return (
+                    <button
+                      key={dept}
+                      type="button"
+                      onClick={() => {
+                        setModalActiveDept(dept);
+                        setIsAddPickerOpen(false);
+                      }}
+                      className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                        active
+                          ? 'bg-orange-50 text-orange-600 border border-orange-300'
+                          : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                      }`}
+                    >
+                      <span>{dept}</span>
+                      <span
+                        className={`px-1.5 py-0.2 rounded-full text-xs font-bold ${
+                          active ? 'bg-orange-200 text-orange-700' : 'bg-white text-slate-600'
+                        }`}
+                      >
+                        {count}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
 
-              <FormField label="Report Year">
-                <Select
-                  value={String(kickoffYear)}
-                  onValueChange={(val) => setKickoffYear(parseInt(val, 10))}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {[2024, 2025, 2026, 2027].map((y) => (
-                      <SelectItem key={y} value={String(y)}>
-                        {y}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </FormField>
+              {/* Add Customer Button */}
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => setIsAddPickerOpen(!isAddPickerOpen)}
+                className="bg-orange-600 hover:bg-orange-700 text-xs h-8"
+              >
+                <UserPlus className="w-3.5 h-3.5 mr-1.5" />
+                <span>+ Add Customer to {modalActiveDept}</span>
+              </Button>
             </div>
 
-            <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-2">
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="includeAll"
-                  checked={includeAllCustomers}
-                  onCheckedChange={(checked) => setIncludeAllCustomers(Boolean(checked))}
-                />
-                <label
-                  htmlFor="includeAll"
-                  className="text-xs font-medium text-slate-700 cursor-pointer select-none"
-                >
-                  Include all customers if none marked routine
-                </label>
+            {/* Quick Add Customer Form Banner (Search & Multi-Add Supported) */}
+            {isAddPickerOpen && (
+              <div className="p-3.5 bg-orange-50/70 border border-orange-200 rounded-xl space-y-3 shadow-xs">
+                {/* Header banner */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <UserPlus className="w-4 h-4 text-orange-600" />
+                    <span className="text-xs font-bold text-slate-900">
+                      Search &amp; Add Customers to {modalActiveDept}
+                    </span>
+                    <Badge variant="neutral" className="text-xs">
+                      {availableToAdd.length} Available in Catalog
+                    </Badge>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsAddPickerOpen(false)}
+                    className="text-slate-500 hover:text-slate-800 p-0.5 rounded"
+                    title="Close picker"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Filter and Configuration Row */}
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-end">
+                  <div className="sm:col-span-8">
+                    <label className="text-xs font-semibold text-slate-700 block mb-1">
+                      Search Customer (Name, Customer ID, Service ID, or Plan)
+                    </label>
+                    <div className="relative">
+                      <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-500" />
+                      <Input
+                        value={pickerSearchQuery}
+                        onChange={(e) => setPickerSearchQuery(e.target.value)}
+                        placeholder="Search by customer name, 01.xxxx, service ID..."
+                        className="pl-8 text-xs h-8 bg-white"
+                      />
+                      {pickerSearchQuery && (
+                        <button
+                          type="button"
+                          onClick={() => setPickerSearchQuery('')}
+                          className="absolute right-2.5 top-2 text-slate-500 hover:text-slate-800 text-xs"
+                          title="Clear search"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="sm:col-span-4">
+                    <label className="text-xs font-semibold text-slate-700 block mb-1">
+                      Default Report Type
+                    </label>
+                    <select
+                      value={selectedReportTypeToAdd}
+                      onChange={(e) => setSelectedReportTypeToAdd(e.target.value)}
+                      className="w-full text-xs bg-white border border-slate-300 rounded-md px-2.5 py-1.5 text-slate-800 font-medium focus:outline-none focus:ring-1 focus:ring-orange-600 h-8"
+                    >
+                      <option value="MRTG">MRTG Only (Auto)</option>
+                      <option value="SLA">SLA Only (Manual)</option>
+                      <option value="BOTH">SLA &amp; MRTG (Both)</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Batch Selection Controls Bar */}
+                <div className="flex items-center justify-between text-xs bg-white/90 px-3 py-1.5 rounded-lg border border-orange-200/80 flex-wrap gap-2">
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleToggleSelectAllFiltered}
+                      disabled={filteredAvailableToAdd.length === 0}
+                      className="h-6 text-xs px-2 text-slate-700 hover:text-slate-900 font-medium"
+                    >
+                      {filteredAvailableToAdd.length > 0 &&
+                      filteredAvailableToAdd.every((c) => selectedCustomerIdsToAdd.includes(c.id))
+                        ? 'Deselect All Filtered'
+                        : `Select All Filtered (${filteredAvailableToAdd.length})`}
+                    </Button>
+                    {selectedCustomerIdsToAdd.length > 0 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setSelectedCustomerIdsToAdd([])}
+                        className="h-6 text-xs px-2 text-rose-600 hover:text-rose-800"
+                      >
+                        Clear Selection
+                      </Button>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs text-slate-600">Selected:</span>
+                    <Badge
+                      variant={selectedCustomerIdsToAdd.length > 0 ? 'warning' : 'neutral'}
+                      className={
+                        selectedCustomerIdsToAdd.length > 0
+                          ? 'bg-orange-600 text-white text-xs font-bold border-transparent'
+                          : 'text-xs'
+                      }
+                    >
+                      {selectedCustomerIdsToAdd.length} Customer{selectedCustomerIdsToAdd.length !== 1 ? 's' : ''}
+                    </Badge>
+                  </div>
+                </div>
+
+                {/* Scrollable Customer Multi-Select List */}
+                <div className="max-h-52 overflow-y-auto border border-slate-200 rounded-lg bg-white divide-y divide-slate-100">
+                  {filteredAvailableToAdd.length === 0 ? (
+                    <div className="py-6 text-center text-xs text-slate-500">
+                      <p className="font-semibold text-slate-700">No matching customers found.</p>
+                      <p className="text-xs text-slate-500 mt-0.5">Try searching with a different keyword or ID.</p>
+                    </div>
+                  ) : (
+                    <>
+                      {filteredAvailableToAdd.slice(0, 100).map((c) => {
+                        const isSelected = selectedCustomerIdsToAdd.includes(c.id);
+                        return (
+                          <div
+                            key={c.id}
+                            onClick={() => handleToggleCustomerSelection(c.id)}
+                            className={`p-2.5 flex items-center justify-between gap-3 text-xs cursor-pointer transition-colors ${
+                              isSelected
+                                ? 'bg-orange-50/80 border-l-2 border-l-orange-600'
+                                : 'hover:bg-slate-50'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <Checkbox
+                                checked={isSelected}
+                                onCheckedChange={() => handleToggleCustomerSelection(c.id)}
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                              <div className="min-w-0">
+                                <div className="font-semibold text-slate-900 truncate">{c.customerName}</div>
+                                <div className="text-xs text-slate-500 flex items-center gap-2 truncate">
+                                  <span>ID: <code className="font-mono">{c.customerId}</code></span>
+                                  <span>•</span>
+                                  <span>Service: <code className="font-mono">{c.serviceId}</code></span>
+                                  {c.serviceName && (
+                                    <>
+                                      <span>•</span>
+                                      <span className="text-slate-600">{c.serviceName}</span>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="shrink-0 flex items-center gap-1.5">
+                              <Badge variant="neutral" className="text-xs">
+                                {c.serviceId}
+                              </Badge>
+                            </div>
+                          </div>
+                        );
+                      })}
+                      {filteredAvailableToAdd.length > 100 && (
+                        <div className="p-2 text-center text-xs text-slate-500 bg-slate-50 font-medium border-t border-slate-100">
+                          Showing top 100 of {filteredAvailableToAdd.length} matching customers. Refine search to see specific entries.
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+
+                {/* Footer Controls */}
+                <div className="flex items-center justify-between pt-1">
+                  <span className="text-xs text-slate-500 hidden sm:inline">
+                    Enrolled customers will automatically have monthly schedule tasks generated for <strong>{modalActiveDept}</strong>.
+                  </span>
+                  <div className="flex items-center gap-2 ml-auto">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setIsAddPickerOpen(false)}
+                      className="text-xs h-7 text-slate-600"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="primary"
+                      size="sm"
+                      onClick={handleAddCustomersToRoutine}
+                      loading={isSavingRoutineAction}
+                      disabled={selectedCustomerIdsToAdd.length === 0 || isSavingRoutineAction}
+                      className="bg-orange-600 hover:bg-orange-700 text-xs h-7 font-semibold"
+                    >
+                      {selectedCustomerIdsToAdd.length > 0
+                        ? `Add ${selectedCustomerIdsToAdd.length} Customer${selectedCustomerIdsToAdd.length !== 1 ? 's' : ''} to ${modalActiveDept}`
+                        : 'Select Customer(s) to Add'}
+                    </Button>
+                  </div>
+                </div>
               </div>
+            )}
+
+            {/* Enrolled Customers Table for active department */}
+            <div className="flex-1 overflow-y-auto border border-slate-200 rounded-lg">
+              {(routineCustomersByDept[modalActiveDept] || []).length === 0 ? (
+                <div className="py-12 text-center text-xs text-slate-500">
+                  <Users className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                  <p className="font-semibold text-slate-700">No customers enrolled in {modalActiveDept} yet.</p>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Click &quot;+ Add Customer to {modalActiveDept}&quot; above to enroll customers.
+                  </p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-12 text-center">No</TableHead>
+                      <TableHead>Customer</TableHead>
+                      <TableHead>Service ID &amp; Plan</TableHead>
+                      <TableHead>Report Type</TableHead>
+                      <TableHead className="text-right">Action</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {(routineCustomersByDept[modalActiveDept] || []).map((cust, idx) => (
+                      <TableRow key={cust.id} className="hover:bg-slate-50 text-xs">
+                        <TableCell className="text-center text-slate-500 font-medium tabular-nums">
+                          {idx + 1}
+                        </TableCell>
+
+                        <TableCell>
+                          <div className="font-semibold text-slate-900">{cust.customerName}</div>
+                          <div className="text-xs text-slate-500 font-mono">{cust.customerId}</div>
+                        </TableCell>
+
+                        <TableCell>
+                          <div className="font-mono text-slate-800">{cust.serviceId}</div>
+                          <div className="text-xs text-slate-500">{cust.serviceName}</div>
+                        </TableCell>
+
+                        {/* Routine Report Type selector */}
+                        <TableCell>
+                          <select
+                            value={cust.routineReportType || 'SLA'}
+                            onChange={(e) => handleUpdateReportType(cust, e.target.value)}
+                            className="text-xs bg-white border border-slate-200 rounded px-2 py-1 text-slate-800 font-medium focus:outline-none focus:ring-1 focus:ring-orange-600"
+                          >
+                            <option value="SLA">SLA Only (Manual)</option>
+                            <option value="MRTG">MRTG Only (Auto)</option>
+                            <option value="BOTH">SLA &amp; MRTG (Both)</option>
+                          </select>
+                        </TableCell>
+
+                        {/* Remove Button */}
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleRemoveCustomerFromRoutine(cust)}
+                            disabled={isSavingRoutineAction}
+                            className="text-rose-600 hover:text-rose-800 hover:bg-rose-50 h-7 px-2 text-xs"
+                            title="Remove from routine monthly reporting"
+                          >
+                            <Trash2 className="w-3.5 h-3.5 mr-1" />
+                            <span>Remove</span>
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
             </div>
           </div>
 
-          <DialogFooter className="pt-3 border-t border-slate-100">
-            <Button
-              variant="secondary"
-              onClick={() => setIsKickoffModalOpen(false)}
-              disabled={isSubmittingKickoff}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="primary"
-              onClick={handleKickoffSubmit}
-              loading={isSubmittingKickoff}
-              className="bg-[#EA580C] hover:bg-[#C2410C]"
-            >
-              Start Kickoff
+          <DialogFooter className="pt-3 border-t border-slate-100 flex items-center justify-between">
+            <span className="text-xs text-slate-500">
+              Customers enrolled here persist each month automatically until removed.
+            </span>
+            <Button variant="secondary" onClick={() => setIsCustomerModalOpen(false)}>
+              Done
             </Button>
           </DialogFooter>
         </DialogContent>

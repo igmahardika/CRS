@@ -20,17 +20,21 @@ model Customer {
   cactiGraphId      String?  // Cacti Graph ID
   prtgSensorId      String?  // PRTG Sensor ID
   trafficDirection  String   @default("NORMAL") // "NORMAL" or "REVERSED"
-  isMonthlyRoutine  Boolean  @default(false)    // Wajib Laporan Rutin Setiap Tanggal 1
+  isMonthlyRoutine  Boolean  @default(false)    // Enrolled in monthly routine schedule
+  routineGroup      String   @default("Customer Experience") // NOC classified: "Customer Experience", "Account Executive", "Finance"
   routineReportType String   @default("SLA")    // "SLA", "MRTG", or "BOTH"
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
+
+  @@index([isMonthlyRoutine])
+  @@index([routineGroup])
 }
 
 model Report {
   id                   String   @id @default(cuid())
   reportType           String   // "MRTG" or "SLA"
   graphType            String   @default("MRTG") // "MRTG" or "PRTG"
-  documentNumber       String
+  documentNumber       String   @unique
   customerName         String
   customerId           String
   serviceId            String
@@ -59,15 +63,33 @@ model Report {
   tickets              String?  // JSON string
   cases                String?  // JSON string
   pdfPath              String?
-  status               String   @default("PENDING_APPROVAL") // PENDING_APPROVAL, APPROVED, REVISION_NEEDED
+  // Two-tier approval lifecycle: PENDING_NOC_APPROVAL -> PENDING_DEPT_APPROVAL -> APPROVED, REVISION_NEEDED
+  status               String   @default("PENDING_NOC_APPROVAL")
+  assignedDepartment   String   @default("Customer Experience") // "Customer Experience", "Account Executive", "Finance"
   generatedById        String?
   generatedByName      String?
+  
+  // Tier 1: Technical Approval by NOC Supervisor
+  nocApprovedById      String?
+  nocApprovedByName    String?
+  nocApprovedAt        DateTime?
+  
+  // Tier 2: Departmental Approval by CX / AE / Finance Supervisor
+  deptApprovedById     String?
+  deptApprovedByName   String?
+  deptApprovedAt       DateTime?
+
+  // Legacy fallback fields for backward compatibility
   approvedById         String?
   approvedByName       String?
   approvedAt           DateTime?
+  
   rejectionNotes       String?
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
+
+  @@index([status])
+  @@index([assignedDepartment])
 }
 
 model DiscoveredItem {
@@ -100,7 +122,8 @@ model User {
   email        String?   @unique
   passwordHash String
   passwordSalt String
-  role         String    @default("OPERATOR") // "ADMIN", "OPERATOR", "VIEWER"
+  role         String    @default("OPERATOR") // "ADMIN", "SUPERVISOR", "STAFF", "OPERATOR", "VIEWER"
+  department   String    @default("Network Operation") // "Network Operation", "Customer Experience", "Account Executive", "Finance"
   isActive     Boolean   @default(true)
   lastLogin    DateTime?
   createdAt    DateTime  @default(now())
@@ -108,6 +131,7 @@ model User {
 
   @@index([username])
   @@index([role])
+  @@index([department])
 }
 
 model AppConfig {
@@ -120,6 +144,8 @@ model AppConfig {
   prtgUsername                 String   @default("")
   prtgPassword                 String   @default("")
   prtgAuthType                 String   @default("PASSWORD") // "PASSWORD" or "PASSHASH"
+  prtgBasicUsername            String?  @default("appsmg01")
+  prtgBasicPassword            String?  @default("appsmg01")
   coverMrtgPath                String   @default("/assets/templates/cover_mrtg.png")
   coverSlaPath                 String   @default("/assets/templates/cover_sla.png")
   pageBgPath                   String   @default("/assets/templates/page_bg.png")
@@ -135,9 +161,10 @@ model AppConfig {
 model ReportRequest {
   id                String    @id @default(cuid())
   ticketNumber      String    @unique // e.g. REQ-202611-0001
+  requesterUserId   String?   // Linked User account ID if authenticated
   requesterName     String
   requesterEmail    String?
-  requesterDept     String    // "Account Management", "Sales", "NOC", "Customer Care", "Technical Support", etc.
+  requesterDept     String    // "Network Operation", "Customer Experience", "Account Executive", "Finance"
   reportType        String    // "SLA", "MRTG", "BOTH"
   customerName      String
   customerId        String?
@@ -147,9 +174,11 @@ model ReportRequest {
   urgency           String    @default("NORMAL") // "NORMAL" or "URGENT"
   notes             String?
   status            String    @default("PENDING") // "PENDING", "IN_PROGRESS", "COMPLETED", "CANCELLED"
-  processedById     String?
-  processedByName   String?
-  processedReportId String?
+  processedById         String?
+  processedByName       String?
+  processedReportId     String?
+  processedMrtgReportId String?
+  processedSlaReportId  String?
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
@@ -157,28 +186,34 @@ model ReportRequest {
   @@index([ticketNumber])
   @@index([customerName])
   @@index([requesterDept])
+  @@index([requesterUserId])
   @@index([createdAt])
 }
 
 model MonthlyScheduleTask {
-  id                String    @id @default(cuid())
-  customerId        String
-  customerName      String
-  serviceId         String?
-  serviceName       String?
-  periodMonth       Int
-  periodYear        Int
-  reportType        String    @default("SLA") // "SLA", "MRTG", "BOTH"
-  kickoffTime       DateTime  @default(now())
-  deadlineTime      DateTime  // 24 hours from kickoff
-  status            String    @default("PENDING") // "PENDING", "COMPLETED", "BREACHED"
-  completedAt       DateTime?
-  completedReportId String?
-  processedByName   String?
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  id                   String    @id @default(cuid())
+  customerId           String
+  customerName         String
+  serviceId            String?
+  serviceName          String?
+  periodMonth          Int
+  periodYear           Int
+  reportType           String    @default("SLA") // "SLA", "MRTG", "BOTH"
+  assignedDepartment   String    @default("Customer Experience") // "Customer Experience", "Account Executive", "Finance"
+  executionType        String    @default("MANUAL") // "AUTO_SCHEDULED" or "MANUAL"
+  errorMessage         String?
+  kickoffTime          DateTime  @default(now())
+  deadlineTime         DateTime  // 24 hours from kickoff
+  status               String    @default("PENDING") // "PENDING", "COMPLETED", "FAILED_MANUAL_REQUIRED", "BREACHED"
+  completedAt          DateTime?
+  completedReportId    String?
+  processedByName      String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 
   @@index([periodMonth, periodYear])
+  @@index([assignedDepartment])
+  @@index([reportType])
   @@index([status])
   @@index([customerName])
   @@index([deadlineTime])

@@ -35,6 +35,7 @@ export interface CustomerData {
   prtgSensorId?: string | null;
   trafficDirection?: string;
   isMonthlyRoutine?: boolean;
+  routineGroup?: 'Customer Experience' | 'Account Executive' | 'Finance' | string;
   routineReportType?: 'SLA' | 'MRTG' | 'BOTH';
 }
 
@@ -64,6 +65,7 @@ export default function CustomerFormModal({
     prtgSensorId: '',
     trafficDirection: 'NORMAL',
     isMonthlyRoutine: false,
+    routineGroup: 'Customer Experience',
     routineReportType: 'SLA',
   });
 
@@ -78,6 +80,7 @@ export default function CustomerFormModal({
         prtgSensorId: initialData.prtgSensorId || '',
         trafficDirection: initialData.trafficDirection || 'NORMAL',
         isMonthlyRoutine: initialData.isMonthlyRoutine ?? false,
+        routineGroup: initialData.routineGroup || 'Customer Experience',
         routineReportType: initialData.routineReportType || 'SLA',
       });
     } else {
@@ -94,6 +97,7 @@ export default function CustomerFormModal({
         prtgSensorId: '',
         trafficDirection: 'NORMAL',
         isMonthlyRoutine: false,
+        routineGroup: 'Customer Experience',
         routineReportType: 'SLA',
       });
     }
@@ -289,7 +293,25 @@ export default function CustomerFormModal({
             </div>
 
             {formData.isMonthlyRoutine && (
-              <div className="pt-2 border-t border-orange-200/50">
+              <div className="pt-2 border-t border-orange-200/50 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <FormField label="Routine Department Group">
+                  <Select
+                    value={formData.routineGroup || 'Customer Experience'}
+                    onValueChange={(val) =>
+                      setFormData({ ...formData, routineGroup: val })
+                    }
+                  >
+                    <SelectTrigger className="bg-white">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Customer Experience">Customer Experience</SelectItem>
+                      <SelectItem value="Account Executive">Account Executive</SelectItem>
+                      <SelectItem value="Finance">Finance</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </FormField>
+
                 <FormField label="Routine Report Type">
                   <Select
                     value={formData.routineReportType || 'SLA'}

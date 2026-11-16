@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { requireAuth, requireOperatorOrAdmin } from '@/lib/auth';
+import { requirePermission } from '@/lib/auth';
 
 /**
  * POST /api/discovery/map-customer
@@ -8,7 +8,7 @@ import { requireAuth, requireOperatorOrAdmin } from '@/lib/auth';
  * Body: { customerId: string; engine: 'MRTG' | 'PRTG'; targetId: string }
  */
 export async function POST(req: NextRequest) {
-  const auth = await requireOperatorOrAdmin();
+  const auth = await requirePermission('discovery:manage');
   if (!auth.authorized) {
     return NextResponse.json({ error: auth.error }, { status: auth.status });
   }
@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
  * Find customers already mapped to a specific graph/sensor ID.
  */
 export async function GET(req: NextRequest) {
-  const auth = await requireAuth();
+  const auth = await requirePermission('discovery:view');
   if (!auth.authorized) {
     return NextResponse.json({ error: auth.error }, { status: auth.status });
   }

@@ -139,10 +139,10 @@ export default function ExcelImportModal({
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="text-[13px] font-semibold text-slate-900">
-                  Standard 4-Column Upload Template
+                  Full Customer Import Template (All Columns Supported)
                 </p>
                 <p className="text-[12px] text-slate-500 mt-0.5">
-                  Spreadsheet requires 4 columns. Node count & target SLA are automatically computed.
+                  Mendukung seluruh atribut: identitas, node, target SLA, engine (MRTG/PRTG), sensor/graph ID, arah trafik, hingga jadwal rutin. Kolom opsional yang kosong akan otomatis dihitung oleh sistem.
                 </p>
               </div>
               <Button
@@ -155,12 +155,21 @@ export default function ExcelImportModal({
               </Button>
             </div>
 
-            <div className="flex flex-wrap items-center gap-1.5 text-[12px]">
+            <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
               <span className="font-medium text-slate-700">Columns:</span>
-              <Badge variant="neutral" className="text-[11px]">1. Customer Name</Badge>
-              <Badge variant="neutral" className="text-[11px]">2. Customer ID</Badge>
-              <Badge variant="neutral" className="text-[11px]">3. Service ID</Badge>
+              <Badge variant="neutral" className="text-[11px]">1. Customer Name *</Badge>
+              <Badge variant="neutral" className="text-[11px]">2. Customer ID *</Badge>
+              <Badge variant="neutral" className="text-[11px]">3. Service ID *</Badge>
               <Badge variant="neutral" className="text-[11px]">4. Service Name</Badge>
+              <Badge variant="neutral" className="text-[11px]">5. Node Count</Badge>
+              <Badge variant="neutral" className="text-[11px]">6. Target SLA (%)</Badge>
+              <Badge variant="neutral" className="text-[11px]">7. Preferred Engine</Badge>
+              <Badge variant="neutral" className="text-[11px]">8. Cacti Graph ID</Badge>
+              <Badge variant="neutral" className="text-[11px]">9. PRTG Sensor ID</Badge>
+              <Badge variant="neutral" className="text-[11px]">10. Traffic Direction</Badge>
+              <Badge variant="neutral" className="text-[11px]">11. Monthly Routine</Badge>
+              <Badge variant="neutral" className="text-[11px]">12. Routine Group</Badge>
+              <Badge variant="neutral" className="text-[11px]">13. Routine Report Type</Badge>
             </div>
           </div>
 
@@ -203,9 +212,9 @@ export default function ExcelImportModal({
                   <div>
                     <p className="text-[13px] font-medium text-slate-700">
                       Drag & drop Excel file here, or{' '}
-                      <span className="text-[#EA580C] font-semibold">Browse</span>
+                      <span className="text-orange-600 font-semibold">Browse</span>
                     </p>
-                    <p className="text-[12px] text-slate-400 mt-0.5">
+                    <p className="text-xs text-slate-500 mt-0.5">
                       Supports Microsoft Excel (.xlsx, .xls)
                     </p>
                   </div>
@@ -225,7 +234,7 @@ export default function ExcelImportModal({
                     </label>
                   </div>
                   {resetBeforeImport && (
-                    <Badge variant="warning" className="text-[11px]">
+                    <Badge variant="warning" className="text-xs">
                       Replace All
                     </Badge>
                   )}
@@ -252,19 +261,19 @@ export default function ExcelImportModal({
                 </div>
                 <div className="grid grid-cols-3 gap-2 mt-3 text-center">
                   <div className="bg-white p-3 rounded-lg border border-emerald-200/60">
-                    <span className="text-[11px] text-slate-500 block">Total Rows</span>
+                    <span className="text-xs text-slate-500 block">Total Rows</span>
                     <span className="text-[18px] font-bold font-heading text-slate-900 tabular-nums">
                       {result.totalRows}
                     </span>
                   </div>
                   <div className="bg-white p-3 rounded-lg border border-emerald-200/60">
-                    <span className="text-[11px] text-emerald-700 block">New Records</span>
+                    <span className="text-xs text-emerald-700 block">New Records</span>
                     <span className="text-[18px] font-bold font-heading text-emerald-600 tabular-nums">
                       +{result.inserted}
                     </span>
                   </div>
                   <div className="bg-white p-3 rounded-lg border border-emerald-200/60">
-                    <span className="text-[11px] text-blue-700 block">Updated</span>
+                    <span className="text-xs text-blue-700 block">Updated</span>
                     <span className="text-[18px] font-bold font-heading text-blue-600 tabular-nums">
                       {result.updated}
                     </span>

@@ -16,7 +16,7 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-0',
           error
             ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-500/25 text-red-950'
-            : 'border-slate-200 focus-visible:border-[#EA580C] focus-visible:ring-orange-500/25',
+            : 'border-slate-200 focus-visible:border-orange-600 focus-visible:ring-orange-500/25',
           disabled && 'bg-slate-50 text-slate-500 border-slate-200 cursor-not-allowed opacity-75',
           className
         )}

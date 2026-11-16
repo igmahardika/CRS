@@ -19,7 +19,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
           inputSize === 'sm' ? 'h-8 px-2.5 py-1' : 'h-9 px-3 py-1.5',
           error
             ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-500/25 text-red-950'
-            : 'border-slate-200 focus-visible:border-[#EA580C] focus-visible:ring-orange-500/25',
+            : 'border-slate-200 focus-visible:border-orange-600 focus-visible:ring-orange-500/25',
           disabled && 'bg-slate-50 text-slate-500 border-slate-200 cursor-not-allowed opacity-75',
           className
         )}

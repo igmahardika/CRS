@@ -3,10 +3,10 @@ import * as XLSX from 'xlsx';
 import { prisma } from '@/lib/prisma';
 import { extractNodeFromServiceId } from '@/lib/service-utils';
 import { getSlaByServiceName } from '@/lib/service-sla';
-import { requireOperatorOrAdmin } from '@/lib/auth';
+import { requirePermission } from '@/lib/auth';
 
 export async function POST(req: NextRequest) {
-  const auth = await requireOperatorOrAdmin();
+  const auth = await requirePermission('customer:write');
   if (!auth.authorized) {
     return NextResponse.json({ error: auth.error }, { status: auth.status });
   }
@@ -68,8 +68,11 @@ export async function POST(req: NextRequest) {
       const targetSlaStr = findVal(row, ['targetsla', 'sla', 'target']);
       const cactiGraphId = findVal(row, ['cactigraphid', 'cactiid', 'cacti', 'graphid', 'localgraphid']);
       const prtgSensorId = findVal(row, ['prtgsensorid', 'prtgid', 'prtg', 'sensorid', 'objectid']);
-      const defaultEngineStr = findVal(row, ['defaultengine', 'engine', 'graphtype', 'mode']);
+      const defaultEngineStr = findVal(row, ['defaultengine', 'engine', 'graphtype', 'mode', 'preferredengine']);
       const trafficDirStr = findVal(row, ['trafficdirection', 'direction', 'arahtrafik', 'arah']);
+      const monthlyRoutineStr = findVal(row, ['monthlyroutine', 'isroutine', 'routine', 'rutin', 'ismonthlyroutine', 'bulanan', 'jadwalrutin']);
+      const routineGroupStr = findVal(row, ['routinegroup', 'deptgroup', 'group', 'grup', 'departemen', 'dept', 'divisi']);
+      const routineReportTypeStr = findVal(row, ['routinereporttype', 'reporttype', 'jenislaporan', 'tipe', 'tipelaporan', 'report']);
 
       if (!customerName || !customerId || !serviceId) {
         errors.push({
@@ -112,6 +115,43 @@ export async function POST(req: NextRequest) {
         trafficDirection = 'REVERSED';
       }
 
+      // Parse Monthly Routine
+      let isMonthlyRoutine: boolean | undefined = undefined;
+      if (monthlyRoutineStr !== '') {
+        const normRoutine = monthlyRoutineStr.toLowerCase().trim();
+        isMonthlyRoutine = ['true', 'yes', 'ya', '1', 'y', 'aktif', 'enable', 'enabled'].includes(normRoutine);
+      }
+
+      // Parse Routine Group
+      let routineGroup: string | undefined = undefined;
+      if (routineGroupStr !== '') {
+        const normGroup = routineGroupStr.toLowerCase().trim();
+        if (normGroup.includes('acc') || normGroup.includes('ae') || normGroup.includes('executive')) {
+          routineGroup = 'Account Executive';
+        } else if (normGroup.includes('fin') || normGroup.includes('keuangan')) {
+          routineGroup = 'Finance';
+        } else if (normGroup.includes('cx') || normGroup.includes('cust') || normGroup.includes('exp') || normGroup.includes('pelanggan')) {
+          routineGroup = 'Customer Experience';
+        } else {
+          routineGroup = routineGroupStr;
+        }
+      }
+
+      // Parse Routine Report Type
+      let routineReportType: string | undefined = undefined;
+      if (routineReportTypeStr !== '') {
+        const normType = routineReportTypeStr.toUpperCase().trim();
+        if (normType.includes('BOTH') || normType.includes('SEMUA') || normType.includes('&') || normType.includes('DAN')) {
+          routineReportType = 'BOTH';
+        } else if (normType.includes('MRTG')) {
+          routineReportType = 'MRTG';
+        } else if (normType.includes('SLA')) {
+          routineReportType = 'SLA';
+        } else {
+          routineReportType = routineReportTypeStr;
+        }
+      }
+
       validCustomers.push({
         customerName,
         customerId,
@@ -124,6 +164,9 @@ export async function POST(req: NextRequest) {
         prtgSensorId: prtgSensorId || null,
         graphId: cactiGraphId || (graphType === 'PRTG' ? prtgSensorId : null),
         trafficDirection,
+        isMonthlyRoutine,
+        routineGroup,
+        routineReportType,
         rowIdx,
       });
     }
@@ -143,6 +186,9 @@ export async function POST(req: NextRequest) {
         prtgSensorId: true,
         graphId: true,
         graphType: true,
+        isMonthlyRoutine: true,
+        routineGroup: true,
+        routineReportType: true,
       },
     });
 
@@ -153,6 +199,9 @@ export async function POST(req: NextRequest) {
       prtgSensorId: string | null;
       graphId: string | null;
       graphType: string;
+      isMonthlyRoutine: boolean;
+      routineGroup: string;
+      routineReportType: string;
     }>();
 
     for (const rec of existingRecords) {
@@ -181,6 +230,9 @@ export async function POST(req: NextRequest) {
             prtgSensorId: cust.prtgSensorId !== null ? cust.prtgSensorId : existing.prtgSensorId,
             graphId: cust.cactiGraphId || existing.cactiGraphId || cust.graphId || existing.graphId,
             trafficDirection: cust.trafficDirection,
+            isMonthlyRoutine: cust.isMonthlyRoutine !== undefined ? cust.isMonthlyRoutine : existing.isMonthlyRoutine,
+            routineGroup: cust.routineGroup !== undefined ? cust.routineGroup : existing.routineGroup,
+            routineReportType: cust.routineReportType !== undefined ? cust.routineReportType : existing.routineReportType,
           },
         });
         updated++;
@@ -198,6 +250,9 @@ export async function POST(req: NextRequest) {
             prtgSensorId: cust.prtgSensorId,
             graphId: cust.cactiGraphId || cust.prtgSensorId,
             trafficDirection: cust.trafficDirection,
+            isMonthlyRoutine: cust.isMonthlyRoutine !== undefined ? cust.isMonthlyRoutine : false,
+            routineGroup: cust.routineGroup || 'Customer Experience',
+            routineReportType: cust.routineReportType || 'SLA',
           },
         });
         existingMap.set(sidKey, created);

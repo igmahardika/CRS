@@ -4,7 +4,8 @@ import path from 'path';
 import { prisma } from '@/lib/prisma';
 import { generatePdfBuffer } from '@/lib/pdf-generator';
 import { ReportData } from '@/lib/pdf-template';
-import { requireAuth } from '@/lib/auth';
+import { requireAuth, canUserAccessReport } from '@/lib/auth';
+import { hasPermission } from '@/lib/permissions';
 
 export async function GET(req: NextRequest) {
   const auth = await requireAuth();
@@ -28,9 +29,26 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Report not found' }, { status: 404 });
     }
 
-    // Role-based download gate: Only APPROVED reports can be downloaded publicly.
-    // PENDING_APPROVAL or REVISION_NEEDED can only be previewed by SUPERVISOR or ADMIN.
-    if (report.status !== 'APPROVED' && auth.session.role !== 'ADMIN' && auth.session.role !== 'SUPERVISOR') {
+    // Check Department & Scoped Access
+    const hasAccess = await canUserAccessReport(auth.session, report);
+    if (!hasAccess) {
+      return NextResponse.json({
+        error: 'Akses ditolak: Anda tidak memiliki wewenang untuk mengunduh laporan ini.',
+      }, { status: 403 });
+    }
+
+    const isInline = searchParams.get('inline') === '1' || searchParams.get('preview') === '1';
+
+    // Role-based download gate: Only APPROVED reports can be downloaded.
+    // PENDING_APPROVAL or REVISION_NEEDED can be previewed only by SUPERVISOR, ADMIN, or the creator inside NOC.
+    const isOwner = report.generatedById === auth.session.id;
+    const isDeptReviewer =
+      auth.session.role === 'SUPERVISOR' &&
+      report.status === 'PENDING_DEPT_APPROVAL' &&
+      report.assignedDepartment === auth.session.department;
+    const canViewDraft = hasPermission(auth.session, 'report:view_all_status') || isOwner || isDeptReviewer;
+
+    if (report.status !== 'APPROVED' && (!canViewDraft || !isInline)) {
       return NextResponse.json({
         error: `Laporan ini belum disetujui oleh Supervisor (Status saat ini: ${report.status}). Hubungi Supervisor untuk proses approval sebelum mengunduh.`,
       }, { status: 403 });
@@ -43,6 +61,9 @@ export async function GET(req: NextRequest) {
 
     const filename = `REPORT ${report.reportType} - ${report.customerName} - ${report.reportPeriod}.pdf`;
     const safeFilename = filename.replace(/[/\\?%*:|"<>]/g, '-');
+    const disposition = isInline
+      ? `inline; filename="${safeFilename}"`
+      : `attachment; filename="${safeFilename}"`;
 
     const safeBase = report.pdfPath ? path.basename(report.pdfPath) : '';
     const filePath = safeBase ? path.resolve(storageDir, safeBase) : '';
@@ -54,7 +75,7 @@ export async function GET(req: NextRequest) {
         status: 200,
         headers: {
           'Content-Type': 'application/pdf',
-          'Content-Disposition': `attachment; filename="${safeFilename}"`,
+          'Content-Disposition': disposition,
           'Content-Length': String(fileBuffer.length),
           'X-Source': 'physical-storage',
         },
@@ -109,7 +130,7 @@ export async function GET(req: NextRequest) {
       status: 200,
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="${safeFilename}"`,
+        'Content-Disposition': disposition,
         'Content-Length': String(pdfBuffer.length),
         'X-Source': 'generated-and-saved',
       },

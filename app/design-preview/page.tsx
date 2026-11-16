@@ -132,31 +132,31 @@ export default function DesignPreviewPage() {
             <div className="h-6 w-full rounded-md bg-[#F16614]" />
             <div>
               <p className="text-[12px] font-medium text-slate-900">Brand Logo</p>
-              <p className="text-[11px] text-slate-500 ">#F16614</p>
+              <p className="text-xs text-slate-500 ">#F16614</p>
             </div>
           </div>
 
           <div className="bg-white border border-slate-200 rounded-lg p-3 shadow-sm flex flex-col justify-between h-24">
-            <div className="h-6 w-full rounded-md bg-[#EA580C]" />
+            <div className="h-6 w-full rounded-md bg-orange-600" />
             <div>
               <p className="text-[12px] font-medium text-slate-900">Primary Solid</p>
-              <p className="text-[11px] text-slate-500 ">#EA580C</p>
+              <p className="text-xs text-slate-500 ">orange-600</p>
             </div>
           </div>
 
           <div className="bg-white border border-slate-200 rounded-lg p-3 shadow-sm flex flex-col justify-between h-24">
-            <div className="h-6 w-full rounded-md bg-[#C2410C]" />
+            <div className="h-6 w-full rounded-md bg-orange-700" />
             <div>
               <p className="text-[12px] font-medium text-slate-900">Strong / Hover</p>
-              <p className="text-[11px] text-slate-500 ">#C2410C</p>
+              <p className="text-xs text-slate-500 ">orange-700</p>
             </div>
           </div>
 
           <div className="bg-white border border-slate-200 rounded-lg p-3 shadow-sm flex flex-col justify-between h-24">
-            <div className="h-6 w-full rounded-md bg-[#FFF7ED] border border-orange-200" />
+            <div className="h-6 w-full rounded-md bg-orange-50 border border-orange-200" />
             <div>
               <p className="text-[12px] font-medium text-slate-900">Soft Pill Nav</p>
-              <p className="text-[11px] text-slate-500 ">#FFF7ED</p>
+              <p className="text-xs text-slate-500 ">orange-50</p>
             </div>
           </div>
 
@@ -164,7 +164,7 @@ export default function DesignPreviewPage() {
             <div className="h-6 w-full rounded-md bg-emerald-600" />
             <div>
               <p className="text-[12px] font-medium text-slate-900">Success Status</p>
-              <p className="text-[11px] text-slate-500 ">#16A34A</p>
+              <p className="text-xs text-slate-500 ">#16A34A</p>
             </div>
           </div>
 
@@ -172,7 +172,7 @@ export default function DesignPreviewPage() {
             <div className="h-6 w-full rounded-md bg-red-600" />
             <div>
               <p className="text-[12px] font-medium text-slate-900">Destructive Status</p>
-              <p className="text-[11px] text-slate-500 ">#DC2626</p>
+              <p className="text-xs text-slate-500 ">#DC2626</p>
             </div>
           </div>
 
@@ -180,7 +180,7 @@ export default function DesignPreviewPage() {
             <div className="h-6 w-full rounded-md bg-amber-600" />
             <div>
               <p className="text-[12px] font-medium text-slate-900">Warning Status</p>
-              <p className="text-[11px] text-slate-500 ">#D97706</p>
+              <p className="text-xs text-slate-500 ">#D97706</p>
             </div>
           </div>
 
@@ -188,7 +188,7 @@ export default function DesignPreviewPage() {
             <div className="h-6 w-full rounded-md bg-blue-600" />
             <div>
               <p className="text-[12px] font-medium text-slate-900">Info Status</p>
-              <p className="text-[11px] text-slate-500 ">#2563EB</p>
+              <p className="text-xs text-slate-500 ">#2563EB</p>
             </div>
           </div>
         </div>
@@ -197,54 +197,54 @@ export default function DesignPreviewPage() {
       {/* 3. Typography Scale */}
       <section className="space-y-4">
         <h2 className="text-[16px] font-heading font-semibold text-slate-900">
-          Typography Scale (Strict 12 / 13 / 14 / 16 / 20 / 24)
+          Typography Scale (Strict 12 / 13 / 14 / 16 / 18 / 20 Proportional)
         </h2>
-        <div className="border border-slate-200 bg-white rounded-lg p-6 shadow-sm space-y-4">
-          <div className="flex items-baseline justify-between border-b border-slate-100 pb-3">
-            <span className="text-[12px] font-medium text-slate-500 uppercase tracking-wider w-40">
-              Page Title (24/600)
+        <div className="border border-slate-200 bg-white rounded-lg p-4 sm:p-6 shadow-sm space-y-4 overflow-hidden">
+          <div className="flex flex-col sm:flex-row sm:items-baseline justify-between border-b border-slate-100 pb-3 gap-1">
+            <span className="text-[12px] font-medium text-slate-500 uppercase tracking-wider sm:w-40 shrink-0">
+              Page Title (20/600)
             </span>
-            <span className="text-[24px] font-heading font-semibold text-slate-900 flex-1">
-              Poppins 24px SemiBold - Network SLA Reporting
+            <span className="text-lg sm:text-xl font-heading font-semibold text-slate-900 flex-1 break-words">
+              Poppins 20px SemiBold - Network SLA Reporting
             </span>
           </div>
-          <div className="flex items-baseline justify-between border-b border-slate-100 pb-3">
-            <span className="text-[12px] font-medium text-slate-500 uppercase tracking-wider w-40">
+          <div className="flex flex-col sm:flex-row sm:items-baseline justify-between border-b border-slate-100 pb-3 gap-1">
+            <span className="text-[12px] font-medium text-slate-500 uppercase tracking-wider sm:w-40 shrink-0">
               Section Title (16/600)
             </span>
-            <span className="text-[16px] font-heading font-semibold text-slate-900 flex-1">
+            <span className="text-[16px] font-heading font-semibold text-slate-900 flex-1 break-words">
               Poppins 16px SemiBold - Customer Bandwidth Summary
             </span>
           </div>
-          <div className="flex items-baseline justify-between border-b border-slate-100 pb-3">
-            <span className="text-[12px] font-medium text-slate-500 uppercase tracking-wider w-40">
+          <div className="flex flex-col sm:flex-row sm:items-baseline justify-between border-b border-slate-100 pb-3 gap-1">
+            <span className="text-[12px] font-medium text-slate-500 uppercase tracking-wider sm:w-40 shrink-0">
               Subheading (14/500)
             </span>
-            <span className="text-[14px] font-heading font-medium text-slate-800 flex-1">
+            <span className="text-[14px] font-heading font-medium text-slate-800 flex-1 break-words">
               Poppins 14px Medium - Interface Port Diagnostics
             </span>
           </div>
-          <div className="flex items-baseline justify-between border-b border-slate-100 pb-3">
-            <span className="text-[12px] font-medium text-slate-500 uppercase tracking-wider w-40">
+          <div className="flex flex-col sm:flex-row sm:items-baseline justify-between border-b border-slate-100 pb-3 gap-1">
+            <span className="text-[12px] font-medium text-slate-500 uppercase tracking-wider sm:w-40 shrink-0">
               Control Label (13/500)
             </span>
-            <span className="text-[13px] font-sans font-medium text-slate-700 flex-1">
+            <span className="text-[13px] font-sans font-medium text-slate-700 flex-1 break-words">
               Inter 13px Medium - Target SLA Percentage
             </span>
           </div>
-          <div className="flex items-baseline justify-between border-b border-slate-100 pb-3">
-            <span className="text-[12px] font-medium text-slate-500 uppercase tracking-wider w-40">
+          <div className="flex flex-col sm:flex-row sm:items-baseline justify-between border-b border-slate-100 pb-3 gap-1">
+            <span className="text-[12px] font-medium text-slate-500 uppercase tracking-wider sm:w-40 shrink-0">
               Body & Table (13/400)
             </span>
-            <span className="text-[13px] font-sans text-slate-600 flex-1">
+            <span className="text-[13px] font-sans text-slate-600 flex-1 break-words">
               Inter 13px Regular - High availability met contractual threshold of 99.50% during October 2026.
             </span>
           </div>
-          <div className="flex items-baseline justify-between">
-            <span className="text-[12px] font-medium text-slate-500 uppercase tracking-wider w-40">
+          <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1">
+            <span className="text-[12px] font-medium text-slate-500 uppercase tracking-wider sm:w-40 shrink-0">
               Table Header (12/500)
             </span>
-            <span className="text-[12px] font-sans font-medium uppercase tracking-wider text-slate-500 flex-1">
+            <span className="text-[12px] font-sans font-medium uppercase tracking-wider text-slate-500 flex-1 break-words">
               Inter 12px Medium Uppercase - SERVICE IDENTIFIER & TARGET SLA
             </span>
           </div>
@@ -435,7 +435,7 @@ export default function DesignPreviewPage() {
               <Checkbox id="preview-check-disabled" disabled checked />
               <label
                 htmlFor="preview-check-disabled"
-                className="text-[13px] font-sans text-slate-400 select-none"
+                className="text-[13px] font-sans text-slate-500 select-none opacity-80"
               >
                 Locked configuration (admin only)
               </label>
@@ -495,14 +495,16 @@ export default function DesignPreviewPage() {
           </div>
 
           {/* Tabs */}
-          <div className="space-y-2 pt-4 border-t border-slate-100">
+          <div className="space-y-2 pt-4 border-t border-slate-100 overflow-hidden">
             <Label>Section Tabs</Label>
             <Tabs defaultValue="cacti">
-              <TabsList>
-                <TabsTrigger value="cacti">Cacti Integration</TabsTrigger>
-                <TabsTrigger value="prtg">PRTG Integration</TabsTrigger>
-                <TabsTrigger value="branding">Report Templates</TabsTrigger>
-              </TabsList>
+              <div className="overflow-x-auto max-w-full pb-1">
+                <TabsList>
+                  <TabsTrigger value="cacti">Cacti Integration</TabsTrigger>
+                  <TabsTrigger value="prtg">PRTG Integration</TabsTrigger>
+                  <TabsTrigger value="branding">Report Templates</TabsTrigger>
+                </TabsList>
+              </div>
               <TabsContent value="cacti" className="text-[13px] text-slate-600 p-3 bg-slate-50 rounded-lg border border-slate-200">
                 Cacti base endpoint: <code className="text-slate-800">http://cacti.internal.net</code>
               </TabsContent>
@@ -526,7 +528,7 @@ export default function DesignPreviewPage() {
           <span className="text-[12px] text-slate-500">Kebab dropdown actions, zero raw button/input tags</span>
         </div>
 
-        <div className="border border-slate-200 bg-white rounded-lg shadow-sm overflow-hidden">
+        <div className="border border-slate-200 bg-white rounded-lg shadow-sm overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -641,7 +643,7 @@ export default function DesignPreviewPage() {
                 </TableCell>
                 <TableCell>Prime 200 Mbps</TableCell>
                 <TableCell>
-                  <span className="text-slate-400 text-[12px]">Not set</span>
+                  <span className="text-slate-500 text-xs">Not set</span>
                 </TableCell>
                 <TableCell className="text-right tabular-nums">99.50%</TableCell>
                 <TableCell className="text-right">

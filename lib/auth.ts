@@ -8,6 +8,7 @@ import {
   createToken,
   verifyToken,
 } from './token';
+import { hasPermission, PermissionKey, isNocDepartment } from './permissions';
 
 export type { UserSession };
 export { AUTH_COOKIE_NAME, AUTH_SECRET, createToken, verifyToken };
@@ -50,7 +51,15 @@ export async function getSession(): Promise<UserSession | null> {
     // Verify user exists and is active in DB
     const user = await prisma.user.findUnique({
       where: { id: payload.id },
-      select: { id: true, username: true, name: true, email: true, role: true, isActive: true },
+      select: {
+        id: true,
+        username: true,
+        name: true,
+        email: true,
+        role: true,
+        department: true,
+        isActive: true,
+      },
     });
 
     if (!user || !user.isActive) {
@@ -62,7 +71,8 @@ export async function getSession(): Promise<UserSession | null> {
       username: user.username,
       name: user.name,
       email: user.email,
-      role: user.role as 'ADMIN' | 'SUPERVISOR' | 'STAFF' | 'OPERATOR' | 'VIEWER' | 'REQUESTER',
+      role: user.role as 'ADMIN' | 'SUPERVISOR' | 'STAFF' | 'OPERATOR' | 'VIEWER',
+      department: user.department || 'Network Operation',
     };
   } catch {
     return null;
@@ -156,6 +166,110 @@ export async function requireStaffOrAbove(): Promise<AuthCheckResult> {
   return requireOperatorOrAdmin();
 }
 
+export async function requirePermission(permission: PermissionKey): Promise<AuthCheckResult> {
+  const check = await requireAuth();
+  if (!check.authorized) return check;
+
+  if (!hasPermission(check.session, permission)) {
+    return {
+      authorized: false,
+      error: `Akses ditolak: Anda tidak memiliki izin untuk fitur ini (${permission}).`,
+      status: 403,
+    };
+  }
+  return check;
+}
+
+export async function requireAnyPermission(permissions: PermissionKey[]): Promise<AuthCheckResult> {
+  const check = await requireAuth();
+  if (!check.authorized) return check;
+
+  const allowed = permissions.some((p) => hasPermission(check.session, p));
+  if (!allowed) {
+    return {
+      authorized: false,
+      error: 'Akses ditolak: Anda tidak memiliki wewenang untuk tindakan ini.',
+      status: 403,
+    };
+  }
+  return check;
+}
+
+/**
+ * Returns all Report IDs that originated from ReportRequests created by a given department.
+ * Used for Request-Scoped report visibility for non-NOC departments (AE, CX, Finance).
+ */
+export async function getScopedReportIdsForDepartment(department: string): Promise<string[]> {
+  if (!department) return [];
+  const requests = await prisma.reportRequest.findMany({
+    where: { requesterDept: department },
+    select: {
+      processedReportId: true,
+      processedSlaReportId: true,
+      processedMrtgReportId: true,
+    },
+  });
+
+  const idSet = new Set<string>();
+  for (const r of requests) {
+    if (r.processedReportId) idSet.add(r.processedReportId);
+    if (r.processedSlaReportId) idSet.add(r.processedSlaReportId);
+    if (r.processedMrtgReportId) idSet.add(r.processedMrtgReportId);
+  }
+
+  // Also include reports directly assigned to this department (e.g. from schedule or ad-hoc)
+  const assignedReports = await prisma.report.findMany({
+    where: { assignedDepartment: department },
+    select: { id: true },
+  });
+  for (const r of assignedReports) {
+    idSet.add(r.id);
+  }
+
+  return Array.from(idSet);
+}
+
+/**
+ * Checks whether a user session can access (view/download) a specific Report record.
+ */
+export async function canUserAccessReport(
+  session: UserSession,
+  report: { id: string; status: string; generatedById?: string | null; assignedDepartment?: string | null }
+): Promise<boolean> {
+  if (session.role === 'ADMIN') return true;
+
+  // NOC members with full status permission can see reports in their workflow
+  if (isNocDepartment(session.department)) {
+    if (hasPermission(session, 'report:view_all_status')) {
+      return true;
+    }
+    // Read-only observer inside NOC can only view approved reports
+    return report.status === 'APPROVED';
+  }
+
+  // Non-NOC (Customer Experience, Account Executive, Finance)
+  // 1. Tier 2 Review: Supervisor of the assigned department can access PENDING_DEPT_APPROVAL
+  if (
+    report.status === 'PENDING_DEPT_APPROVAL' &&
+    session.role === 'SUPERVISOR' &&
+    report.assignedDepartment === session.department
+  ) {
+    return true;
+  }
+
+  // 2. Otherwise must be APPROVED AND (assigned to department OR scoped to their department's requests)
+  if (report.status !== 'APPROVED') {
+    return false;
+  }
+
+  if (report.assignedDepartment && report.assignedDepartment === session.department) {
+    return true;
+  }
+
+  const scopedIds = await getScopedReportIdsForDepartment(session.department);
+  return scopedIds.includes(report.id);
+}
+
 // ============================================================
 // Default Admin Seeding
 // ============================================================
@@ -172,6 +286,7 @@ export async function ensureDefaultAdmin() {
         passwordHash: hash,
         passwordSalt: salt,
         role: 'ADMIN',
+        department: 'Network Operation',
         isActive: true,
       },
     });

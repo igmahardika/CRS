@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { requireSupervisorOrAdmin } from '@/lib/auth';
+import { requirePermission } from '@/lib/auth';
 import { sendTelegramNotification } from '@/lib/telegram';
 
 export async function POST(req: NextRequest) {
-  const auth = await requireSupervisorOrAdmin();
+  const auth = await requirePermission('report:approve');
   if (!auth.authorized) {
     return NextResponse.json({ error: auth.error }, { status: auth.status });
   }

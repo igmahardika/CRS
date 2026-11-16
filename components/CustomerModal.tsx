@@ -1,3 +1,8 @@
+/**
+ * CustomerPickerModal (CustomerModal)
+ * Role: Searchable picker modal used by the Report Generator to browse and select customers.
+ * For editing or creating customer records, delegates to CustomerFormModal.
+ */
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -149,11 +154,11 @@ export default function CustomerModal({
           {/* Search Bar & Add Customer Button */}
           <div className="flex items-center gap-3 pt-2">
             <div className="relative flex-1">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+              <Search className="w-4 h-4 text-slate-500 absolute left-3 top-2.5" />
               <Input
                 value={search}
                 onChange={(e) => handleSearchChange(e.target.value)}
-                placeholder="Search customers..."
+                placeholder="Cari nama pelanggan, CID, atau service ID..."
                 className="pl-9 h-9"
               />
             </div>
@@ -179,7 +184,7 @@ export default function CustomerModal({
                   : `Menampilkan ${visibleCustomers.length} dari ${customers.length} pelanggan`}
               </span>
               {filtered.length > displayLimit && (
-                <span className="text-[11px] text-slate-400">
+                <span className="text-xs text-slate-500">
                   Ketik nama/ID untuk hasil lebih spesifik
                 </span>
               )}
@@ -227,14 +232,14 @@ export default function CustomerModal({
                       className="flex-1 h-auto p-1 text-left justify-start items-start flex-col hover:bg-transparent font-normal"
                     >
                       <div className="flex items-center gap-2">
-                        <span className="text-[13px] font-semibold text-slate-900 group-hover:text-[#C2410C] transition-colors">
+                        <span className="text-[13px] font-semibold text-slate-900 group-hover:text-orange-700 transition-colors">
                           {customer.customerName}
                         </span>
-                        <Badge variant="neutral" className="text-[11px]">
+                        <Badge variant="neutral" className="text-xs">
                           {customer.customerId}
                         </Badge>
                         {customer.trafficDirection === 'REVERSED' && (
-                          <Badge variant="warning" className="text-[11px]">
+                          <Badge variant="warning" className="text-xs">
                             Reversed
                           </Badge>
                         )}

@@ -26,6 +26,7 @@ export interface ReportData {
   trafficDirection?: 'NORMAL' | 'REVERSED';
   tickets?: TicketItem[];
   cases?: CaseItem[];
+  isDraft?: boolean;
 }
 
 function getAssetAsBase64(relativeAssetPath: string): string {
@@ -434,9 +435,28 @@ export function generateReportHtml(data: ReportData): string {
     .traffic-bullet .bullet-text {
       flex: 1;
     }
+    .draft-watermark {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(-30deg);
+      font-size: 54pt;
+      font-weight: 800;
+      color: rgba(234, 88, 12, 0.14);
+      text-transform: uppercase;
+      letter-spacing: 6px;
+      pointer-events: none;
+      z-index: 100;
+      white-space: nowrap;
+      font-family: 'Poppins', Arial, sans-serif;
+      border: 4px dashed rgba(234, 88, 12, 0.2);
+      padding: 8px 36px;
+      border-radius: 10px;
+    }
   </style>
 </head>
 <body>
+  ${data.isDraft ? '<div class="draft-watermark" style="position: fixed;">DRAFT / PREVIEW</div>' : ''}
 
   <!-- ==================== PAGE 1: COVER ==================== -->
   <div class="page cover-page" style="background-image: url('${coverBg}');">

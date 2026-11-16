@@ -185,7 +185,8 @@ export async function fetchPrtgGraphImage(
 }
 
 /**
- * Parser string nilai bandwidth PRTG ke Mbps (mendukung format: "15.4 Mbit/s", "800 kbit/s", "1.2 Gbit/s", Byte/s, bps)
+ * Parser nilai bandwidth PRTG ke Mbps (mendukung format string bertipe unit: "15.4 Mbit/s", "800 kbit/s", "1.2 Gbit/s",
+ * serta nilai numerik mentah dari PRTG SNMP Traffic Speed yang selalu berformat Bytes/second).
  */
 function parseBandwidthValueToMbps(raw: unknown): number {
   if (raw === null || raw === undefined) return NaN;
@@ -196,15 +197,29 @@ function parseBandwidthValueToMbps(raw: unknown): number {
   if (isNaN(num)) return NaN;
 
   const lower = str.toLowerCase();
-  if (lower.includes('gbit') || lower.includes('gbps')) return num * 1000;
-  if (lower.includes('kbit') || lower.includes('kbps')) return num / 1000;
-  if (lower.includes('mbit') || lower.includes('mbps')) return num;
-  if (lower.includes('byte') || lower.includes('b/s')) return (num * 8) / 1_000_000;
 
-  // Nilai numerik mentah
-  if (num > 1_000_000) return num / 1_000_000; // bps -> Mbps
-  if (num > 10_000) return (num * 8) / 1_000_000; // Byte/s -> Mbps
-  return num;
+  // 1. Explicit Gigabits / Gigabytes
+  if (lower.includes('gbit') || lower.includes('gbps')) return num * 1000;
+  if (lower.includes('gbyte') || lower.includes('gb/s')) return (num * 8) * 1000;
+
+  // 2. Explicit Megabits / Megabytes
+  if (lower.includes('mbit') || lower.includes('mbps')) return num;
+  if (lower.includes('mbyte') || lower.includes('mb/s')) return num * 8;
+
+  // 3. Explicit Kilobits / Kilobytes
+  if (lower.includes('kbit') || lower.includes('kbps')) return num / 1000;
+  if (lower.includes('kbyte') || lower.includes('kb/s')) return (num * 8) / 1000;
+
+  // 4. Explicit Bytes/s
+  if (lower.includes('byte/s') || lower.includes('b/s')) return (num * 8) / 1_000_000;
+
+  // 5. Explicit bits/s (bps)
+  if (lower.includes('bps') || lower.includes('bit/s')) return num / 1_000_000;
+
+  // 6. Nilai numerik mentah dari PRTG Traffic Sensor:
+  // PRTG SNMP Traffic menyimpan speed dalam satuan Bytes/second (Octets/sec).
+  // Konversi Byte/s ke Mbps = (Byte/s * 8) / 1,000,000.
+  return (num * 8) / 1_000_000;
 }
 
 /**
@@ -266,7 +281,7 @@ export async function fetchPrtgTrafficMetrics(
   sensorId: string | number,
   year: number,
   month: number
-): Promise<{ metrics: PrtgTrafficMetrics; isFallback: boolean; error?: string }> {
+): Promise<{ metrics: PrtgTrafficMetrics; isFallback: boolean; error?: string; debugKeys?: string[]; debugSample?: Record<string, unknown> }> {
   const cleanBase = normalizePrtgUrl(config.baseUrl || 'https://nms.nexa.net.id');
   const { sdate, edate } = getPrtgPeriodDates(year, month);
   const client = createPrtgClient();
@@ -297,6 +312,11 @@ export async function fetchPrtgTrafficMetrics(
       const sampleItem = histdata[0] || {};
       const keys = Object.keys(sampleItem);
 
+      // DEBUG: log keys dan sample data untuk diagnosis
+      console.log('[PRTG Debug] histdata rows:', histdata.length);
+      console.log('[PRTG Debug] all keys:', JSON.stringify(keys));
+      console.log('[PRTG Debug] sample row:', JSON.stringify(sampleItem).substring(0, 600));
+
       const inKey = keys.find(k => {
         const lk = k.toLowerCase();
         return (lk.includes('traffic in') || lk.includes('inbound') || lk.includes('traffic total in')) && lk.includes('_raw');
@@ -313,6 +333,9 @@ export async function fetchPrtgTrafficMetrics(
         return (lk.includes('traffic out') || lk.includes('outbound')) && !lk.includes('volume');
       });
 
+      console.log('[PRTG Debug] inKey:', inKey, '→ value sample:', inKey ? sampleItem[inKey] : 'NOT FOUND');
+      console.log('[PRTG Debug] outKey:', outKey, '→ value sample:', outKey ? sampleItem[outKey] : 'NOT FOUND');
+
       const inVals: number[] = [];
       const outVals: number[] = [];
 
@@ -327,17 +350,24 @@ export async function fetchPrtgTrafficMetrics(
         }
       }
 
+      console.log('[PRTG Debug] inVals count:', inVals.length, '| first few:', inVals.slice(0, 3));
+      console.log('[PRTG Debug] outVals count:', outVals.length, '| first few:', outVals.slice(0, 3));
+
       if (inVals.length > 0 || outVals.length > 0) {
         const inAvg = inVals.length ? Number((inVals.reduce((a, b) => a + b, 0) / inVals.length).toFixed(2)) : 0;
         const inMax = inVals.length ? Number(Math.max(...inVals).toFixed(2)) : 0;
         const outAvg = outVals.length ? Number((outVals.reduce((a, b) => a + b, 0) / outVals.length).toFixed(2)) : 0;
         const outMax = outVals.length ? Number(Math.max(...outVals).toFixed(2)) : 0;
 
+        console.log('[PRTG Debug] RESULT → inAvg:', inAvg, 'inMax:', inMax, 'outAvg:', outAvg, 'outMax:', outMax);
+
         return {
           metrics: { inAvg, inMax, outAvg, outMax, inUnit: 'Mbps', outUnit: 'Mbps' },
           isFallback: false,
         };
       }
+
+      console.warn('[PRTG Debug] No valid values found! Falling through to CSV / fallback.');
     }
   } catch (jsonErr) {
     console.warn('PRTG historicdata.json fetch failed, trying CSV export fallback...', jsonErr);

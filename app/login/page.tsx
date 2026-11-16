@@ -40,7 +40,8 @@ function LoginForm() {
         throw new Error(data.error || 'Authentication failed. Please verify your credentials.');
       }
 
-      router.push(redirectUrl);
+      const destination = redirectUrl && redirectUrl !== '/' ? redirectUrl : (data.defaultRoute || '/');
+      router.push(destination);
       router.refresh();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -52,16 +53,16 @@ function LoginForm() {
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center p-4 sm:p-6 bg-[#F8FAFC]">
-      <div className="w-full max-w-sm bg-white rounded-lg border border-slate-200 shadow-sm p-6 sm:p-8 space-y-6">
+      <div className="w-full max-w-sm bg-white rounded-xl border border-slate-200 shadow-sm p-6 sm:p-8 space-y-6">
         {/* Brand Header */}
         <div className="text-center">
-          <div className="w-10 h-10 rounded-lg bg-[#EA580C] text-white flex items-center justify-center mx-auto mb-3 shadow-xs">
+          <div className="w-10 h-10 rounded-lg bg-orange-600 text-white flex items-center justify-center mx-auto mb-3 shadow-xs">
             <BarChart3 className="w-6 h-6 stroke-[2]" />
           </div>
-          <h1 className="font-heading text-2xl font-semibold text-slate-900 tracking-tight">
+          <h1 className="font-heading text-lg sm:text-xl font-semibold text-slate-900 tracking-tight">
             GENRE
           </h1>
-          <p className="text-[13px] text-slate-600 font-sans font-normal mt-1 leading-normal">
+          <p className="text-xs text-slate-500 font-sans font-normal mt-0.5 leading-normal">
             Sign in to access network telemetry and SLA reporting.
           </p>
         </div>
@@ -104,7 +105,7 @@ function LoginForm() {
                 variant="ghost"
                 size="icon-sm"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-1 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
+                className="absolute right-1 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-800"
                 title={showPassword ? 'Hide password' : 'Show password'}
               >
                 {showPassword ? (
@@ -153,7 +154,7 @@ export default function LoginPage() {
     <Suspense
       fallback={
         <div className="min-h-screen w-full flex items-center justify-center bg-[#F8FAFC]">
-          <div className="w-8 h-8 rounded-full border-2 border-slate-200 border-t-[#EA580C] animate-spin" />
+          <div className="w-8 h-8 rounded-full border-2 border-slate-200 border-t-orange-600 animate-spin" />
         </div>
       }
     >
