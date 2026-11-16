@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { requireAuth, requireAdmin } from '@/lib/auth';
+import { requireAuth, requireSupervisorOrAdmin } from '@/lib/auth';
 import { DEPARTMENTS, isValidDepartment } from '@/lib/permissions';
 
 // GET /api/staff - List all staff or filter by department/active
@@ -47,7 +47,7 @@ export async function GET(req: NextRequest) {
 
 // POST /api/staff - Create new staff PIC
 export async function POST(req: NextRequest) {
-  const auth = await requireAdmin();
+  const auth = await requireSupervisorOrAdmin();
   if (!auth.authorized) {
     return NextResponse.json({ error: auth.error }, { status: auth.status });
   }
@@ -90,7 +90,7 @@ export async function POST(req: NextRequest) {
 
 // PUT /api/staff - Update existing staff PIC
 export async function PUT(req: NextRequest) {
-  const auth = await requireAdmin();
+  const auth = await requireSupervisorOrAdmin();
   if (!auth.authorized) {
     return NextResponse.json({ error: auth.error }, { status: auth.status });
   }
@@ -129,7 +129,7 @@ export async function PUT(req: NextRequest) {
 
 // DELETE /api/staff - Delete or deactivate staff PIC
 export async function DELETE(req: NextRequest) {
-  const auth = await requireAdmin();
+  const auth = await requireSupervisorOrAdmin();
   if (!auth.authorized) {
     return NextResponse.json({ error: auth.error }, { status: auth.status });
   }

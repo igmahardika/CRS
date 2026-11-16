@@ -175,8 +175,6 @@ export async function POST(req: NextRequest) {
           isMonthlyRoutine: true,
           routineGroup: requesterDept,
           routineReportType: reportType,
-          salesPicName: salesPicName || undefined,
-          cePicName: cePicName || undefined,
         },
       }).catch((e) => console.error('[Auto-enroll Routine Error]', e));
     }

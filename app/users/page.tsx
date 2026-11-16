@@ -428,34 +428,23 @@ export default function UsersManagementPage() {
     <div className="space-y-6">
       {/* Page Header */}
       <PageHeader
-        title="Pengguna &amp; Direktori Staf"
-        description="Kelola akun login pengguna sistem serta master staf PIC komersial (Sales &amp; Customer Experience)."
+        title="User Management"
+        description="Manage system login accounts, role-based access controls, and departmental user assignments."
         breadcrumb={
           <Link href="/" className="hover:text-slate-800 flex items-center gap-1 font-medium text-slate-500">
             <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Kembali ke Generator</span>
+            <span>Back to Generator</span>
           </Link>
         }
         actions={
-          activeSection === 'users' ? (
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={() => setIsCreateModalOpen(true)}
-            >
-              <UserPlus className="w-3.5 h-3.5 mr-1.5" />
-              <span>Tambah User Login</span>
-            </Button>
-          ) : (
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={() => setIsCreateStaffModalOpen(true)}
-            >
-              <UserCheck className="w-3.5 h-3.5 mr-1.5" />
-              <span>Tambah Staf / PIC</span>
-            </Button>
-          )
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={() => setIsCreateModalOpen(true)}
+          >
+            <UserPlus className="w-3.5 h-3.5 mr-1.5" />
+            <span>Add User Account</span>
+          </Button>
         }
       />
 

@@ -15,6 +15,7 @@ import {
   CalendarCheck,
   Server,
   Users,
+  Building,
   Radio,
   ShieldCheck,
   UserCheck,
@@ -148,7 +149,7 @@ export default function Navbar() {
   // Active section flags
   const isReportsActive = pathname === '/' || pathname === '/history' || pathname === '/approvals';
   const isQueueActive = pathname === '/requests' || pathname === '/schedule';
-  const isMasterActive = pathname === '/customers' || pathname === '/discovery';
+  const isMasterActive = pathname === '/customers' || pathname === '/discovery' || pathname === '/staff';
   const isSystemActive = pathname === '/users' || pathname === '/settings';
 
   const isGuestOnRequestPage = false;
@@ -374,11 +375,22 @@ export default function Navbar() {
                             className={`flex items-center gap-2.5 px-2.5 py-2 rounded-md cursor-pointer text-xs font-medium ${pathname === '/customers' ? 'bg-orange-50 text-orange-700 font-semibold' : 'text-slate-700 hover:bg-slate-50'
                               }`}
                           >
-                            <Users className="w-4 h-4 text-slate-500" />
+                            <Building className="w-4 h-4 text-slate-500" />
                             <span>Customer Directory</span>
                           </Link>
                         </DropdownMenuItem>
                       )}
+
+                      <DropdownMenuItem asChild>
+                        <Link
+                          href="/staff"
+                          className={`flex items-center gap-2.5 px-2.5 py-2 rounded-md cursor-pointer text-xs font-medium ${pathname === '/staff' ? 'bg-orange-50 text-orange-700 font-semibold' : 'text-slate-700 hover:bg-slate-50'
+                            }`}
+                        >
+                          <Users className="w-4 h-4 text-slate-500" />
+                          <span>Staff Directory</span>
+                        </Link>
+                      </DropdownMenuItem>
 
                       {canViewDiscovery && (
                         <DropdownMenuItem asChild>
@@ -634,10 +646,19 @@ export default function Navbar() {
                   className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition ${pathname === '/customers' ? 'bg-orange-50 text-orange-700 font-semibold' : 'text-slate-700 hover:bg-slate-100'
                     }`}
                 >
-                  <Users className="w-4 h-4 text-slate-500" />
+                  <Building className="w-4 h-4 text-slate-500" />
                   <span>Customer Directory</span>
                 </Link>
               )}
+              <Link
+                href="/staff"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition ${pathname === '/staff' ? 'bg-orange-50 text-orange-700 font-semibold' : 'text-slate-700 hover:bg-slate-100'
+                  }`}
+              >
+                <Users className="w-4 h-4 text-slate-500" />
+                <span>Staff Directory</span>
+              </Link>
               {canViewDiscovery && (
                 <Link
                   href="/discovery"

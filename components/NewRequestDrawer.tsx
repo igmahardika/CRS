@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   Send,
   CheckCircle2,
@@ -8,13 +8,12 @@ import {
   AlertTriangle,
   Copy,
   Check,
-  FileText,
   Building2,
   User,
   Calendar,
-  Layers,
   Search,
   X,
+  HelpCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -35,6 +34,7 @@ import {
   DialogFooter,
   Spinner,
 } from '@/components/ui';
+import { DEPARTMENTS, Department } from '@/lib/permissions';
 
 interface CustomerSearchResult {
   id: string;
@@ -44,16 +44,22 @@ interface CustomerSearchResult {
   serviceName: string;
   routineReportType?: string;
   targetSla?: number;
-  salesPicId?: string | null;
-  salesPicName?: string | null;
-  cePicId?: string | null;
-  cePicName?: string | null;
 }
 
 const monthNames = [
   'January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December',
 ];
+
+const monthShortNames = [
+  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+];
+
+interface PeriodItem {
+  month: number;
+  year: number;
+}
 
 interface NewRequestDrawerProps {
   open: boolean;
@@ -66,8 +72,8 @@ export default function NewRequestDrawer({
   onOpenChange,
   onSuccess,
 }: NewRequestDrawerProps) {
-  const now = new Date();
-  const currentMonth = now.getMonth() + 1;
+  const now = useMemo(() => new Date(), []);
+  const currentMonth = now.getMonth() + 1; // 1 - 12
   const currentYear = now.getFullYear();
 
   // Smart Default: previous month (M-1)
@@ -82,11 +88,13 @@ export default function NewRequestDrawer({
     department: string;
   } | null>(null);
 
+  // Section 1: Requester Information state
+  const [requesterDept, setRequesterDept] = useState<Department>('Customer Experience');
   const [requesterName, setRequesterName] = useState('');
-  const [requesterDept, setRequesterDept] = useState('Network Operation');
   const [requesterEmail, setRequesterEmail] = useState('');
+  const [isManualRequester, setIsManualRequester] = useState(false);
 
-  // Staff PIC state
+  // Staff list for dropdown
   const [staffList, setStaffList] = useState<Array<{
     id: string;
     name: string;
@@ -94,12 +102,10 @@ export default function NewRequestDrawer({
     phone: string | null;
     department: string;
     roleTitle: string | null;
+    isActive: boolean;
   }>>([]);
-  const [salesPicName, setSalesPicName] = useState('');
-  const [salesPicEmail, setSalesPicEmail] = useState('');
-  const [cePicName, setCePicName] = useState('');
-  const [cePicEmail, setCePicEmail] = useState('');
 
+  // Section 2: Customer & Report Details state
   const [reportType, setReportType] = useState<'SLA' | 'MRTG' | 'BOTH'>('SLA');
   const [customerName, setCustomerName] = useState('');
   const [serviceId, setServiceId] = useState('');
@@ -117,16 +123,16 @@ export default function NewRequestDrawer({
   const [modalCustomers, setModalCustomers] = useState<CustomerSearchResult[]>([]);
   const [isModalLoading, setIsModalLoading] = useState(false);
 
-  // Period state (Default M-1)
-  const [periodMonth, setPeriodMonth] = useState(String(defaultPrevMonth));
-  const [periodYear, setPeriodYear] = useState(String(defaultPrevYear));
-  const [isMultiMonth, setIsMultiMonth] = useState(false);
-  const [selectedMonths, setSelectedMonths] = useState<number[]>([defaultPrevMonth]);
-  const [isRoutineSchedule, setIsRoutineSchedule] = useState(false);
+  // Smart Period State
+  const [selectedPeriods, setSelectedPeriods] = useState<PeriodItem[]>([
+    { month: defaultPrevMonth, year: defaultPrevYear },
+  ]);
 
+  // Section 3: Priority & Notes
   const [urgency, setUrgency] = useState<'NORMAL' | 'URGENT'>('NORMAL');
   const [notes, setNotes] = useState('');
 
+  // Submission State
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submittedTicket, setSubmittedTicket] = useState<{
     ticketNumber: string;
@@ -138,7 +144,7 @@ export default function NewRequestDrawer({
   } | null>(null);
   const [copiedTicket, setCopiedTicket] = useState(false);
 
-  // Fetch current user info for prefill & role locking + Staff PIC list
+  // Fetch current user and staff directory
   useEffect(() => {
     if (open) {
       fetch('/api/auth/me')
@@ -146,9 +152,8 @@ export default function NewRequestDrawer({
         .then((data) => {
           if (data?.user) {
             setCurrentUser(data.user);
-            setRequesterName(data.user.fullName || data.user.name || data.user.username || '');
-            if (data.user.department) {
-              setRequesterDept(data.user.department);
+            if (data.user.department && DEPARTMENTS.includes(data.user.department as Department)) {
+              setRequesterDept(data.user.department as Department);
             }
           }
         })
@@ -157,7 +162,7 @@ export default function NewRequestDrawer({
       fetch('/api/staff?active=true')
         .then((r) => (r.ok ? r.json() : null))
         .then((data) => {
-          if (data?.staff) {
+          if (data?.staff && Array.isArray(data.staff)) {
             setStaffList(data.staff);
           }
         })
@@ -165,7 +170,117 @@ export default function NewRequestDrawer({
     }
   }, [open]);
 
-  // Fetch autocomplete suggestions with debounce
+  // Available staff filtered by the selected department
+  const departmentStaff = useMemo(() => {
+    return staffList.filter((s) => s.department === requesterDept && s.isActive);
+  }, [staffList, requesterDept]);
+
+  // When staff selection changes or department changes, update requester name and email
+  const handleSelectStaff = (staffId: string) => {
+    if (staffId === 'MANUAL') {
+      setIsManualRequester(true);
+      setRequesterName('');
+      setRequesterEmail('');
+      return;
+    }
+    const staff = departmentStaff.find((s) => s.id === staffId);
+    if (staff) {
+      setRequesterName(staff.name);
+      setRequesterEmail(staff.email);
+    }
+  };
+
+  // Generate Relative Months (-5 to +2)
+  const relativeMonths = useMemo(() => {
+    const list: Array<{
+      month: number;
+      year: number;
+      label: string;
+      isPast: boolean;
+      isCurrent: boolean;
+      isFuture: boolean;
+      isPrevious: boolean;
+    }> = [];
+
+    const baseM = now.getMonth();
+    const baseY = now.getFullYear();
+
+    for (let offset = -5; offset <= 2; offset++) {
+      const d = new Date(baseY, baseM + offset, 1);
+      const m = d.getMonth() + 1;
+      const y = d.getFullYear();
+
+      list.push({
+        month: m,
+        year: y,
+        label: `${monthShortNames[m - 1]} ${y}`,
+        isPast: offset < 0,
+        isCurrent: offset === 0,
+        isFuture: offset > 0,
+        isPrevious: offset === -1,
+      });
+    }
+    return list;
+  }, [now]);
+
+  // Period helpers
+  const isPeriodSelected = useCallback(
+    (month: number, year: number) => {
+      return selectedPeriods.some((p) => p.month === month && p.year === year);
+    },
+    [selectedPeriods]
+  );
+
+  const togglePeriod = (month: number, year: number) => {
+    setSelectedPeriods((prev) => {
+      const exists = prev.some((p) => p.month === month && p.year === year);
+      if (exists) {
+        // Prevent deselecting all periods
+        if (prev.length === 1) return prev;
+        return prev.filter((p) => !(p.month === month && p.year === year));
+      } else {
+        // Add and sort chronologically
+        const next = [...prev, { month, year }];
+        return next.sort((a, b) => a.year - b.year || a.month - b.month);
+      }
+    });
+  };
+
+  // Presets
+  const applyPresetPreviousMonth = () => {
+    setSelectedPeriods([{ month: defaultPrevMonth, year: defaultPrevYear }]);
+  };
+
+  const applyPresetLast2Months = () => {
+    const p1 = new Date(currentYear, now.getMonth() - 2, 1);
+    const p2 = new Date(currentYear, now.getMonth() - 1, 1);
+    setSelectedPeriods([
+      { month: p1.getMonth() + 1, year: p1.getFullYear() },
+      { month: p2.getMonth() + 1, year: p2.getFullYear() },
+    ]);
+  };
+
+  const applyPresetLastQuarter = () => {
+    const p1 = new Date(currentYear, now.getMonth() - 3, 1);
+    const p2 = new Date(currentYear, now.getMonth() - 2, 1);
+    const p3 = new Date(currentYear, now.getMonth() - 1, 1);
+    setSelectedPeriods([
+      { month: p1.getMonth() + 1, year: p1.getFullYear() },
+      { month: p2.getMonth() + 1, year: p2.getFullYear() },
+      { month: p3.getMonth() + 1, year: p3.getFullYear() },
+    ]);
+  };
+
+  // Check if any selected period is in the future or ongoing
+  const hasFutureOrOngoing = useMemo(() => {
+    return selectedPeriods.some((p) => {
+      if (p.year > currentYear) return true;
+      if (p.year === currentYear && p.month >= currentMonth) return true;
+      return false;
+    });
+  }, [selectedPeriods, currentYear, currentMonth]);
+
+  // Customer Autocomplete logic
   const fetchAutocompleteCustomers = useCallback(async (query: string) => {
     setIsSearchingCustomer(true);
     try {
@@ -181,7 +296,6 @@ export default function NewRequestDrawer({
     }
   }, []);
 
-  // Fetch customers for Browse Directory modal
   const fetchModalCustomers = useCallback(async (query: string) => {
     setIsModalLoading(true);
     try {
@@ -206,7 +320,6 @@ export default function NewRequestDrawer({
     }
   }, [open, customerName, selectedCustomer, fetchAutocompleteCustomers]);
 
-  // Click outside listener for autocomplete dropdown
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -217,40 +330,11 @@ export default function NewRequestDrawer({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Close on Escape key
-  useEffect(() => {
-    function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape' && open && !isBrowseModalOpen && !isSubmitting) {
-        onOpenChange(false);
-      }
-    }
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [open, isBrowseModalOpen, isSubmitting, onOpenChange]);
-
-  const handleSelectCustomer = (c: CustomerSearchResult) => {
-    setSelectedCustomer(c);
-    setCustomerName(c.customerName);
-    setServiceId(c.serviceId);
+  const handleSelectCustomer = (customer: CustomerSearchResult) => {
+    setSelectedCustomer(customer);
+    setCustomerName(customer.customerName);
+    setServiceId(customer.serviceId || customer.customerId || '');
     setShowCustomerDropdown(false);
-
-    if (c.routineReportType === 'SLA' || c.routineReportType === 'MRTG' || c.routineReportType === 'BOTH') {
-      setReportType(c.routineReportType as 'SLA' | 'MRTG' | 'BOTH');
-    }
-
-    // Auto-populate PIC Sales & CE if present
-    if (c.salesPicName) {
-      setSalesPicName(c.salesPicName);
-      const found = staffList.find((s) => s.name === c.salesPicName);
-      if (found) setSalesPicEmail(found.email);
-    }
-    if (c.cePicName) {
-      setCePicName(c.cePicName);
-      const found = staffList.find((s) => s.name === c.cePicName);
-      if (found) setCePicEmail(found.email);
-    }
-
-    toast.success(`Pelanggan dipilih: ${c.customerName}`);
   };
 
   const handleClearCustomer = () => {
@@ -262,63 +346,66 @@ export default function NewRequestDrawer({
   const handleCopyTicket = (ticket: string) => {
     navigator.clipboard.writeText(ticket);
     setCopiedTicket(true);
-    toast.success('Ticket number copied to clipboard!');
+    toast.success('Ticket number copied to clipboard.');
     setTimeout(() => setCopiedTicket(false), 2000);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!requesterName.trim() || !requesterDept.trim() || !customerName.trim()) {
-      toast.error('Lengkapi Nama Pemohon, Departemen, dan Nama Pelanggan.');
+    if (!requesterName.trim() || !customerName.trim()) {
+      toast.error('Please specify the Requester Staff and Customer Name.');
       return;
     }
 
-    if (isMultiMonth && selectedMonths.length === 0) {
-      toast.error('Pilih minimal satu bulan untuk laporan multi-bulan.');
+    if (selectedPeriods.length === 0) {
+      toast.error('Please select at least one reporting period.');
       return;
     }
 
     setIsSubmitting(true);
     try {
-      const yearNum = parseInt(periodYear, 10);
-      const primaryMonth = isMultiMonth ? selectedMonths[selectedMonths.length - 1] : parseInt(periodMonth, 10);
-      const periodsPayload = isMultiMonth
-        ? selectedMonths.map((m) => ({ month: m, year: yearNum }))
-        : null;
+      const primaryPeriod = selectedPeriods[selectedPeriods.length - 1];
+      const isMulti = selectedPeriods.length > 1;
+      const periodsPayload = isMulti ? selectedPeriods : null;
+
+      const salesPicName = requesterDept === 'Account Executive' ? requesterName : null;
+      const salesPicEmail = requesterDept === 'Account Executive' ? requesterEmail : null;
+      const cePicName = requesterDept === 'Customer Experience' ? requesterName : null;
+      const cePicEmail = requesterDept === 'Customer Experience' ? requesterEmail : null;
 
       const res = await fetch('/api/requests', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          requesterName,
+          requesterName: requesterName.trim(),
           requesterDept,
-          requesterEmail,
-          salesPicName: salesPicName.trim() || null,
-          salesPicEmail: salesPicEmail.trim() || null,
-          cePicName: cePicName.trim() || null,
-          cePicEmail: cePicEmail.trim() || null,
+          requesterEmail: requesterEmail.trim() || null,
+          salesPicName,
+          salesPicEmail,
+          cePicName,
+          cePicEmail,
           reportType,
-          customerName,
+          customerName: customerName.trim(),
           customerId: selectedCustomer?.id || null,
-          serviceId,
-          periodMonth: primaryMonth,
-          periodYear: yearNum,
+          serviceId: serviceId.trim() || null,
+          periodMonth: primaryPeriod.month,
+          periodYear: primaryPeriod.year,
           periodsJson: periodsPayload,
-          isRoutineSchedule,
+          isRoutineSchedule: hasFutureOrOngoing,
           urgency,
-          notes,
+          notes: notes.trim() || null,
         }),
       });
 
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || 'Gagal mengirimkan permohonan.');
+        throw new Error(data.error || 'Failed to submit request.');
       }
 
-      const periodDisplay = isMultiMonth
-        ? selectedMonths.map((m) => monthNames[m - 1]).join(', ') + ` ${yearNum}`
-        : `${monthNames[data.request.periodMonth - 1]} ${data.request.periodYear}`;
+      const periodDisplay = isMulti
+        ? selectedPeriods.map((p) => `${monthShortNames[p.month - 1]} ${p.year}`).join(', ')
+        : `${monthNames[primaryPeriod.month - 1]} ${primaryPeriod.year}`;
 
       setSubmittedTicket({
         ticketNumber: data.request.ticketNumber,
@@ -329,13 +416,13 @@ export default function NewRequestDrawer({
         createdAt: data.request.createdAt,
       });
 
-      toast.success(data.message || `Permintaan berhasil dikirim! Tiket: ${data.request.ticketNumber}`);
+      toast.success(data.message || `Request submitted successfully! Ticket: ${data.request.ticketNumber}`);
       if (onSuccess) {
         onSuccess(data.request.ticketNumber);
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      toast.error(`Kesalahan: ${msg}`);
+      toast.error(msg);
     } finally {
       setIsSubmitting(false);
     }
@@ -347,6 +434,7 @@ export default function NewRequestDrawer({
     setServiceId('');
     setNotes('');
     setUrgency('NORMAL');
+    setSelectedPeriods([{ month: defaultPrevMonth, year: defaultPrevYear }]);
     setSubmittedTicket(null);
   };
 
@@ -368,15 +456,15 @@ export default function NewRequestDrawer({
 
       {/* Slide-over Drawer Panel */}
       <div className="fixed inset-y-0 right-0 flex max-w-full pl-0 sm:pl-10">
-        <div className="w-screen max-w-xl md:max-w-2xl bg-white shadow-2xl flex flex-col h-full transform transition ease-in-out duration-300 animate-in slide-in-from-right">
+        <div className="w-screen max-w-xl bg-white shadow-2xl flex flex-col h-full animate-in slide-in-from-right duration-200 border-l border-slate-200">
           {/* Drawer Header */}
           <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/80 shrink-0">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-orange-100 text-orange-600 flex items-center justify-center shadow-xs">
-                <Send className="w-5 h-5 stroke-[2.2]" />
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 rounded-lg bg-orange-100 text-orange-600 flex items-center justify-center shadow-xs">
+                <Send className="w-4 h-4 stroke-[2.2]" />
               </div>
               <div>
-                <h2 className="text-base font-heading font-bold text-slate-900">
+                <h2 className="text-base font-heading font-bold text-slate-900 leading-tight">
                   New Report Request
                 </h2>
                 <p className="text-xs text-slate-500">
@@ -389,7 +477,7 @@ export default function NewRequestDrawer({
               onClick={handleClose}
               disabled={isSubmitting}
               className="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-100 transition cursor-pointer"
-              title="Close panel (Esc)"
+              title="Close panel"
             >
               <X className="w-5 h-5" />
             </button>
@@ -398,7 +486,7 @@ export default function NewRequestDrawer({
           {/* Drawer Body */}
           <div className="flex-1 overflow-y-auto p-6 space-y-6">
             {submittedTicket ? (
-              /* ================= SUCCESS CONFIRMATION VIEW ================= */
+              /* Success View */
               <div className="bg-white rounded-xl border border-emerald-200 shadow-xs p-6 space-y-6 animate-in fade-in zoom-in-95 duration-200">
                 <div className="flex flex-col items-center text-center space-y-2">
                   <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shadow-xs">
@@ -408,11 +496,10 @@ export default function NewRequestDrawer({
                     Request Submitted Successfully!
                   </h3>
                   <p className="text-xs text-slate-600 max-w-sm">
-                    Your request ticket has been queued and an automated alert has been dispatched to the team via Telegram.
+                    Your request ticket has been queued. Internal alerts and email notifications have been dispatched.
                   </p>
                 </div>
 
-                {/* Ticket Card */}
                 <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg space-y-3">
                   <div className="flex items-center justify-between pb-3 border-b border-slate-200">
                     <span className="text-xs text-slate-500 font-medium">Ticket Number</span>
@@ -481,115 +568,106 @@ export default function NewRequestDrawer({
                 </div>
               </div>
             ) : (
-              /* ================= REQUEST FORM ================= */
+              /* Request Form */
               <form id="new-request-drawer-form" onSubmit={handleSubmit} className="space-y-6">
                 {/* Section 1: Requester Information */}
                 <div className="space-y-3.5 p-4 bg-slate-50/70 border border-slate-200/80 rounded-xl">
-                  <div className="flex items-center gap-2 pb-2 border-b border-slate-200/60">
-                    <User className="w-4 h-4 text-orange-600" />
-                    <h3 className="font-heading text-xs font-bold text-slate-900 uppercase tracking-wider">
-                      1. Requester Information
-                    </h3>
+                  <div className="flex items-center justify-between pb-2 border-b border-slate-200/60">
+                    <div className="flex items-center gap-2">
+                      <User className="w-4 h-4 text-orange-600" />
+                      <h3 className="font-heading text-xs font-bold text-slate-900 uppercase tracking-wider">
+                        1. Requester Information
+                      </h3>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsManualRequester(!isManualRequester)}
+                      title="Toggle manual input if staff is not in the directory"
+                      className="text-[11px] text-slate-500 hover:text-slate-800 underline transition"
+                    >
+                      {isManualRequester ? 'Select from Directory' : 'Manual Input'}
+                    </button>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                    <FormField label="Full Name" required>
-                      <Input
-                        value={requesterName}
-                        onChange={(e) => setRequesterName(e.target.value)}
-                        required
-                        className="text-xs h-9"
-                      />
-                    </FormField>
-
-                    <FormField
-                      label="Department / Division"
-                      required
-                      hint={
-                        currentUser?.role !== 'ADMIN'
-                          ? 'Terkunci otomatis sesuai akun Anda.'
-                          : undefined
-                      }
-                    >
-                      <Select
-                        value={requesterDept}
-                        onValueChange={setRequesterDept}
-                        disabled={currentUser ? currentUser.role !== 'ADMIN' : false}
-                      >
-                        <SelectTrigger className="text-xs h-9">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Network Operation">Network Operation</SelectItem>
-                          <SelectItem value="Customer Experience">Customer Experience</SelectItem>
-                          <SelectItem value="Account Executive">Account Executive</SelectItem>
-                          <SelectItem value="Finance">Finance</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </FormField>
-
-                    {/* PIC Sales / Account Executive Dropdown */}
-                    <FormField label="PIC Sales / Account Executive (Opsional)">
-                      <Select
-                        value={salesPicName}
-                        onValueChange={(val) => {
-                          const cleanVal = val === 'NONE' ? '' : val;
-                          setSalesPicName(cleanVal);
-                          const found = staffList.find((s) => s.name === cleanVal);
-                          setSalesPicEmail(found?.email || '');
-                        }}
-                      >
-                        <SelectTrigger className="text-xs h-9 bg-white">
-                          <SelectValue placeholder="Pilih PIC Sales..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="NONE">-- Tanpa PIC Sales Khusus --</SelectItem>
-                          {staffList
-                            .filter((s) => s.department === 'Account Executive')
-                            .map((s) => (
-                              <SelectItem key={s.id} value={s.name}>
-                                {s.name} ({s.roleTitle || 'AE'})
+                    {/* Department */}
+                    <FormField label="Department">
+                      {currentUser?.role === 'ADMIN' ? (
+                        <Select
+                          value={requesterDept}
+                          onValueChange={(val) => {
+                            setRequesterDept(val as Department);
+                            setRequesterName('');
+                            setRequesterEmail('');
+                          }}
+                        >
+                          <SelectTrigger className="text-xs h-9 bg-white">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {DEPARTMENTS.map((d) => (
+                              <SelectItem key={d} value={d}>
+                                {d}
                               </SelectItem>
                             ))}
-                        </SelectContent>
-                      </Select>
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <div className="h-9 px-3 rounded-lg border border-slate-200 bg-slate-100 flex items-center justify-between text-xs font-semibold text-slate-800">
+                          <span>{requesterDept}</span>
+                          <span title="Locked to your account's department" className="cursor-help">
+                            <HelpCircle className="w-3.5 h-3.5 text-slate-400" />
+                          </span>
+                        </div>
+                      )}
                     </FormField>
 
-                    {/* PIC Customer Experience Dropdown */}
-                    <FormField label="PIC Customer Experience (Opsional)">
-                      <Select
-                        value={cePicName}
-                        onValueChange={(val) => {
-                          const cleanVal = val === 'NONE' ? '' : val;
-                          setCePicName(cleanVal);
-                          const found = staffList.find((s) => s.name === cleanVal);
-                          setCePicEmail(found?.email || '');
-                        }}
-                      >
-                        <SelectTrigger className="text-xs h-9 bg-white">
-                          <SelectValue placeholder="Pilih PIC CE..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="NONE">-- Tanpa PIC CE Khusus --</SelectItem>
-                          {staffList
-                            .filter((s) => s.department === 'Customer Experience')
-                            .map((s) => (
-                              <SelectItem key={s.id} value={s.name}>
-                                {s.name} ({s.roleTitle || 'CE'})
+                    {/* Requester Staff Member */}
+                    <FormField label="Requester Staff" required>
+                      {isManualRequester ? (
+                        <Input
+                          value={requesterName}
+                          onChange={(e) => setRequesterName(e.target.value)}
+                          placeholder="e.g. John Doe"
+                          required
+                          className="text-xs h-9 bg-white"
+                        />
+                      ) : (
+                        <Select
+                          value={
+                            departmentStaff.find((s) => s.name === requesterName)?.id || ''
+                          }
+                          onValueChange={handleSelectStaff}
+                        >
+                          <SelectTrigger className="text-xs h-9 bg-white">
+                            <SelectValue placeholder={`Select ${requesterDept} staff...`} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {departmentStaff.length === 0 ? (
+                              <SelectItem value="MANUAL">
+                                (No staff registered - Click to enter manual name)
                               </SelectItem>
-                            ))}
-                        </SelectContent>
-                      </Select>
+                            ) : (
+                              departmentStaff.map((s) => (
+                                <SelectItem key={s.id} value={s.id}>
+                                  {s.name} {s.roleTitle ? `(${s.roleTitle})` : ''}
+                                </SelectItem>
+                              ))
+                            )}
+                          </SelectContent>
+                        </Select>
+                      )}
                     </FormField>
 
+                    {/* Contact Email / Phone */}
                     <div className="sm:col-span-2">
-                      <FormField label="Email / WhatsApp Contact">
+                      <FormField label="Email / Contact">
                         <Input
                           type="text"
                           value={requesterEmail}
                           onChange={(e) => setRequesterEmail(e.target.value)}
-                          placeholder="e.g. requester@company.com or 0812xxxx"
-                          className="text-xs h-9"
+                          placeholder="e.g. staff@nexa.net.id"
+                          className="text-xs h-9 bg-white font-mono"
                         />
                       </FormField>
                     </div>
@@ -613,33 +691,33 @@ export default function NewRequestDrawer({
                         onClick={() => setReportType('SLA')}
                         className={`p-2.5 rounded-lg border text-center transition cursor-pointer select-none ${
                           reportType === 'SLA'
-                            ? 'border-orange-500 bg-orange-50 ring-1 ring-orange-500 text-orange-700'
-                            : 'border-slate-200 bg-white hover:border-slate-300 text-slate-700'
+                            ? 'border-orange-500 bg-orange-50 ring-1 ring-orange-500 text-orange-700 font-bold'
+                            : 'border-slate-200 bg-white hover:border-slate-300 text-slate-700 font-medium'
                         }`}
                       >
-                        <div className="text-xs font-bold">SLA Report</div>
+                        <div className="text-xs">SLA Report</div>
                       </button>
                       <button
                         type="button"
                         onClick={() => setReportType('MRTG')}
                         className={`p-2.5 rounded-lg border text-center transition cursor-pointer select-none ${
                           reportType === 'MRTG'
-                            ? 'border-orange-500 bg-orange-50 ring-1 ring-orange-500 text-orange-700'
-                            : 'border-slate-200 bg-white hover:border-slate-300 text-slate-700'
+                            ? 'border-orange-500 bg-orange-50 ring-1 ring-orange-500 text-orange-700 font-bold'
+                            : 'border-slate-200 bg-white hover:border-slate-300 text-slate-700 font-medium'
                         }`}
                       >
-                        <div className="text-xs font-bold">MRTG Report</div>
+                        <div className="text-xs">MRTG Report</div>
                       </button>
                       <button
                         type="button"
                         onClick={() => setReportType('BOTH')}
                         className={`p-2.5 rounded-lg border text-center transition cursor-pointer select-none ${
                           reportType === 'BOTH'
-                            ? 'border-orange-500 bg-orange-50 ring-1 ring-orange-500 text-orange-700'
-                            : 'border-slate-200 bg-white hover:border-slate-300 text-slate-700'
+                            ? 'border-orange-500 bg-orange-50 ring-1 ring-orange-500 text-orange-700 font-bold'
+                            : 'border-slate-200 bg-white hover:border-slate-300 text-slate-700 font-medium'
                         }`}
                       >
-                        <div className="text-xs font-bold">Both (SLA &amp; MRTG)</div>
+                        <div className="text-xs">Both (SLA &amp; MRTG)</div>
                       </button>
                     </div>
                   </FormField>
@@ -675,7 +753,7 @@ export default function NewRequestDrawer({
                             <div className="text-xs font-semibold text-emerald-950 flex items-center gap-2 flex-wrap">
                               <span>{selectedCustomer.customerName}</span>
                               <Badge variant="success" className="text-[10px] py-0 px-1.5">
-                                Registered in Directory
+                                Verified
                               </Badge>
                             </div>
                             <div className="text-[11px] text-emerald-700 mt-0.5 truncate">
@@ -701,7 +779,7 @@ export default function NewRequestDrawer({
                       <div className="relative">
                         <Input
                           value={customerName}
-                          placeholder="Ketik nama pelanggan untuk autocomplete..."
+                          placeholder="Search customer name or CID/SID..."
                           onChange={(e) => {
                             setCustomerName(e.target.value);
                             setShowCustomerDropdown(true);
@@ -770,160 +848,111 @@ export default function NewRequestDrawer({
                     />
                   </FormField>
 
-                  {/* Period Mode Selector */}
-                  <div className="space-y-2.5 pt-1">
+                  {/* Smart Time-Aware Period Selector */}
+                  <div className="space-y-3 pt-2 border-t border-slate-200/60">
                     <div className="flex items-center justify-between">
-                      <label className="text-xs font-semibold text-slate-800">
-                        Periode Laporan yang Diminta <span className="text-rose-500">*</span>
+                      <label className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
+                        <Calendar className="w-3.5 h-3.5 text-orange-600" />
+                        <span>Reporting Period</span>
+                        <span className="text-rose-500">*</span>
                       </label>
-                      <div className="flex items-center bg-slate-200/70 p-0.5 rounded-lg text-[11px] font-medium">
+
+                      {/* Presets */}
+                      <div className="flex items-center gap-1.5">
                         <button
                           type="button"
-                          onClick={() => setIsMultiMonth(false)}
-                          className={`px-2.5 py-1 rounded-md transition ${
-                            !isMultiMonth
-                              ? 'bg-white text-slate-900 font-bold shadow-2xs'
-                              : 'text-slate-600 hover:text-slate-900'
-                          }`}
+                          onClick={applyPresetPreviousMonth}
+                          className="text-[11px] font-medium text-slate-600 hover:text-orange-600 bg-white hover:bg-orange-50 px-2 py-0.5 rounded border border-slate-200 transition"
                         >
-                          Bulan Tunggal
+                          Previous Month
                         </button>
                         <button
                           type="button"
-                          onClick={() => setIsMultiMonth(true)}
-                          className={`px-2.5 py-1 rounded-md transition ${
-                            isMultiMonth
-                              ? 'bg-white text-slate-900 font-bold shadow-2xs'
-                              : 'text-slate-600 hover:text-slate-900'
-                          }`}
+                          onClick={applyPresetLast2Months}
+                          className="text-[11px] font-medium text-slate-600 hover:text-orange-600 bg-white hover:bg-orange-50 px-2 py-0.5 rounded border border-slate-200 transition"
                         >
-                          Multi-Bulan
+                          Last 2 Months
+                        </button>
+                        <button
+                          type="button"
+                          onClick={applyPresetLastQuarter}
+                          className="text-[11px] font-medium text-slate-600 hover:text-orange-600 bg-white hover:bg-orange-50 px-2 py-0.5 rounded border border-slate-200 transition"
+                        >
+                          Last Quarter
                         </button>
                       </div>
                     </div>
 
-                    {!isMultiMonth ? (
-                      <div className="grid grid-cols-2 gap-3.5">
-                        <FormField label="Pilihan Bulan" required>
-                          <Select value={periodMonth} onValueChange={setPeriodMonth}>
-                            <SelectTrigger className="text-xs h-9 bg-white">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {monthNames.map((m, idx) => {
-                                const mNum = idx + 1;
-                                const isPrev = mNum === defaultPrevMonth;
-                                const isCurr = mNum === currentMonth;
-                                const isNext = mNum > currentMonth;
-                                return (
-                                  <SelectItem key={m} value={String(mNum)}>
-                                    {m} {isPrev ? '★ (Bulan Lalu)' : isCurr ? '(Bulan Berjalan)' : isNext ? '🗓️ (Bulan Depan)' : ''}
-                                  </SelectItem>
-                                );
-                              })}
-                            </SelectContent>
-                          </Select>
-                        </FormField>
+                    {/* Timeline Pills */}
+                    <div className="p-2.5 bg-white border border-slate-200 rounded-lg space-y-2">
+                      <div className="grid grid-cols-4 sm:grid-cols-8 gap-1.5">
+                        {relativeMonths.map((item) => {
+                          const isSelected = isPeriodSelected(item.month, item.year);
+                          const isFuture = item.isFuture;
+                          const isCurrent = item.isCurrent;
 
-                        <FormField label="Tahun Laporan" required>
-                          <Select value={periodYear} onValueChange={setPeriodYear}>
-                            <SelectTrigger className="text-xs h-9 bg-white">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {[currentYear - 1, currentYear, currentYear + 1].map((y) => (
-                                <SelectItem key={y} value={String(y)}>
-                                  {y}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </FormField>
-                      </div>
-                    ) : (
-                      /* Multi-Month Selector */
-                      <div className="space-y-2 p-3 bg-white border border-slate-200 rounded-lg">
-                        <div className="flex items-center justify-between text-xs text-slate-600 pb-1.5 border-b border-slate-100">
-                          <span>Pilih bulan ({selectedMonths.length} bulan terpilih):</span>
-                          <div className="flex gap-1.5">
+                          return (
                             <button
+                              key={`${item.year}-${item.month}`}
                               type="button"
-                              onClick={() => {
-                                const qMonths = [defaultPrevMonth - 2, defaultPrevMonth - 1, defaultPrevMonth]
-                                  .map((m) => (m <= 0 ? m + 12 : m));
-                                setSelectedMonths(qMonths);
-                              }}
-                              className="text-[11px] font-semibold text-orange-600 hover:text-orange-700 bg-orange-50 px-2 py-0.5 rounded border border-orange-200"
+                              onClick={() => togglePeriod(item.month, item.year)}
+                              title={
+                                isFuture
+                                  ? 'Future period - will automatically enroll into Monthly Routine Schedule'
+                                  : isCurrent
+                                  ? 'Ongoing month'
+                                  : 'Completed historical period'
+                              }
+                              className={`py-1.5 px-1 rounded text-xs font-semibold text-center border transition flex flex-col items-center justify-center select-none cursor-pointer ${
+                                isSelected
+                                  ? isFuture
+                                    ? 'bg-blue-600 text-white border-blue-700 shadow-2xs'
+                                    : 'bg-orange-600 text-white border-orange-700 shadow-2xs'
+                                  : isFuture
+                                  ? 'bg-blue-50/50 text-blue-800 border-blue-200 hover:bg-blue-100/60'
+                                  : isCurrent
+                                  ? 'bg-amber-50/60 text-amber-900 border-amber-200 hover:bg-amber-100'
+                                  : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                              }`}
                             >
-                              Kuartal Terakhir
+                              <span className="text-[11px]">{item.label}</span>
+                              <span className="text-[9px] opacity-80 mt-0.5">
+                                {item.isPrevious
+                                  ? '★ Prev'
+                                  : item.isCurrent
+                                  ? 'Ongoing'
+                                  : item.isFuture
+                                  ? '🗓️ Future'
+                                  : 'Past'}
+                              </span>
                             </button>
-                            <button
-                              type="button"
-                              onClick={() => setSelectedMonths([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])}
-                              className="text-[11px] text-slate-600 hover:text-slate-900 bg-slate-100 px-2 py-0.5 rounded"
-                            >
-                              Semua
-                            </button>
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-4 sm:grid-cols-6 gap-1.5 pt-1">
-                          {monthNames.map((m, idx) => {
-                            const mNum = idx + 1;
-                            const isSelected = selectedMonths.includes(mNum);
-                            return (
-                              <button
-                                key={m}
-                                type="button"
-                                onClick={() => {
-                                  setSelectedMonths((prev) =>
-                                    prev.includes(mNum)
-                                      ? prev.filter((x) => x !== mNum)
-                                      : [...prev, mNum].sort((a, b) => a - b)
-                                  );
-                                }}
-                                className={`py-1.5 px-2 rounded text-xs font-semibold text-center border transition select-none ${
-                                  isSelected
-                                    ? 'bg-orange-500 text-white border-orange-600 shadow-2xs'
-                                    : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-                                }`}
-                              >
-                                {m.slice(0, 3)}
-                              </button>
-                            );
-                          })}
-                        </div>
+                          );
+                        })}
                       </div>
-                    )}
 
-                    {/* Routine Schedule Checkbox & Banner */}
-                    <div className="pt-2 border-t border-slate-200/60 space-y-2">
-                      <label className="flex items-start gap-2.5 cursor-pointer text-xs font-medium text-slate-800">
-                        <input
-                          type="checkbox"
-                          checked={isRoutineSchedule}
-                          onChange={(e) => setIsRoutineSchedule(e.target.checked)}
-                          className="rounded border-slate-300 text-orange-600 focus:ring-orange-500 w-4 h-4 mt-0.5"
-                        />
-                        <div>
-                          <span className="font-semibold text-slate-900 block">
-                            Daftarkan ke Kalender Rutin Bulanan NOC (Monthly Schedule 24 Jam)
-                          </span>
-                          <span className="text-[11px] text-slate-500 block leading-relaxed">
-                            Centang agar pelanggan ini otomatis masuk dalam tugas rutin bulanan NOC tanpa perlu request manual lagi.
+                      {/* Period Status Indicator */}
+                      <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-2">
+                          <span className="text-slate-500 font-medium">Selected:</span>
+                          <span className="font-semibold text-slate-900">
+                            {selectedPeriods.length === 1
+                              ? `${monthNames[selectedPeriods[0].month - 1]} ${selectedPeriods[0].year}`
+                              : `${selectedPeriods.length} months (${selectedPeriods
+                                  .map((p) => `${monthShortNames[p.month - 1]} ${p.year}`)
+                                  .join(', ')})`}
                           </span>
                         </div>
-                      </label>
 
-                      {/* Auto alert for future months */}
-                      {parseInt(periodMonth, 10) > currentMonth && parseInt(periodYear, 10) >= currentYear && (
-                        <div className="p-2.5 rounded-lg bg-blue-50 border border-blue-200 text-blue-900 text-xs flex items-center gap-2">
-                          <Calendar className="w-4 h-4 text-blue-600 shrink-0" />
-                          <span>
-                            <strong>Bulan Mendatang Terdeteksi:</strong> Periode yang dipilih adalah bulan depan. Permintaan ini otomatis didaftarkan ke Kalender Rutin Bulanan.
-                          </span>
-                        </div>
-                      )}
+                        {hasFutureOrOngoing ? (
+                          <Badge variant="info" className="text-[10px] py-0 px-2 bg-blue-50 text-blue-700 border-blue-200">
+                            🗓️ Routine Schedule
+                          </Badge>
+                        ) : (
+                          <Badge variant="success" className="text-[10px] py-0 px-2 bg-emerald-50 text-emerald-700 border-emerald-200">
+                            Ready for NOC (24H SLA)
+                          </Badge>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -944,11 +973,11 @@ export default function NewRequestDrawer({
                         onClick={() => setUrgency('NORMAL')}
                         className={`p-2.5 rounded-lg border text-center transition cursor-pointer select-none ${
                           urgency === 'NORMAL'
-                            ? 'border-emerald-500 bg-emerald-50 ring-1 ring-emerald-500 text-emerald-800'
-                            : 'border-slate-200 bg-white hover:border-slate-300 text-slate-700'
+                            ? 'border-emerald-500 bg-emerald-50 ring-1 ring-emerald-500 text-emerald-800 font-bold'
+                            : 'border-slate-200 bg-white hover:border-slate-300 text-slate-700 font-medium'
                         }`}
                       >
-                        <div className="text-xs font-bold flex items-center justify-center gap-1.5">
+                        <div className="text-xs flex items-center justify-center gap-1.5">
                           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                           <span>Normal Priority</span>
                         </div>
@@ -958,11 +987,11 @@ export default function NewRequestDrawer({
                         onClick={() => setUrgency('URGENT')}
                         className={`p-2.5 rounded-lg border text-center transition cursor-pointer select-none ${
                           urgency === 'URGENT'
-                            ? 'border-rose-500 bg-rose-50 ring-1 ring-rose-500 text-rose-700'
-                            : 'border-slate-200 bg-white hover:border-slate-300 text-slate-700'
+                            ? 'border-rose-500 bg-rose-50 ring-1 ring-rose-500 text-rose-700 font-bold'
+                            : 'border-slate-200 bg-white hover:border-slate-300 text-slate-700 font-medium'
                         }`}
                       >
-                        <div className="text-xs font-bold flex items-center justify-center gap-1.5">
+                        <div className="text-xs flex items-center justify-center gap-1.5">
                           <AlertTriangle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
                           <span>Urgent Priority</span>
                         </div>
@@ -970,7 +999,7 @@ export default function NewRequestDrawer({
                     </div>
                   </FormField>
 
-                  <FormField label="Additional Notes / Client Instructions">
+                  <FormField label="Additional Notes">
                     <Textarea
                       rows={3}
                       value={notes}
@@ -1022,7 +1051,7 @@ export default function NewRequestDrawer({
         </div>
       </div>
 
-      {/* Browse Customer Directory Dialog (Layered on top of Drawer) */}
+      {/* Browse Customer Directory Dialog */}
       <Dialog open={isBrowseModalOpen} onOpenChange={setIsBrowseModalOpen}>
         <DialogContent className="max-w-xl max-h-[85vh] flex flex-col p-6 z-[60]">
           <DialogHeader>
@@ -1105,4 +1134,3 @@ export default function NewRequestDrawer({
     </div>
   );
 }
-
