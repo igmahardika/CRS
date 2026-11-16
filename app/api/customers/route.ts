@@ -59,6 +59,10 @@ export async function POST(req: NextRequest) {
       cactiGraphId,
       prtgSensorId,
       trafficDirection,
+      salesPicId,
+      salesPicName,
+      cePicId,
+      cePicName,
     } = body;
 
     if (!customerName || !customerId || !serviceId) {
@@ -92,6 +96,10 @@ export async function POST(req: NextRequest) {
         isMonthlyRoutine: Boolean(body.isMonthlyRoutine),
         routineGroup: body.routineGroup || 'Customer Experience',
         routineReportType: body.routineReportType || 'SLA',
+        salesPicId: salesPicId || null,
+        salesPicName: salesPicName || null,
+        cePicId: cePicId || null,
+        cePicName: cePicName || null,
       } as any,
     });
 
@@ -130,6 +138,10 @@ export async function PUT(req: NextRequest) {
         isMonthlyRoutine: data.isMonthlyRoutine !== undefined ? Boolean(data.isMonthlyRoutine) : undefined,
         routineGroup: data.routineGroup !== undefined ? String(data.routineGroup) : undefined,
         routineReportType: data.routineReportType !== undefined ? String(data.routineReportType) : undefined,
+        salesPicId: data.salesPicId !== undefined ? (data.salesPicId || null) : undefined,
+        salesPicName: data.salesPicName !== undefined ? (data.salesPicName || null) : undefined,
+        cePicId: data.cePicId !== undefined ? (data.cePicId || null) : undefined,
+        cePicName: data.cePicName !== undefined ? (data.cePicName || null) : undefined,
       } as any,
     });
 

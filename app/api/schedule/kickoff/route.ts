@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requirePermission } from '@/lib/auth';
 import { sendTelegramNotification } from '@/lib/telegram';
+import { sendEmail, getDepartmentEmail, getHelpdeskEmail } from '@/lib/email';
+import { renderKickoffDigestHtml } from '@/lib/email-templates';
 
 const monthNames = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -126,6 +128,50 @@ export async function POST(req: NextRequest) {
         `• <b>Batas Akhir SLA:</b> ⏳ <b>${deadlineStr} WIB (Tepat 24 Jam)</b>\n\n` +
         `<i>Seluruh staf diharapkan segera membuka menu <b>Antrean & Jadwal > Jadwal Bulanan & SLA 24 Jam</b> untuk mulai memproses pembuatan laporan agar tidak melampaui batas waktu 24 jam.</i>`,
     }).catch((e) => console.error('[Telegram Kickoff Error]', e));
+
+    // Send Batch Digest Email per Department to Supervisors
+    (async () => {
+      try {
+        const origin = req.nextUrl.origin || 'http://localhost:3000';
+        const helpdeskEmail = await getHelpdeskEmail();
+
+        // Group routine customers by assigned department
+        const deptGroupMap = new Map<string, typeof routineCustomers>();
+        for (const c of routineCustomers) {
+          const dept = c.routineGroup || 'Customer Experience';
+          if (!deptGroupMap.has(dept)) {
+            deptGroupMap.set(dept, []);
+          }
+          deptGroupMap.get(dept)!.push(c);
+        }
+
+        for (const [dept, custs] of deptGroupMap.entries()) {
+          const targetDeptEmail = await getDepartmentEmail(dept);
+          if (!targetDeptEmail) continue;
+
+          const emailHtml = renderKickoffDigestHtml({
+            period: `${monthName} ${periodYear}`,
+            deptName: dept,
+            deadlineStr: `${deadlineStr} WIB`,
+            customers: custs.map((c) => ({
+              customerName: c.customerName,
+              serviceId: c.serviceId,
+              reportType: c.routineReportType || 'SLA',
+            })),
+            scheduleUrl: `${origin}/schedule?month=${periodMonth}&year=${periodYear}&department=${encodeURIComponent(dept)}`,
+          });
+
+          await sendEmail({
+            to: targetDeptEmail,
+            cc: helpdeskEmail && helpdeskEmail !== targetDeptEmail ? helpdeskEmail : undefined,
+            subject: `[GENRE - KICKOFF SLA 24 JAM] Jadwal Rutin Laporan Bulanan ${monthName} ${periodYear} - Tim ${dept} (${custs.length} Pelanggan)`,
+            html: emailHtml,
+          });
+        }
+      } catch (digestErr) {
+        console.error('[Kickoff Digest Email Error]', digestErr);
+      }
+    })();
 
     return NextResponse.json({
       success: true,

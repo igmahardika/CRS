@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { sendTelegramNotification } from '@/lib/telegram';
+import { sendEmail, getDepartmentEmail, getHelpdeskEmail } from '@/lib/email';
+import { renderRequestReceivedHtml } from '@/lib/email-templates';
 import { requireAuth, requirePermission } from '@/lib/auth';
 import { hasPermission, isValidDepartment } from '@/lib/permissions';
 
@@ -117,11 +119,17 @@ export async function POST(req: NextRequest) {
     const reportType = String(body.reportType || 'SLA').toUpperCase();
     const periodMonth = parseInt(body.periodMonth, 10) || new Date().getMonth() + 1;
     const periodYear = parseInt(body.periodYear, 10) || new Date().getFullYear();
+    const periodsJson = body.periodsJson ? JSON.stringify(body.periodsJson) : null;
     const urgency = body.urgency === 'URGENT' ? 'URGENT' : 'NORMAL';
     const notes = String(body.notes || '').trim() || null;
     const requesterEmail = body.requesterEmail ? String(body.requesterEmail).trim() : (auth.session.email || null);
     const customerId = body.customerId ? String(body.customerId).trim() : null;
     const serviceId = body.serviceId ? String(body.serviceId).trim() : null;
+    const salesPicName = body.salesPicName ? String(body.salesPicName).trim() : null;
+    const salesPicEmail = body.salesPicEmail ? String(body.salesPicEmail).trim().toLowerCase() : null;
+    const cePicName = body.cePicName ? String(body.cePicName).trim() : null;
+    const cePicEmail = body.cePicEmail ? String(body.cePicEmail).trim().toLowerCase() : null;
+    const isRoutineSchedule = Boolean(body.isRoutineSchedule);
 
     if (!requesterName || !customerName) {
       return NextResponse.json({
@@ -157,6 +165,23 @@ export async function POST(req: NextRequest) {
 
     const nextSeq = String(maxSeq + 1).padStart(4, '0');
     const ticketNumber = `${prefix}${nextSeq}`;
+    const emailThreadMessageId = `<${ticketNumber}@genre.nexa.net.id>`;
+
+    // If requested for future schedule / routine, auto-enroll customer into Monthly Routine
+    if (isRoutineSchedule && customerId) {
+      await prisma.customer.updateMany({
+        where: { id: customerId },
+        data: {
+          isMonthlyRoutine: true,
+          routineGroup: requesterDept,
+          routineReportType: reportType,
+          salesPicName: salesPicName || undefined,
+          cePicName: cePicName || undefined,
+        },
+      }).catch((e) => console.error('[Auto-enroll Routine Error]', e));
+    }
+
+    const initialStatus = isRoutineSchedule ? 'SCHEDULED_ROUTINE' : 'PENDING';
 
     const created = await prisma.reportRequest.create({
       data: {
@@ -165,20 +190,29 @@ export async function POST(req: NextRequest) {
         requesterName,
         requesterEmail,
         requesterDept,
+        salesPicName,
+        salesPicEmail,
+        cePicName,
+        cePicEmail,
         reportType,
         customerName,
         customerId,
         serviceId,
         periodMonth,
         periodYear,
+        periodsJson,
         urgency,
         notes,
-        status: 'PENDING',
+        status: initialStatus,
+        emailThreadMessageId,
       },
     });
 
     // Notify Telegram group topic
     const monthName = monthNames[periodMonth - 1] || `Bulan ${periodMonth}`;
+    const periodLabel = periodsJson
+      ? `${monthName} ${periodYear} (Multi-Bulan)`
+      : `${monthName} ${periodYear}`;
     const urgencyBadge = urgency === 'URGENT' ? '🔴 <b>URGENT (Butuh Cepat)</b>' : '🟢 Normal';
 
     sendTelegramNotification({
@@ -186,19 +220,76 @@ export async function POST(req: NextRequest) {
         `📥 <b>[PERMINTAAN LAPORAN BARU DITERIMA]</b>\n\n` +
         `• <b>No. Tiket:</b> <code>${created.ticketNumber}</code>\n` +
         `• <b>Pemohon:</b> ${created.requesterName} (${created.requesterDept})\n` +
+        (created.salesPicName ? `• <b>PIC Sales:</b> ${created.salesPicName}\n` : '') +
+        (created.cePicName ? `• <b>PIC CE:</b> ${created.cePicName}\n` : '') +
         (created.requesterEmail ? `• <b>Email/Kontak:</b> ${created.requesterEmail}\n` : '') +
         `• <b>Pelanggan:</b> <b>${created.customerName}</b>\n` +
         (created.serviceId ? `• <b>Service ID:</b> <code>${created.serviceId}</code>\n` : '') +
         `• <b>Tipe Laporan:</b> ${created.reportType}\n` +
-        `• <b>Periode:</b> ${monthName} ${created.periodYear}\n` +
+        `• <b>Periode:</b> ${periodLabel}\n` +
         `• <b>Urgensi:</b> ${urgencyBadge}\n` +
+        (isRoutineSchedule ? `• <b>Jadwal:</b> 🗓️ Terjadwal Rutin Bulanan\n` : '') +
         `• <b>Catatan Pemohon:</b> <i>${created.notes || '-'}</i>\n\n` +
         `<i>Permintaan telah masuk antrean sistem. Staf dapat memproses melalui menu Antrean & Jadwal > Antrean Permintaan.</i>`,
     }).catch((e) => console.error('[Telegram Notify Request Error]', e));
 
+    // Send Threaded Email (Milestone 1)
+    (async () => {
+      try {
+        const deptEmail = await getDepartmentEmail(created.requesterDept);
+        const helpdeskEmail = await getHelpdeskEmail();
+
+        // CC list: Helpdesk always receives copy + requesterEmail or salesPicEmail if valid
+        const ccSet = new Set<string>();
+        if (helpdeskEmail) ccSet.add(helpdeskEmail);
+        if (created.requesterEmail && created.requesterEmail.includes('@')) {
+          ccSet.add(created.requesterEmail.trim().toLowerCase());
+        }
+        if (created.salesPicEmail && created.salesPicEmail.includes('@')) {
+          ccSet.add(created.salesPicEmail.trim().toLowerCase());
+        }
+        if (created.cePicEmail && created.cePicEmail.includes('@')) {
+          ccSet.add(created.cePicEmail.trim().toLowerCase());
+        }
+        // Remove recipient from CC if identical
+        ccSet.delete(deptEmail.toLowerCase());
+
+        const origin = req.nextUrl.origin || 'http://localhost:3000';
+        const appUrl = `${origin}/requests?ticket=${encodeURIComponent(created.ticketNumber)}`;
+
+        const emailHtml = renderRequestReceivedHtml({
+          ticketNumber: created.ticketNumber,
+          customerName: created.customerName,
+          serviceId: created.serviceId,
+          reportType: created.reportType,
+          period: periodLabel,
+          urgency: created.urgency,
+          requesterName: created.requesterName,
+          requesterDept: created.requesterDept,
+          salesPicName: created.salesPicName,
+          cePicName: created.cePicName,
+          notes: created.notes,
+          appUrl,
+        });
+
+        await sendEmail({
+          to: deptEmail,
+          cc: Array.from(ccSet),
+          subject: `[GENRE - Tiket ${created.ticketNumber}] Permintaan Laporan ${created.reportType} - ${created.customerName} (${periodLabel})`,
+          html: emailHtml,
+          ticketNumber: created.ticketNumber,
+          messageId: emailThreadMessageId,
+        });
+      } catch (emailErr) {
+        console.error('[Send Request Email Error]', emailErr);
+      }
+    })();
+
     return NextResponse.json({
       success: true,
-      message: 'Permintaan laporan berhasil disubmit.',
+      message: isRoutineSchedule
+        ? 'Permintaan laporan berhasil disubmit dan dijadwalkan ke Kalender Rutin Bulanan.'
+        : 'Permintaan laporan berhasil disubmit.',
       request: created,
     });
   } catch (err: unknown) {

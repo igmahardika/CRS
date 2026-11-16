@@ -250,6 +250,20 @@ export default function CustomerModal({
                         <span>Nodes: <span className="tabular-nums text-slate-700">{customer.nodeCount}</span></span>
                         <span>Target SLA: <span className="tabular-nums text-slate-700">{customer.targetSla}%</span></span>
                       </div>
+                      {(customer.salesPicName || customer.cePicName) && (
+                        <div className="flex items-center gap-2 mt-1 text-[11px]">
+                          {customer.salesPicName && (
+                            <span className="text-purple-700 bg-purple-50 px-1.5 py-0.5 rounded border border-purple-200">
+                              SLS: {customer.salesPicName}
+                            </span>
+                          )}
+                          {customer.cePicName && (
+                            <span className="text-sky-700 bg-sky-50 px-1.5 py-0.5 rounded border border-sky-200">
+                              CE: {customer.cePicName}
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </Button>
 
                     <div className="flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity ml-2">

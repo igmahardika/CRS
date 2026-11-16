@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requirePermission } from '@/lib/auth';
 import { sendTelegramNotification } from '@/lib/telegram';
+import { sendEmail, getDepartmentEmail, getHelpdeskEmail } from '@/lib/email';
+import { renderApprovalNeededHtml, renderReportApprovedHtml } from '@/lib/email-templates';
 
 export async function POST(req: NextRequest) {
   const auth = await requirePermission('report:approve');
@@ -135,6 +137,114 @@ export async function POST(req: NextRequest) {
     });
 
     sendTelegramNotification({ text: notificationText }).catch((e) => console.error('[Telegram Approve Error]', e));
+
+    // Handle Threaded Email Notifications & Linked Request Status update
+    (async () => {
+      try {
+        const origin = req.nextUrl.origin || 'http://localhost:3000';
+
+        // Check if there is an active linked request
+        const linkedRequest = await prisma.reportRequest.findFirst({
+          where: {
+            OR: [
+              { processedReportId: updated.id },
+              { processedMrtgReportId: updated.id },
+              { processedSlaReportId: updated.id },
+              {
+                customerName: updated.customerName,
+                periodMonth: updated.periodMonth,
+                periodYear: updated.periodYear,
+              },
+            ],
+          },
+        });
+
+        const ticketNumber = linkedRequest?.ticketNumber || null;
+        const targetDept = updated.assignedDepartment || 'Customer Experience';
+        const deptEmail = await getDepartmentEmail(targetDept);
+        const helpdeskEmail = await getHelpdeskEmail();
+
+        // Milestone 2: Stage 1 Approved (NOC) -> Forward to Dept Supervisor for Approval
+        if (nextStatus === 'PENDING_DEPT_APPROVAL') {
+          const reviewUrl = `${origin}/approvals`;
+          const emailHtml = renderApprovalNeededHtml({
+            ticketNumber,
+            customerName: updated.customerName,
+            serviceId: updated.serviceId,
+            reportType: updated.reportType,
+            period: updated.reportPeriod,
+            documentNumber: updated.documentNumber,
+            deptName: targetDept,
+            verifiedByNocName: auth.session.name,
+            reviewUrl,
+          });
+
+          await sendEmail({
+            to: deptEmail,
+            subject: ticketNumber
+              ? `Re: [GENRE - Tiket ${ticketNumber}] Permintaan Laporan ${updated.reportType} - ${updated.customerName} (${updated.reportPeriod})`
+              : `[GENRE - PERLU APPROVAL] Laporan ${updated.reportType} - ${updated.customerName} (${updated.documentNumber})`,
+            html: emailHtml,
+            ticketNumber: ticketNumber || undefined,
+            isFollowUp: Boolean(ticketNumber),
+          });
+        }
+
+        // Milestone 3: Final Approved -> Released & Ready for Download
+        if (nextStatus === 'APPROVED') {
+          // If linked request exists, mark as COMPLETED
+          if (linkedRequest && linkedRequest.status !== 'COMPLETED') {
+            await prisma.reportRequest.update({
+              where: { id: linkedRequest.id },
+              data: {
+                status: 'COMPLETED',
+                processedReportId: updated.id,
+              },
+            }).catch(() => {});
+          }
+
+          const downloadUrl = `${origin}/api/reports/download?id=${updated.id}`;
+          const emailHtml = renderReportApprovedHtml({
+            ticketNumber,
+            customerName: updated.customerName,
+            serviceId: updated.serviceId,
+            reportType: updated.reportType,
+            period: updated.reportPeriod,
+            documentNumber: updated.documentNumber,
+            approvedByName: auth.session.name,
+            approvedDeptName: auth.session.department || targetDept,
+            downloadUrl,
+            appUrl: `${origin}/history`,
+          });
+
+          const ccList = new Set<string>();
+          if (helpdeskEmail) ccList.add(helpdeskEmail);
+          if (linkedRequest?.requesterEmail && linkedRequest.requesterEmail.includes('@')) {
+            ccList.add(linkedRequest.requesterEmail.trim().toLowerCase());
+          }
+          if (linkedRequest?.salesPicEmail && linkedRequest.salesPicEmail.includes('@')) {
+            ccList.add(linkedRequest.salesPicEmail.trim().toLowerCase());
+          }
+          if (linkedRequest?.cePicEmail && linkedRequest.cePicEmail.includes('@')) {
+            ccList.add(linkedRequest.cePicEmail.trim().toLowerCase());
+          }
+          ccList.delete(deptEmail.toLowerCase());
+
+          await sendEmail({
+            to: deptEmail,
+            cc: Array.from(ccList),
+            subject: ticketNumber
+              ? `Re: [GENRE - Tiket ${ticketNumber}] Permintaan Laporan ${updated.reportType} - ${updated.customerName} (${updated.reportPeriod})`
+              : `[GENRE - LAPORAN RESMI DISAHKAN] Laporan ${updated.reportType} - ${updated.customerName} (${updated.documentNumber})`,
+            html: emailHtml,
+            ticketNumber: ticketNumber || undefined,
+            isFollowUp: Boolean(ticketNumber),
+          });
+        }
+      } catch (notifyErr) {
+        console.error('[Approval Notify Error]', notifyErr);
+      }
+    })();
 
     return NextResponse.json({
       success: true,

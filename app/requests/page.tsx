@@ -64,15 +64,18 @@ interface ReportRequestItem {
   requesterName: string;
   requesterEmail?: string;
   requesterDept: string;
+  salesPicName?: string;
+  cePicName?: string;
   reportType: 'SLA' | 'MRTG' | 'BOTH';
   customerName: string;
   customerId?: string;
   serviceId?: string;
   periodMonth: number;
   periodYear: number;
+  periodsJson?: string;
   urgency: 'NORMAL' | 'URGENT';
   notes?: string;
-  status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+  status: 'PENDING' | 'IN_PROGRESS' | 'SCHEDULED_ROUTINE' | 'COMPLETED' | 'CANCELLED';
   processedById?: string;
   processedByName?: string;
   processedReportId?: string;
@@ -213,7 +216,8 @@ export default function RequestsQueuePage() {
     const isBothParam = req.reportType === 'BOTH' ? '&isBoth=1' : '';
     const typeParam = req.reportType === 'BOTH' ? 'SLA' : req.reportType;
     const deptParam = req.requesterDept ? `&dept=${encodeURIComponent(req.requesterDept)}` : '';
-    const url = `/?customerName=${encodeURIComponent(req.customerName)}&serviceId=${encodeURIComponent(req.serviceId || '')}&customerId=${encodeURIComponent(req.customerId || '')}&type=${typeParam}&month=${req.periodMonth}&year=${req.periodYear}&requestId=${req.id}&ticket=${encodeURIComponent(req.ticketNumber)}${deptParam}${isBothParam}`;
+    const periodsParam = req.periodsJson ? `&periods=${encodeURIComponent(req.periodsJson)}` : '';
+    const url = `/?customerName=${encodeURIComponent(req.customerName)}&serviceId=${encodeURIComponent(req.serviceId || '')}&customerId=${encodeURIComponent(req.customerId || '')}&type=${typeParam}&month=${req.periodMonth}&year=${req.periodYear}&requestId=${req.id}&ticket=${encodeURIComponent(req.ticketNumber)}${deptParam}${isBothParam}${periodsParam}`;
 
     router.push(url);
   };
@@ -505,11 +509,23 @@ export default function RequestsQueuePage() {
                       {/* Customer Name */}
                       <TableCell className="font-semibold text-slate-900 text-xs">
                         <div>{r.customerName}</div>
-                        {r.serviceId && (
-                          <div className="text-xs text-slate-500 font-normal">
-                            SID: {r.serviceId}
-                          </div>
-                        )}
+                        <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
+                          {r.serviceId && (
+                            <span className="font-mono text-[11px] text-slate-500">
+                              SID: {r.serviceId}
+                            </span>
+                          )}
+                          {r.salesPicName && (
+                            <span className="text-[10px] bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded border border-amber-200">
+                              AE: {r.salesPicName}
+                            </span>
+                          )}
+                          {r.cePicName && (
+                            <span className="text-[10px] bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded border border-blue-200">
+                              CE: {r.cePicName}
+                            </span>
+                          )}
+                        </div>
                       </TableCell>
 
                       {/* Report Type */}
@@ -521,7 +537,17 @@ export default function RequestsQueuePage() {
 
                       {/* Period */}
                       <TableCell className="text-xs text-slate-600 font-medium">
-                        {monthName} {r.periodYear}
+                        {(() => {
+                          if (r.periodsJson) {
+                            try {
+                              const parsed = JSON.parse(r.periodsJson);
+                              if (Array.isArray(parsed) && parsed.length > 1) {
+                                return parsed.map((p: any) => monthNames[p.month - 1].slice(0, 3)).join(', ') + ` ${r.periodYear}`;
+                              }
+                            } catch {}
+                          }
+                          return `${monthName} ${r.periodYear}`;
+                        })()}
                       </TableCell>
 
                       {/* Requester */}
@@ -539,6 +565,10 @@ export default function RequestsQueuePage() {
                         ) : r.status === 'IN_PROGRESS' ? (
                           <Badge variant="info" dot>
                             In Progress
+                          </Badge>
+                        ) : r.status === 'SCHEDULED_ROUTINE' ? (
+                          <Badge variant="soft" className="bg-purple-50 text-purple-700 border-purple-200" dot>
+                            Terjadwal Rutin
                           </Badge>
                         ) : r.status === 'CANCELLED' ? (
                           <Badge variant="neutral">Cancelled</Badge>

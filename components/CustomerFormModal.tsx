@@ -37,6 +37,10 @@ export interface CustomerData {
   isMonthlyRoutine?: boolean;
   routineGroup?: 'Customer Experience' | 'Account Executive' | 'Finance' | string;
   routineReportType?: 'SLA' | 'MRTG' | 'BOTH';
+  salesPicId?: string | null;
+  salesPicName?: string | null;
+  cePicId?: string | null;
+  cePicName?: string | null;
 }
 
 export interface CustomerFormModalProps {
@@ -67,10 +71,30 @@ export default function CustomerFormModal({
     isMonthlyRoutine: false,
     routineGroup: 'Customer Experience',
     routineReportType: 'SLA',
+    salesPicId: '',
+    salesPicName: '',
+    cePicId: '',
+    cePicName: '',
   });
 
+  const [staffList, setStaffList] = useState<
+    Array<{ id: string; name: string; department: string; roleTitle?: string | null; email?: string | null }>
+  >([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      fetch('/api/staff')
+        .then((r) => r.json())
+        .then((d) => {
+          if (Array.isArray(d.staff)) {
+            setStaffList(d.staff);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     if (initialData) {
@@ -82,6 +106,10 @@ export default function CustomerFormModal({
         isMonthlyRoutine: initialData.isMonthlyRoutine ?? false,
         routineGroup: initialData.routineGroup || 'Customer Experience',
         routineReportType: initialData.routineReportType || 'SLA',
+        salesPicId: initialData.salesPicId || '',
+        salesPicName: initialData.salesPicName || '',
+        cePicId: initialData.cePicId || '',
+        cePicName: initialData.cePicName || '',
       });
     } else {
       setFormData({
@@ -99,6 +127,10 @@ export default function CustomerFormModal({
         isMonthlyRoutine: false,
         routineGroup: 'Customer Experience',
         routineReportType: 'SLA',
+        salesPicId: '',
+        salesPicName: '',
+        cePicId: '',
+        cePicName: '',
       });
     }
     setErrorMsg(null);
@@ -273,6 +305,95 @@ export default function CustomerFormModal({
                 </SelectContent>
               </Select>
             </FormField>
+          </div>
+
+          <div className="p-3.5 bg-slate-50/80 rounded-xl border border-slate-200/80 space-y-3">
+            <div className="text-[12px] font-semibold text-slate-700 uppercase tracking-wider">
+              Person in Charge (PIC)
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <FormField label="PIC Sales / Account Executive">
+                <Select
+                  value={formData.salesPicId || 'none'}
+                  onValueChange={(val) => {
+                    if (val === 'none') {
+                      setFormData({ ...formData, salesPicId: '', salesPicName: '' });
+                    } else {
+                      const staff = staffList.find((s) => s.id === val);
+                      setFormData({
+                        ...formData,
+                        salesPicId: val,
+                        salesPicName: staff ? staff.name : '',
+                      });
+                    }
+                  }}
+                >
+                  <SelectTrigger className="bg-white">
+                    <SelectValue placeholder="Pilih Sales PIC..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">-- Belum Ditentukan --</SelectItem>
+                    {staffList
+                      .filter((s) => s.department === 'SALES' || s.department === 'ALL')
+                      .map((s) => (
+                        <SelectItem key={s.id} value={s.id}>
+                          {s.name} {s.roleTitle ? `(${s.roleTitle})` : ''}
+                        </SelectItem>
+                      ))}
+                    {staffList.filter((s) => s.department !== 'SALES' && s.department !== 'ALL').length > 0 && (
+                      staffList
+                        .filter((s) => s.department !== 'SALES' && s.department !== 'ALL')
+                        .map((s) => (
+                          <SelectItem key={s.id} value={s.id}>
+                            {s.name} ({s.department})
+                          </SelectItem>
+                        ))
+                    )}
+                  </SelectContent>
+                </Select>
+              </FormField>
+
+              <FormField label="PIC Customer Experience (CE)">
+                <Select
+                  value={formData.cePicId || 'none'}
+                  onValueChange={(val) => {
+                    if (val === 'none') {
+                      setFormData({ ...formData, cePicId: '', cePicName: '' });
+                    } else {
+                      const staff = staffList.find((s) => s.id === val);
+                      setFormData({
+                        ...formData,
+                        cePicId: val,
+                        cePicName: staff ? staff.name : '',
+                      });
+                    }
+                  }}
+                >
+                  <SelectTrigger className="bg-white">
+                    <SelectValue placeholder="Pilih CE PIC..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">-- Belum Ditentukan --</SelectItem>
+                    {staffList
+                      .filter((s) => s.department === 'CE' || s.department === 'ALL')
+                      .map((s) => (
+                        <SelectItem key={s.id} value={s.id}>
+                          {s.name} {s.roleTitle ? `(${s.roleTitle})` : ''}
+                        </SelectItem>
+                      ))}
+                    {staffList.filter((s) => s.department !== 'CE' && s.department !== 'ALL').length > 0 && (
+                      staffList
+                        .filter((s) => s.department !== 'CE' && s.department !== 'ALL')
+                        .map((s) => (
+                          <SelectItem key={s.id} value={s.id}>
+                            {s.name} ({s.department})
+                          </SelectItem>
+                        ))
+                    )}
+                  </SelectContent>
+                </Select>
+              </FormField>
+            </div>
           </div>
 
           <div className="p-3.5 bg-orange-50/50 rounded-xl border border-orange-200/60 space-y-3">

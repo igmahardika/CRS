@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, Suspense, useCallback, useRef } from 'react';
+import React, { useState, useEffect, Suspense, useCallback, useRef, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
   FileText,
@@ -77,6 +77,17 @@ function GeneratorPageContent() {
   const revisingReportIdParam = searchParams.get('revisingReportId');
   const isBothParam = searchParams.get('isBoth') === '1' || typeParam === 'BOTH';
   const deptParam = searchParams.get('dept');
+  const periodsParam = searchParams.get('periods');
+
+  const requestedPeriods = useMemo(() => {
+    try {
+      if (!periodsParam) return [];
+      const parsed = JSON.parse(periodsParam);
+      return Array.isArray(parsed) ? (parsed as Array<{ month: number; year: number }>) : [];
+    } catch {
+      return [];
+    }
+  }, [periodsParam]);
 
   const [activeRequestId, setActiveRequestId] = useState<string | null>(requestIdParam);
   const [activeRequestTicket, setActiveRequestTicket] = useState<string | null>(ticketParam);
@@ -1293,6 +1304,32 @@ function GeneratorPageContent() {
 
               {/* Period & Document Number Row */}
               <div className="pt-2 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
+                {requestedPeriods.length > 1 && (
+                  <div className="sm:col-span-12 flex items-center gap-2 flex-wrap p-2.5 bg-orange-50/80 border border-orange-200/80 rounded-lg text-xs mb-1">
+                    <span className="font-semibold text-orange-900">Periode Terpilih ({requestedPeriods.length}):</span>
+                    {requestedPeriods.map((p, idx) => {
+                      const isSelected = month === p.month && year === p.year;
+                      return (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => {
+                            setMonth(p.month);
+                            setYear(p.year);
+                          }}
+                          className={`px-2.5 py-1 rounded text-xs font-medium transition flex items-center gap-1 cursor-pointer ${
+                            isSelected
+                              ? 'bg-orange-600 text-white shadow-xs font-semibold'
+                              : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
+                          }`}
+                        >
+                          <span>{monthNames[p.month - 1]} {p.year}</span>
+                          {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
                 <div className="sm:col-span-4">
                   <FormField label="Report Month">
                     <Select

@@ -895,6 +895,26 @@ export default function CustomersPage() {
                             </span>
                           )}
                         </div>
+                        {(c.salesPicName || c.cePicName) && (
+                          <div className="flex items-center gap-1.5 mt-1 text-[11px] text-slate-500 font-normal">
+                            {c.salesPicName && (
+                              <span
+                                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200 text-[11px]"
+                                title={`PIC Sales: ${c.salesPicName}`}
+                              >
+                                <span className="font-semibold text-[10px] text-purple-800">SLS:</span> {c.salesPicName}
+                              </span>
+                            )}
+                            {c.cePicName && (
+                              <span
+                                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-sky-50 text-sky-700 border border-sky-200 text-[11px]"
+                                title={`PIC CE: ${c.cePicName}`}
+                              >
+                                <span className="font-semibold text-[10px] text-sky-800">CE:</span> {c.cePicName}
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </TableCell>
                       <TableCell className="text-slate-600 text-xs font-mono tabular-nums">{c.customerId}</TableCell>
                       <TableCell className="text-slate-600 text-xs font-mono tabular-nums">{c.serviceId}</TableCell>

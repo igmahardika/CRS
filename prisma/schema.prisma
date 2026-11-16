@@ -23,11 +23,17 @@ model Customer {
   isMonthlyRoutine  Boolean  @default(false)    // Enrolled in monthly routine schedule
   routineGroup      String   @default("Customer Experience") // NOC classified: "Customer Experience", "Account Executive", "Finance"
   routineReportType String   @default("SLA")    // "SLA", "MRTG", or "BOTH"
+  salesPicId        String?  // Linked StaffMember ID for Account Executive / Sales
+  salesPicName      String?  // Name of Sales PIC
+  cePicId           String?  // Linked StaffMember ID for Customer Experience
+  cePicName         String?  // Name of CE PIC
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
   @@index([isMonthlyRoutine])
   @@index([routineGroup])
+  @@index([salesPicId])
+  @@index([cePicId])
 }
 
 model Report {
@@ -155,7 +161,46 @@ model AppConfig {
   telegramChatId               String   @default("")
   telegramThreadId             String   @default("") // Topic ID / message_thread_id
   telegramNotificationsEnabled Boolean  @default(false)
+  
+  // Email (SMTP) Integration
+  emailNotificationsEnabled    Boolean  @default(false)
+  smtpHost                     String   @default("")
+  smtpPort                     Int      @default(587)
+  smtpSecure                   Boolean  @default(false)
+  smtpUser                     String   @default("")
+  smtpPassword                 String   @default("")
+  smtpFromEmail                String   @default("noreply-genre@nexa.net.id")
+  smtpFromName                 String   @default("NEXA GENRE Reporting")
+  
+  // Department Email Mappings (Distribution Lists)
+  emailDeptSales               String   @default("sls@nexa.net.id")
+  emailDeptCe                  String   @default("cxe@nexa.net.id")
+  emailDeptFinance             String   @default("finc@nexa.net.id")
+  emailDeptHelpdesk            String   @default("helpdesk@nexa.net.id")
+  
+  // Custom Notification Templates
+  emailTemplateRequestReceived String?
+  emailTemplateApprovalNeeded  String?
+  emailTemplateReportApproved  String?
+  telegramTemplateRequestReceived String?
+  telegramTemplateApprovalNeeded  String?
+  
   updatedAt                    DateTime @updatedAt
+}
+
+model StaffMember {
+  id          String   @id @default(cuid())
+  name        String
+  email       String
+  phone       String?
+  department  String   // "Customer Experience", "Account Executive", "Finance", "Network Operation"
+  roleTitle   String?  // e.g. "Account Manager", "Customer Experience Specialist"
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([department])
+  @@index([isActive])
 }
 
 model ReportRequest {
@@ -165,15 +210,21 @@ model ReportRequest {
   requesterName     String
   requesterEmail    String?
   requesterDept     String    // "Network Operation", "Customer Experience", "Account Executive", "Finance"
+  salesPicName      String?   // Sales / Account Executive PIC Name
+  salesPicEmail     String?   // Sales / Account Executive PIC Email
+  cePicName         String?   // Customer Experience PIC Name
+  cePicEmail        String?   // Customer Experience PIC Email
   reportType        String    // "SLA", "MRTG", "BOTH"
   customerName      String
   customerId        String?
   serviceId         String?
   periodMonth       Int
   periodYear        Int
+  periodsJson       String?   // JSON Array for multi-month requests e.g. [{"month":8,"year":2026},{"month":9,"year":2026}]
   urgency           String    @default("NORMAL") // "NORMAL" or "URGENT"
   notes             String?
-  status            String    @default("PENDING") // "PENDING", "IN_PROGRESS", "COMPLETED", "CANCELLED"
+  status            String    @default("PENDING") // "PENDING", "IN_PROGRESS", "SCHEDULED_ROUTINE", "COMPLETED", "CANCELLED"
+  emailThreadMessageId String? // RFC 2822 Message-ID for thread chaining e.g. <REQ-202611-0001@genre.nexa.net.id>
   processedById         String?
   processedByName       String?
   processedReportId     String?

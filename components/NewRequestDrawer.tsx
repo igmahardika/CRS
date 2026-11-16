@@ -44,6 +44,10 @@ interface CustomerSearchResult {
   serviceName: string;
   routineReportType?: string;
   targetSla?: number;
+  salesPicId?: string | null;
+  salesPicName?: string | null;
+  cePicId?: string | null;
+  cePicName?: string | null;
 }
 
 const monthNames = [
@@ -62,8 +66,13 @@ export default function NewRequestDrawer({
   onOpenChange,
   onSuccess,
 }: NewRequestDrawerProps) {
-  const currentMonth = new Date().getMonth() + 1;
-  const currentYear = new Date().getFullYear();
+  const now = new Date();
+  const currentMonth = now.getMonth() + 1;
+  const currentYear = now.getFullYear();
+
+  // Smart Default: previous month (M-1)
+  const defaultPrevMonth = now.getMonth() === 0 ? 12 : now.getMonth();
+  const defaultPrevYear = now.getMonth() === 0 ? currentYear - 1 : currentYear;
 
   const [currentUser, setCurrentUser] = useState<{
     id: string;
@@ -76,6 +85,21 @@ export default function NewRequestDrawer({
   const [requesterName, setRequesterName] = useState('');
   const [requesterDept, setRequesterDept] = useState('Network Operation');
   const [requesterEmail, setRequesterEmail] = useState('');
+
+  // Staff PIC state
+  const [staffList, setStaffList] = useState<Array<{
+    id: string;
+    name: string;
+    email: string;
+    phone: string | null;
+    department: string;
+    roleTitle: string | null;
+  }>>([]);
+  const [salesPicName, setSalesPicName] = useState('');
+  const [salesPicEmail, setSalesPicEmail] = useState('');
+  const [cePicName, setCePicName] = useState('');
+  const [cePicEmail, setCePicEmail] = useState('');
+
   const [reportType, setReportType] = useState<'SLA' | 'MRTG' | 'BOTH'>('SLA');
   const [customerName, setCustomerName] = useState('');
   const [serviceId, setServiceId] = useState('');
@@ -93,8 +117,13 @@ export default function NewRequestDrawer({
   const [modalCustomers, setModalCustomers] = useState<CustomerSearchResult[]>([]);
   const [isModalLoading, setIsModalLoading] = useState(false);
 
-  const [periodMonth, setPeriodMonth] = useState(String(currentMonth));
-  const [periodYear, setPeriodYear] = useState(String(currentYear));
+  // Period state (Default M-1)
+  const [periodMonth, setPeriodMonth] = useState(String(defaultPrevMonth));
+  const [periodYear, setPeriodYear] = useState(String(defaultPrevYear));
+  const [isMultiMonth, setIsMultiMonth] = useState(false);
+  const [selectedMonths, setSelectedMonths] = useState<number[]>([defaultPrevMonth]);
+  const [isRoutineSchedule, setIsRoutineSchedule] = useState(false);
+
   const [urgency, setUrgency] = useState<'NORMAL' | 'URGENT'>('NORMAL');
   const [notes, setNotes] = useState('');
 
@@ -109,7 +138,7 @@ export default function NewRequestDrawer({
   } | null>(null);
   const [copiedTicket, setCopiedTicket] = useState(false);
 
-  // Fetch current user info for prefill & role locking
+  // Fetch current user info for prefill & role locking + Staff PIC list
   useEffect(() => {
     if (open) {
       fetch('/api/auth/me')
@@ -121,6 +150,15 @@ export default function NewRequestDrawer({
             if (data.user.department) {
               setRequesterDept(data.user.department);
             }
+          }
+        })
+        .catch(() => {});
+
+      fetch('/api/staff?active=true')
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data) => {
+          if (data?.staff) {
+            setStaffList(data.staff);
           }
         })
         .catch(() => {});
@@ -200,7 +238,19 @@ export default function NewRequestDrawer({
       setReportType(c.routineReportType as 'SLA' | 'MRTG' | 'BOTH');
     }
 
-    toast.success(`Selected customer: ${c.customerName}`);
+    // Auto-populate PIC Sales & CE if present
+    if (c.salesPicName) {
+      setSalesPicName(c.salesPicName);
+      const found = staffList.find((s) => s.name === c.salesPicName);
+      if (found) setSalesPicEmail(found.email);
+    }
+    if (c.cePicName) {
+      setCePicName(c.cePicName);
+      const found = staffList.find((s) => s.name === c.cePicName);
+      if (found) setCePicEmail(found.email);
+    }
+
+    toast.success(`Pelanggan dipilih: ${c.customerName}`);
   };
 
   const handleClearCustomer = () => {
@@ -220,12 +270,23 @@ export default function NewRequestDrawer({
     e.preventDefault();
 
     if (!requesterName.trim() || !requesterDept.trim() || !customerName.trim()) {
-      toast.error('Please complete Requester Name, Department, and Customer Name.');
+      toast.error('Lengkapi Nama Pemohon, Departemen, dan Nama Pelanggan.');
+      return;
+    }
+
+    if (isMultiMonth && selectedMonths.length === 0) {
+      toast.error('Pilih minimal satu bulan untuk laporan multi-bulan.');
       return;
     }
 
     setIsSubmitting(true);
     try {
+      const yearNum = parseInt(periodYear, 10);
+      const primaryMonth = isMultiMonth ? selectedMonths[selectedMonths.length - 1] : parseInt(periodMonth, 10);
+      const periodsPayload = isMultiMonth
+        ? selectedMonths.map((m) => ({ month: m, year: yearNum }))
+        : null;
+
       const res = await fetch('/api/requests', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -233,11 +294,18 @@ export default function NewRequestDrawer({
           requesterName,
           requesterDept,
           requesterEmail,
+          salesPicName: salesPicName.trim() || null,
+          salesPicEmail: salesPicEmail.trim() || null,
+          cePicName: cePicName.trim() || null,
+          cePicEmail: cePicEmail.trim() || null,
           reportType,
           customerName,
+          customerId: selectedCustomer?.id || null,
           serviceId,
-          periodMonth: parseInt(periodMonth, 10),
-          periodYear: parseInt(periodYear, 10),
+          periodMonth: primaryMonth,
+          periodYear: yearNum,
+          periodsJson: periodsPayload,
+          isRoutineSchedule,
           urgency,
           notes,
         }),
@@ -245,25 +313,29 @@ export default function NewRequestDrawer({
 
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || 'Failed to submit request');
+        throw new Error(data.error || 'Gagal mengirimkan permohonan.');
       }
+
+      const periodDisplay = isMultiMonth
+        ? selectedMonths.map((m) => monthNames[m - 1]).join(', ') + ` ${yearNum}`
+        : `${monthNames[data.request.periodMonth - 1]} ${data.request.periodYear}`;
 
       setSubmittedTicket({
         ticketNumber: data.request.ticketNumber,
         customerName: data.request.customerName,
         reportType: data.request.reportType,
-        period: `${monthNames[data.request.periodMonth - 1]} ${data.request.periodYear}`,
+        period: periodDisplay,
         urgency: data.request.urgency,
         createdAt: data.request.createdAt,
       });
 
-      toast.success(`Request submitted successfully! Ticket: ${data.request.ticketNumber}`);
+      toast.success(data.message || `Permintaan berhasil dikirim! Tiket: ${data.request.ticketNumber}`);
       if (onSuccess) {
         onSuccess(data.request.ticketNumber);
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      toast.error(`Error: ${msg}`);
+      toast.error(`Kesalahan: ${msg}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -456,6 +528,60 @@ export default function NewRequestDrawer({
                       </Select>
                     </FormField>
 
+                    {/* PIC Sales / Account Executive Dropdown */}
+                    <FormField label="PIC Sales / Account Executive (Opsional)">
+                      <Select
+                        value={salesPicName}
+                        onValueChange={(val) => {
+                          const cleanVal = val === 'NONE' ? '' : val;
+                          setSalesPicName(cleanVal);
+                          const found = staffList.find((s) => s.name === cleanVal);
+                          setSalesPicEmail(found?.email || '');
+                        }}
+                      >
+                        <SelectTrigger className="text-xs h-9 bg-white">
+                          <SelectValue placeholder="Pilih PIC Sales..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="NONE">-- Tanpa PIC Sales Khusus --</SelectItem>
+                          {staffList
+                            .filter((s) => s.department === 'Account Executive')
+                            .map((s) => (
+                              <SelectItem key={s.id} value={s.name}>
+                                {s.name} ({s.roleTitle || 'AE'})
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                    </FormField>
+
+                    {/* PIC Customer Experience Dropdown */}
+                    <FormField label="PIC Customer Experience (Opsional)">
+                      <Select
+                        value={cePicName}
+                        onValueChange={(val) => {
+                          const cleanVal = val === 'NONE' ? '' : val;
+                          setCePicName(cleanVal);
+                          const found = staffList.find((s) => s.name === cleanVal);
+                          setCePicEmail(found?.email || '');
+                        }}
+                      >
+                        <SelectTrigger className="text-xs h-9 bg-white">
+                          <SelectValue placeholder="Pilih PIC CE..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="NONE">-- Tanpa PIC CE Khusus --</SelectItem>
+                          {staffList
+                            .filter((s) => s.department === 'Customer Experience')
+                            .map((s) => (
+                              <SelectItem key={s.id} value={s.name}>
+                                {s.name} ({s.roleTitle || 'CE'})
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                    </FormField>
+
                     <div className="sm:col-span-2">
                       <FormField label="Email / WhatsApp Contact">
                         <Input
@@ -644,36 +770,161 @@ export default function NewRequestDrawer({
                     />
                   </FormField>
 
-                  <div className="grid grid-cols-2 gap-3.5">
-                    <FormField label="Report Month" required>
-                      <Select value={periodMonth} onValueChange={setPeriodMonth}>
-                        <SelectTrigger className="text-xs h-9 bg-white">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {monthNames.map((m, idx) => (
-                            <SelectItem key={m} value={String(idx + 1)}>
-                              {m}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </FormField>
+                  {/* Period Mode Selector */}
+                  <div className="space-y-2.5 pt-1">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-semibold text-slate-800">
+                        Periode Laporan yang Diminta <span className="text-rose-500">*</span>
+                      </label>
+                      <div className="flex items-center bg-slate-200/70 p-0.5 rounded-lg text-[11px] font-medium">
+                        <button
+                          type="button"
+                          onClick={() => setIsMultiMonth(false)}
+                          className={`px-2.5 py-1 rounded-md transition ${
+                            !isMultiMonth
+                              ? 'bg-white text-slate-900 font-bold shadow-2xs'
+                              : 'text-slate-600 hover:text-slate-900'
+                          }`}
+                        >
+                          Bulan Tunggal
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setIsMultiMonth(true)}
+                          className={`px-2.5 py-1 rounded-md transition ${
+                            isMultiMonth
+                              ? 'bg-white text-slate-900 font-bold shadow-2xs'
+                              : 'text-slate-600 hover:text-slate-900'
+                          }`}
+                        >
+                          Multi-Bulan
+                        </button>
+                      </div>
+                    </div>
 
-                    <FormField label="Report Year" required>
-                      <Select value={periodYear} onValueChange={setPeriodYear}>
-                        <SelectTrigger className="text-xs h-9 bg-white">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {[currentYear - 1, currentYear, currentYear + 1, currentYear + 2].map((y) => (
-                            <SelectItem key={y} value={String(y)}>
-                              {y}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </FormField>
+                    {!isMultiMonth ? (
+                      <div className="grid grid-cols-2 gap-3.5">
+                        <FormField label="Pilihan Bulan" required>
+                          <Select value={periodMonth} onValueChange={setPeriodMonth}>
+                            <SelectTrigger className="text-xs h-9 bg-white">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {monthNames.map((m, idx) => {
+                                const mNum = idx + 1;
+                                const isPrev = mNum === defaultPrevMonth;
+                                const isCurr = mNum === currentMonth;
+                                const isNext = mNum > currentMonth;
+                                return (
+                                  <SelectItem key={m} value={String(mNum)}>
+                                    {m} {isPrev ? '★ (Bulan Lalu)' : isCurr ? '(Bulan Berjalan)' : isNext ? '🗓️ (Bulan Depan)' : ''}
+                                  </SelectItem>
+                                );
+                              })}
+                            </SelectContent>
+                          </Select>
+                        </FormField>
+
+                        <FormField label="Tahun Laporan" required>
+                          <Select value={periodYear} onValueChange={setPeriodYear}>
+                            <SelectTrigger className="text-xs h-9 bg-white">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {[currentYear - 1, currentYear, currentYear + 1].map((y) => (
+                                <SelectItem key={y} value={String(y)}>
+                                  {y}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </FormField>
+                      </div>
+                    ) : (
+                      /* Multi-Month Selector */
+                      <div className="space-y-2 p-3 bg-white border border-slate-200 rounded-lg">
+                        <div className="flex items-center justify-between text-xs text-slate-600 pb-1.5 border-b border-slate-100">
+                          <span>Pilih bulan ({selectedMonths.length} bulan terpilih):</span>
+                          <div className="flex gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const qMonths = [defaultPrevMonth - 2, defaultPrevMonth - 1, defaultPrevMonth]
+                                  .map((m) => (m <= 0 ? m + 12 : m));
+                                setSelectedMonths(qMonths);
+                              }}
+                              className="text-[11px] font-semibold text-orange-600 hover:text-orange-700 bg-orange-50 px-2 py-0.5 rounded border border-orange-200"
+                            >
+                              Kuartal Terakhir
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setSelectedMonths([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])}
+                              className="text-[11px] text-slate-600 hover:text-slate-900 bg-slate-100 px-2 py-0.5 rounded"
+                            >
+                              Semua
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-4 sm:grid-cols-6 gap-1.5 pt-1">
+                          {monthNames.map((m, idx) => {
+                            const mNum = idx + 1;
+                            const isSelected = selectedMonths.includes(mNum);
+                            return (
+                              <button
+                                key={m}
+                                type="button"
+                                onClick={() => {
+                                  setSelectedMonths((prev) =>
+                                    prev.includes(mNum)
+                                      ? prev.filter((x) => x !== mNum)
+                                      : [...prev, mNum].sort((a, b) => a - b)
+                                  );
+                                }}
+                                className={`py-1.5 px-2 rounded text-xs font-semibold text-center border transition select-none ${
+                                  isSelected
+                                    ? 'bg-orange-500 text-white border-orange-600 shadow-2xs'
+                                    : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                                }`}
+                              >
+                                {m.slice(0, 3)}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Routine Schedule Checkbox & Banner */}
+                    <div className="pt-2 border-t border-slate-200/60 space-y-2">
+                      <label className="flex items-start gap-2.5 cursor-pointer text-xs font-medium text-slate-800">
+                        <input
+                          type="checkbox"
+                          checked={isRoutineSchedule}
+                          onChange={(e) => setIsRoutineSchedule(e.target.checked)}
+                          className="rounded border-slate-300 text-orange-600 focus:ring-orange-500 w-4 h-4 mt-0.5"
+                        />
+                        <div>
+                          <span className="font-semibold text-slate-900 block">
+                            Daftarkan ke Kalender Rutin Bulanan NOC (Monthly Schedule 24 Jam)
+                          </span>
+                          <span className="text-[11px] text-slate-500 block leading-relaxed">
+                            Centang agar pelanggan ini otomatis masuk dalam tugas rutin bulanan NOC tanpa perlu request manual lagi.
+                          </span>
+                        </div>
+                      </label>
+
+                      {/* Auto alert for future months */}
+                      {parseInt(periodMonth, 10) > currentMonth && parseInt(periodYear, 10) >= currentYear && (
+                        <div className="p-2.5 rounded-lg bg-blue-50 border border-blue-200 text-blue-900 text-xs flex items-center gap-2">
+                          <Calendar className="w-4 h-4 text-blue-600 shrink-0" />
+                          <span>
+                            <strong>Bulan Mendatang Terdeteksi:</strong> Periode yang dipilih adalah bulan depan. Permintaan ini otomatis didaftarkan ke Kalender Rutin Bulanan.
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
 
