@@ -512,7 +512,6 @@ export default function SchedulePage() {
     <div className="space-y-6">
       <PageHeader
         title="Monthly Schedule"
-        description="Monthly routine reporting queue and SLA tracking. Automated kickoff occurs on the 1st of each month."
         breadcrumb={
           <Link href="/" className="hover:text-slate-800 flex items-center gap-1 font-medium text-slate-500">
             <ArrowLeft className="w-3.5 h-3.5" />

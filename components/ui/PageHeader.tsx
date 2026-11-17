@@ -33,11 +33,6 @@ export function PageHeader({
           </h1>
           {badge}
         </div>
-        {description && (
-          <p className="text-xs text-slate-500 font-sans font-normal mt-0.5 leading-normal">
-            {description}
-          </p>
-        )}
       </div>
       {actions && (
         <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap shrink-0">

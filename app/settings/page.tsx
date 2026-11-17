@@ -402,7 +402,6 @@ export default function SettingsPage() {
     <div className="space-y-6">
       <PageHeader
         title="System Settings"
-        description="Configure telemetry integrations, alert notifications, department distribution, and PDF canvas templates."
         breadcrumb={
           <Link href="/" className="hover:text-slate-800 flex items-center gap-1 font-medium text-slate-500">
             <ArrowLeft className="w-3.5 h-3.5" />

@@ -392,11 +392,6 @@ export default function HistoryPage() {
       {/* Standard Page Header */}
       <PageHeader
         title={isNocOrAdmin ? 'Report History' : 'Official Department Reports'}
-        description={
-          isNocOrAdmin
-            ? 'Search, preview, and download archived MRTG and SLA compliance PDF documents.'
-            : `Browse and download authorized compliance reports approved from your department (${currentUser?.department || ''}).`
-        }
         breadcrumb={
           <Link
             href={currentUser?.defaultRoute || (isNocOrAdmin ? '/' : '/requests')}

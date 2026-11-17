@@ -286,7 +286,6 @@ export default function UsersManagementPage() {
       {/* Page Header */}
       <PageHeader
         title="User Management"
-        description="Manage system login accounts, role-based access controls, and departmental user assignments."
         breadcrumb={
           <Link href="/" className="hover:text-slate-800 flex items-center gap-1 font-medium text-slate-500">
             <ArrowLeft className="w-3.5 h-3.5" />

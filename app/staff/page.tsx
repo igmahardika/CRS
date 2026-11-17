@@ -243,7 +243,6 @@ export default function StaffDirectoryPage() {
       {/* Header */}
       <PageHeader
         title="Staff Directory"
-        description="Manage departmental points of contact for Customer Experience, Account Executive, Finance, and NOC."
         actions={
           <Button variant="primary" size="sm" onClick={handleOpenCreate}>
             <Plus className="w-4 h-4 mr-1.5" />

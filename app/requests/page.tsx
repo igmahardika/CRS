@@ -249,7 +249,6 @@ export default function RequestsQueuePage() {
       {/* Page Header */}
       <PageHeader
         title="Report Requests Queue"
-        description="Track and process compliance report requests submitted across departments (NOC, Customer Experience, Account Executive, Finance)."
         breadcrumb={
           isNocOrAdmin ? (
             <Link href="/" className="hover:text-slate-800 flex items-center gap-1 font-medium text-slate-500">

@@ -458,7 +458,6 @@ export default function CustomersPage() {
       {/* Standard Page Header */}
       <PageHeader
         title="Customer Directory"
-        description="Manage customer records, telemetry configurations, and SLA targets."
         breadcrumb={
           <Link href="/" className="hover:text-slate-800 flex items-center gap-1 font-medium text-slate-500">
             <ArrowLeft className="w-3.5 h-3.5" />

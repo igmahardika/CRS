@@ -306,7 +306,6 @@ export default function ApprovalDeskPage() {
       {/* Page Header */}
       <PageHeader
         title="Approval Desk"
-        description="Verify and authorize pending performance compliance reports. Review in-app and use rapid hotkeys to process documents."
         breadcrumb={
           <Link
             href="/history"

@@ -1021,7 +1021,6 @@ function GeneratorPageContent() {
       {/* Page Header with Mode Switcher */}
       <PageHeader
         title="Report Generator"
-        description="Telemetry automation and compliant PDF generation workstation."
         actions={
           <div className="flex bg-slate-100 p-0.5 rounded-lg border border-slate-200">
             <Button
