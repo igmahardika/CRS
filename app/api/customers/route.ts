@@ -218,6 +218,12 @@ export async function DELETE(req: NextRequest) {
       const body = await req.json();
 
       if (body.all === true) {
+        if (auth.session.role !== 'ADMIN') {
+          return NextResponse.json(
+            { error: 'Akses ditolak: Operasi penghapusan seluruh direktori pelanggan hanya diizinkan untuk akun Administrator.' },
+            { status: 403 }
+          );
+        }
         const result = await prisma.customer.deleteMany({});
         return NextResponse.json({ success: true, count: result.count });
       }
