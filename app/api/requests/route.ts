@@ -352,7 +352,7 @@ export async function POST(req: NextRequest) {
         await sendEmail({
           to: deptEmail,
           cc: Array.from(ccSet),
-          subject: `[CRS - Ticket ${firstReq.ticketNumber}] Report Request ${firstReq.reportType} - ${firstReq.customerName} (${periodLabel})`,
+          subject: `[${firstReq.ticketNumber}] Report Request ${firstReq.reportType} - ${firstReq.customerName} (${periodLabel})`,
           html: emailHtml,
           ticketNumber: firstReq.ticketNumber,
           messageId: firstReq.emailThreadMessageId || undefined,

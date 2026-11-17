@@ -229,11 +229,13 @@ export async function POST(req: NextRequest) {
             reviewUrl,
           });
 
+          const approvalSubject = ticketNumber
+            ? `Re: [${ticketNumber}] Report Request ${updated.reportType} - ${updated.customerName} (${updated.reportPeriod})`
+            : `[${updated.documentNumber}] Report Request ${updated.reportType} - ${updated.customerName} (${updated.reportPeriod})`;
+
           await sendEmail({
             to: deptEmail,
-            subject: ticketNumber
-              ? `Re: [CRS - Ticket ${ticketNumber}] Report Request ${updated.reportType} - ${updated.customerName} (${updated.reportPeriod})`
-              : `[CRS - APPROVAL REQUIRED] Report ${updated.reportType} - ${updated.customerName} (${updated.documentNumber})`,
+            subject: approvalSubject,
             html: emailHtml,
             ticketNumber: ticketNumber || undefined,
             isFollowUp: Boolean(ticketNumber),
@@ -280,12 +282,14 @@ export async function POST(req: NextRequest) {
           }
           ccList.delete(deptEmail.toLowerCase());
 
+          const publishedSubject = ticketNumber
+            ? `Re: [${ticketNumber}] Report Request ${updated.reportType} - ${updated.customerName} (${updated.reportPeriod})`
+            : `[${updated.documentNumber}] Report Request ${updated.reportType} - ${updated.customerName} (${updated.reportPeriod})`;
+
           await sendEmail({
             to: deptEmail,
             cc: Array.from(ccList),
-            subject: ticketNumber
-              ? `Re: [CRS - Ticket ${ticketNumber}] Report Request ${updated.reportType} - ${updated.customerName} (${updated.reportPeriod})`
-              : `[CRS - OFFICIAL REPORT APPROVED] Report ${updated.reportType} - ${updated.customerName} (${updated.documentNumber})`,
+            subject: publishedSubject,
             html: emailHtml,
             ticketNumber: ticketNumber || undefined,
             isFollowUp: Boolean(ticketNumber),
