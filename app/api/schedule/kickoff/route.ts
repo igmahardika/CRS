@@ -13,7 +13,11 @@ const monthNames = [
 export async function POST(req: NextRequest) {
   // Support both interactive NOC admin auth and automated background cron
   const cronSecret = req.headers.get('x-cron-secret') || req.headers.get('authorization')?.replace('Bearer ', '');
-  const isAuthorizedCron = cronSecret && (cronSecret === process.env.CRON_SECRET || cronSecret === 'crs_cron_internal_2026' || cronSecret === 'genre_cron_internal_2026');
+  const isAuthorizedCron = Boolean(
+    cronSecret &&
+    process.env.CRON_SECRET &&
+    cronSecret === process.env.CRON_SECRET
+  );
 
   if (!isAuthorizedCron) {
     const auth = await requirePermission('schedule:manage');
