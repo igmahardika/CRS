@@ -17,3 +17,5 @@ export * from './PageHeader';
 export * from './Spinner';
 export * from './FormField';
 export * from './StatCard';
+export * from './Tooltip';
+

@@ -36,6 +36,7 @@ import {
   SelectContent,
   SelectItem,
   Checkbox,
+  SegmentedControl,
   Table,
   TableHeader,
   TableBody,
@@ -221,20 +222,20 @@ export default function StaffDirectoryPage() {
   const getDeptBadge = (dept: string) => {
     switch (dept) {
       case 'Customer Experience':
-        return <Badge variant="info" className="bg-sky-50 text-sky-700 border-sky-200">Customer Experience</Badge>;
+        return <Badge variant="info">Customer Experience</Badge>;
       case 'Account Executive':
-        return <Badge variant="neutral" className="bg-purple-50 text-purple-700 border-purple-200">Account Executive</Badge>;
+        return <Badge variant="neutral">Account Executive</Badge>;
       case 'Finance':
-        return <Badge variant="neutral" className="bg-emerald-50 text-emerald-700 border-emerald-200">Finance</Badge>;
+        return <Badge variant="neutral">Finance</Badge>;
       case 'Network Operation':
-        return <Badge variant="warning" className="bg-orange-50 text-orange-700 border-orange-200">Network Operation</Badge>;
+        return <Badge variant="soft">Network Operation</Badge>;
       default:
-        return <Badge variant="neutral">{dept}</Badge>;
+        return <Badge variant="outline">{dept}</Badge>;
     }
   };
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-in fade-in duration-300">
+    <div className="space-y-6">
       {/* Header */}
       <PageHeader
         title="Staff Directory"
@@ -249,96 +250,88 @@ export default function StaffDirectoryPage() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3.5">
-        <div
+        <button
+          type="button"
           onClick={() => setSelectedDept('ALL')}
-          className={`p-3.5 rounded-xl border transition cursor-pointer ${
+          className={`p-3.5 rounded-xl border text-left transition cursor-pointer ${
             selectedDept === 'ALL'
-              ? 'bg-orange-50/80 border-orange-300 shadow-xs'
-              : 'bg-white border-slate-200 hover:border-slate-300'
+              ? 'bg-orange-50/50 border-orange-400 ring-1 ring-orange-400/20 shadow-2xs'
+              : 'bg-white border-slate-200/90 hover:border-slate-300 hover:bg-slate-50/50 shadow-2xs'
           }`}
         >
-          <div className="text-xs text-slate-500 font-medium">All Staff</div>
-          <div className="text-xl font-heading font-bold text-slate-900 mt-1">{counts.all}</div>
-        </div>
+          <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">All Staff</div>
+          <div className="text-2xl font-sans font-bold tabular-nums text-slate-900 mt-1">{counts.all}</div>
+        </button>
 
-        <div
+        <button
+          type="button"
           onClick={() => setSelectedDept('Customer Experience')}
-          className={`p-3.5 rounded-xl border transition cursor-pointer ${
+          className={`p-3.5 rounded-xl border text-left transition cursor-pointer ${
             selectedDept === 'Customer Experience'
-              ? 'bg-sky-50 border-sky-300 shadow-xs'
-              : 'bg-white border-slate-200 hover:border-slate-300'
+              ? 'bg-orange-50/50 border-orange-400 ring-1 ring-orange-400/20 shadow-2xs'
+              : 'bg-white border-slate-200/90 hover:border-slate-300 hover:bg-slate-50/50 shadow-2xs'
           }`}
         >
-          <div className="text-xs text-sky-700 font-medium">Customer Experience</div>
-          <div className="text-xl font-heading font-bold text-sky-950 mt-1">{counts.ce}</div>
-        </div>
+          <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Customer Exp.</div>
+          <div className="text-2xl font-sans font-bold tabular-nums text-slate-900 mt-1">{counts.ce}</div>
+        </button>
 
-        <div
+        <button
+          type="button"
           onClick={() => setSelectedDept('Account Executive')}
-          className={`p-3.5 rounded-xl border transition cursor-pointer ${
+          className={`p-3.5 rounded-xl border text-left transition cursor-pointer ${
             selectedDept === 'Account Executive'
-              ? 'bg-purple-50 border-purple-300 shadow-xs'
-              : 'bg-white border-slate-200 hover:border-slate-300'
+              ? 'bg-orange-50/50 border-orange-400 ring-1 ring-orange-400/20 shadow-2xs'
+              : 'bg-white border-slate-200/90 hover:border-slate-300 hover:bg-slate-50/50 shadow-2xs'
           }`}
         >
-          <div className="text-xs text-purple-700 font-medium">Account Executive</div>
-          <div className="text-xl font-heading font-bold text-purple-950 mt-1">{counts.ae}</div>
-        </div>
+          <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Account Exec.</div>
+          <div className="text-2xl font-sans font-bold tabular-nums text-slate-900 mt-1">{counts.ae}</div>
+        </button>
 
-        <div
+        <button
+          type="button"
           onClick={() => setSelectedDept('Finance')}
-          className={`p-3.5 rounded-xl border transition cursor-pointer ${
+          className={`p-3.5 rounded-xl border text-left transition cursor-pointer ${
             selectedDept === 'Finance'
-              ? 'bg-emerald-50 border-emerald-300 shadow-xs'
-              : 'bg-white border-slate-200 hover:border-slate-300'
+              ? 'bg-orange-50/50 border-orange-400 ring-1 ring-orange-400/20 shadow-2xs'
+              : 'bg-white border-slate-200/90 hover:border-slate-300 hover:bg-slate-50/50 shadow-2xs'
           }`}
         >
-          <div className="text-xs text-emerald-700 font-medium">Finance</div>
-          <div className="text-xl font-heading font-bold text-emerald-950 mt-1">{counts.finance}</div>
-        </div>
+          <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Finance</div>
+          <div className="text-2xl font-sans font-bold tabular-nums text-slate-900 mt-1">{counts.finance}</div>
+        </button>
 
-        <div
+        <button
+          type="button"
           onClick={() => setSelectedDept('Network Operation')}
-          className={`p-3.5 rounded-xl border transition cursor-pointer ${
+          className={`p-3.5 rounded-xl border text-left transition cursor-pointer ${
             selectedDept === 'Network Operation'
-              ? 'bg-orange-50 border-orange-300 shadow-xs'
-              : 'bg-white border-slate-200 hover:border-slate-300'
+              ? 'bg-orange-50/50 border-orange-400 ring-1 ring-orange-400/20 shadow-2xs'
+              : 'bg-white border-slate-200/90 hover:border-slate-300 hover:bg-slate-50/50 shadow-2xs'
           }`}
         >
-          <div className="text-xs text-orange-700 font-medium">Network Operation</div>
-          <div className="text-xl font-heading font-bold text-orange-950 mt-1">{counts.noc}</div>
-        </div>
+          <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Network Ops</div>
+          <div className="text-2xl font-sans font-bold tabular-nums text-slate-900 mt-1">{counts.noc}</div>
+        </button>
       </div>
 
       {/* Filter & Search Bar */}
       <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
-        {/* Department Tabs */}
-        <div className="flex items-center gap-1 overflow-x-auto w-full sm:w-auto scrollbar-none pb-1 sm:pb-0">
-          <button
-            type="button"
-            onClick={() => setSelectedDept('ALL')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition cursor-pointer ${
-              selectedDept === 'ALL'
-                ? 'bg-slate-900 text-white font-semibold shadow-xs'
-                : 'text-slate-600 hover:bg-slate-100'
-            }`}
-          >
-            All Departments
-          </button>
-          {DEPARTMENTS.map((dept) => (
-            <button
-              key={dept}
-              type="button"
-              onClick={() => setSelectedDept(dept)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition cursor-pointer ${
-                selectedDept === dept
-                  ? 'bg-orange-600 text-white font-semibold shadow-xs'
-                  : 'text-slate-600 hover:bg-slate-100'
-              }`}
-            >
-              {dept}
-            </button>
-          ))}
+        {/* Department Segmented Control */}
+        <div className="w-full sm:w-auto overflow-x-auto">
+          <SegmentedControl
+            size="sm"
+            value={selectedDept}
+            onChange={(val) => setSelectedDept(val as Department | 'ALL')}
+            options={[
+              { label: 'All', value: 'ALL' },
+              { label: 'Customer Experience', value: 'Customer Experience' },
+              { label: 'Account Executive', value: 'Account Executive' },
+              { label: 'Finance', value: 'Finance' },
+              { label: 'Network Operation', value: 'Network Operation' },
+            ]}
+          />
         </div>
 
         {/* Search Input */}
@@ -411,13 +404,13 @@ export default function StaffDirectoryPage() {
                     <TableCell className="text-slate-600 text-xs">
                       {staff.roleTitle || '-'}
                     </TableCell>
-                    <TableCell className="text-slate-600 text-xs font-mono">
+                    <TableCell className="text-slate-600 text-xs font-sans">
                       <div className="flex items-center gap-1.5">
                         <Mail className="w-3.5 h-3.5 text-slate-400" />
                         <span>{staff.email}</span>
                       </div>
                     </TableCell>
-                    <TableCell className="text-slate-600 text-xs font-mono">
+                    <TableCell className="text-slate-600 text-xs font-sans">
                       {staff.phone ? (
                         <div className="flex items-center gap-1.5">
                           <Phone className="w-3.5 h-3.5 text-slate-400" />

@@ -175,7 +175,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: `Kickoff berhasil! ${createdCount} tugas baru dibuat untuk periode ${monthName} ${periodYear}. Batas waktu 24 jam telah dimulai.`,
+      message: `Kickoff completed! ${createdCount} new tasks generated for ${monthName} ${periodYear}. 24-hour SLA deadline started.`,
       createdCount,
       totalRoutineCustomers: routineCustomers.length,
       deadlineTime: deadlineTime.toISOString(),

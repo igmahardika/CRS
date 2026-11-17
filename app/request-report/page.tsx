@@ -14,7 +14,7 @@ export default function RequestReportRedirectPage() {
     <div className="min-h-[60vh] flex flex-col items-center justify-center p-6 text-center space-y-3">
       <div className="w-8 h-8 rounded-full border-2 border-slate-200 border-t-orange-600 animate-spin" />
       <p className="text-xs text-slate-500 font-medium">
-        Mengalihkan ke Antrean Permintaan...
+        Redirecting to Request Queue...
       </p>
     </div>
   );

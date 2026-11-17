@@ -41,6 +41,7 @@ import {
   Textarea,
   SegmentedControl,
   Checkbox,
+  InfoTooltip,
 } from '@/components/ui';
 
 interface TicketCaseManagerProps {
@@ -268,7 +269,7 @@ export default function TicketCaseManager({
     }
     setTickets([...tickets, ...newItems]);
     if (count > 1) {
-      toast.success(`Berhasil menambahkan ${count} tiket baru`);
+      toast.success(`Added ${count} new tickets`);
     }
   };
 
@@ -285,7 +286,7 @@ export default function TicketCaseManager({
   const handleClearAllTickets = () => {
     setTickets([]);
     setConfirmClear(null);
-    toast.success('Daftar tiket berhasil dikosongkan');
+    toast.success('Ticket list cleared successfully');
   };
 
   // ----------------------------------------------------
@@ -308,7 +309,7 @@ export default function TicketCaseManager({
     }
     setCases([...cases, ...newItems]);
     if (count > 1) {
-      toast.success(`Berhasil menambahkan ${count} kasus downtime baru`);
+      toast.success(`Added ${count} new downtime cases`);
     }
   };
 
@@ -325,7 +326,7 @@ export default function TicketCaseManager({
   const handleClearAllCases = () => {
     setCases([]);
     setConfirmClear(null);
-    toast.success('Daftar kasus downtime berhasil dikosongkan');
+    toast.success('Downtime case list cleared successfully');
   };
 
   // ----------------------------------------------------
@@ -421,7 +422,7 @@ export default function TicketCaseManager({
             descParts.push(cols[c].trim());
           }
         }
-        let fullDesc = descParts.join(' — ') || 'Kendala Layanan Pelanggan';
+        let fullDesc = descParts.join(' — ') || 'Customer Service Issue';
         fullDesc = fullDesc.replace(/\s{2,}/g, ' — ').replace(/ —\s*— /g, ' — ');
 
         // Find status column from the tail (e.g. "CLOSE CASE", "CLOSE TICKET", "Open", "Pending")
@@ -591,7 +592,7 @@ export default function TicketCaseManager({
 
   const handleApplyImport = () => {
     if (activeImportItems.length === 0 && crossImportItems.length === 0) {
-      toast.error('Tidak ada baris data valid yang terdeteksi.');
+      toast.error('No valid data rows detected.');
       return;
     }
 
@@ -613,10 +614,10 @@ export default function TicketCaseManager({
           setCases([...cases, ...parsedData.cases]);
         }
         toast.success(
-          `Berhasil mengimpor ${parsedData.tickets.length} tiket & ${parsedData.cases.length} kasus downtime!`
+          `Imported ${parsedData.tickets.length} tickets & ${parsedData.cases.length} downtime cases`
         );
       } else {
-        toast.success(`Berhasil mengimpor ${parsedData.tickets.length} tiket support!`);
+        toast.success(`Imported ${parsedData.tickets.length} support tickets`);
       }
     } else if (importMode === 'cases') {
       // 1. Update Cases
@@ -636,10 +637,10 @@ export default function TicketCaseManager({
           setTickets([...tickets, ...parsedData.tickets]);
         }
         toast.success(
-          `Berhasil mengimpor ${parsedData.cases.length} kasus downtime & ${parsedData.tickets.length} tiket!`
+          `Imported ${parsedData.cases.length} downtime cases & ${parsedData.tickets.length} tickets`
         );
       } else {
-        toast.success(`Berhasil mengimpor ${parsedData.cases.length} kasus downtime!`);
+        toast.success(`Imported ${parsedData.cases.length} downtime cases`);
       }
     }
 
@@ -668,13 +669,14 @@ export default function TicketCaseManager({
             <div className="w-7 h-7 rounded-md bg-orange-500/20 text-orange-400 flex items-center justify-center">
               <ShieldCheck className="w-4 h-4" />
             </div>
-            <div>
+            <div className="flex items-center gap-2">
               <h4 className="font-heading font-semibold text-sm text-white">
                 Realtime SLA Calculation
               </h4>
-              <p className="text-xs text-slate-300 font-sans">
-                Computed automatically from incident cases
-              </p>
+              <InfoTooltip
+                content="Real-time availability percentage computed automatically based on recorded downtime minutes."
+                className="text-slate-400 hover:text-white"
+              />
             </div>
           </div>
           <span
@@ -744,9 +746,6 @@ export default function TicketCaseManager({
                 {tickets.length} {tickets.length === 1 ? 'Ticket' : 'Tickets'}
               </Badge>
             </div>
-            <p className="text-xs text-slate-500 font-sans mt-0.5 truncate">
-              Customer service requests recorded during billing cycle
-            </p>
           </div>
 
           {/* Action buttons: shrink-0 so they never break onto a second line */}
@@ -833,9 +832,6 @@ export default function TicketCaseManager({
               <AlertCircle className="w-4 h-4 text-slate-500 shrink-0" />
               <span>No customer service tickets recorded for this period.</span>
             </div>
-            <span className="text-xs text-slate-500 hidden sm:inline">
-              Click <strong>+ Ticket</strong> or <strong>Paste Excel</strong> to add records
-            </span>
           </div>
         ) : (
           <div className="space-y-3">
@@ -844,7 +840,7 @@ export default function TicketCaseManager({
                 key={idx}
                 className="bg-slate-50/70 hover:bg-slate-50 border border-slate-200 rounded-lg p-3 sm:p-3.5 space-y-2.5 transition"
               >
-                {/* Header Item: Nomor, Judul & Tombol Hapus */}
+                {/* Case Item Header: Index, Title & Delete Action */}
                 <div className="flex items-center justify-between pb-1.5 border-b border-slate-200/60">
                   <div className="flex items-center gap-2 min-w-0">
                     <span className="w-6 h-6 rounded-md bg-blue-100 text-blue-700 text-xs font-bold flex items-center justify-center tabular-nums shrink-0">
@@ -1023,9 +1019,6 @@ export default function TicketCaseManager({
                 {cases.length > 0 ? `${cases.length} ${cases.length === 1 ? 'Case' : 'Cases'} (${slaResult.totalDowntimeMinutes} min)` : '0 Cases'}
               </Badge>
             </div>
-            <p className="text-xs text-slate-500 font-sans mt-0.5 truncate">
-              Service interruptions affecting monthly availability and SLA
-            </p>
           </div>
 
           {/* Action buttons: shrink-0 so they never break onto a second line */}
@@ -1126,7 +1119,7 @@ export default function TicketCaseManager({
                 key={idx}
                 className="bg-slate-50/70 hover:bg-slate-50 border border-slate-200 rounded-lg p-3 sm:p-3.5 space-y-2.5 transition"
               >
-                {/* Header item: nomor urut, judul kasus, badge downtime, & tombol hapus */}
+                {/* Case item header: index, title, downtime badge, & delete action */}
                 <div className="flex items-center justify-between pb-1 border-b border-slate-200/50">
                   <div className="flex items-center gap-2 min-w-0">
                     <span className="w-6 h-6 rounded-md bg-rose-100 text-rose-700 text-xs font-bold flex items-center justify-center tabular-nums shrink-0">
@@ -1151,7 +1144,7 @@ export default function TicketCaseManager({
                   </Button>
                 </div>
 
-                {/* Baris 1: Grid Input Metadata (No. Kasus, Start, End, Downtime) */}
+                {/* Case Metadata Grid (Case No, Start, End, Downtime) */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
                   <div className="min-w-0">
                     <span className="text-xs font-medium text-slate-500 uppercase tracking-wider block mb-1">
@@ -1281,58 +1274,39 @@ export default function TicketCaseManager({
                 {importMode === 'tickets' ? 'Support Tickets' : 'Downtime Incident Cases'})
               </span>
             </DialogTitle>
-            <DialogDescription className="text-xs text-slate-500">
-              Supports direct clipboard copy from ticketing/helpdesk portals or standard spreadsheets.
-            </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-3.5 py-1">
-            {/* Intelligent Format Banner */}
-            <div className="bg-slate-50 rounded-lg p-3 border border-slate-200 text-xs space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="font-semibold text-slate-800 flex items-center gap-1.5">
-                  <ClipboardPaste className="w-3.5 h-3.5 text-orange-600" />
-                  Auto-Detect Helpdesk &amp; Spreadsheet Format
+          <div className="space-y-3 py-1">
+            {/* Intelligent Format Header Bar */}
+            <div className="bg-slate-50 rounded-lg p-2.5 border border-slate-200 text-xs flex items-center justify-between">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <ClipboardPaste className="w-3.5 h-3.5 text-orange-600 shrink-0" />
+                <span className="font-medium text-slate-800 truncate">
+                  Auto-Detect Format
                 </span>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleFillSample}
-                  className="h-6 text-xs text-orange-600 hover:text-orange-700 px-2 font-medium"
-                >
-                  <FileText className="w-3 h-3 mr-1" />
-                  Load Sample Table
-                </Button>
+                <InfoTooltip
+                  content={
+                    importMode === 'tickets'
+                      ? 'Supported columns: [Ticket No] • [Date] • [Description] • [Action] • [Status] (or copy directly from ticketing portal).'
+                      : 'Supported columns: [Case No] • [Date] • [Root Cause] • [Resolution] • [Downtime Minutes / hh:mm:ss].'
+                  }
+                />
+                {parsedData.isHelpdesk && (
+                  <Badge variant="outline" className="border-blue-200 text-blue-700 bg-blue-50 text-[11px] py-0 px-1.5 ml-1">
+                    Helpdesk Recognized
+                  </Badge>
+                )}
               </div>
-
-              {parsedData.isHelpdesk ? (
-                <div className="bg-blue-50/80 border border-blue-200 rounded p-2 text-xs text-blue-900 space-y-1">
-                  <div className="font-semibold flex items-center gap-1 text-blue-800">
-                    <Info className="w-3.5 h-3.5" />
-                    <span>Ticketing / Helpdesk Table Format Recognized!</span>
-                  </div>
-                  <p className="text-blue-700 leading-relaxed font-sans">
-                    Columns mapped: <strong>Ticket No</strong> &bull; <strong>Open Datetime</strong> &rarr; Date &bull; <strong>Description / Cause</strong> &bull; <strong>Action / Resolution</strong> &bull; <strong>Downtime Duration</strong>.
-                  </p>
-                </div>
-              ) : (
-                <div className="text-xs text-slate-600 bg-white p-2 rounded border border-slate-200/80 leading-relaxed font-sans">
-                  {importMode === 'tickets' ? (
-                    <span>
-                      Standard order: <strong>[Ticket No]</strong> &bull; <strong>[Date]</strong> &bull;{' '}
-                      <strong>[Description]</strong> &bull; <strong>[Action]</strong> &bull;{' '}
-                      <strong>[Status]</strong> (or paste entire helpdesk table directly).
-                    </span>
-                  ) : (
-                    <span>
-                      Standard order: <strong>[Case No]</strong> &bull; <strong>[Date]</strong> &bull;{' '}
-                      <strong>[Root Cause]</strong> &bull; <strong>[Resolution]</strong> &bull;{' '}
-                      <strong>[Downtime Minutes / hh:mm:ss]</strong>.
-                    </span>
-                  )}
-                </div>
-              )}
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={handleFillSample}
+                className="h-6 text-xs text-orange-600 hover:text-orange-700 px-2 font-medium shrink-0"
+              >
+                <FileText className="w-3 h-3 mr-1" />
+                Load Sample
+              </Button>
             </div>
 
             {/* Textarea for pasting */}

@@ -164,31 +164,31 @@ export default function Navbar() {
     switch (role) {
       case 'ADMIN':
         return (
-          <Badge variant="neutral" className="bg-slate-900 text-white border-slate-900 font-semibold text-xs px-2 py-0.5 shadow-2xs">
+          <Badge variant="neutral" className="bg-slate-900 text-white border-slate-900 font-semibold text-[11px] px-2 py-0.5 shadow-2xs">
             Admin
           </Badge>
         );
       case 'SUPERVISOR':
         return (
-          <Badge variant="info" className="bg-blue-600 text-white border-blue-600 font-semibold text-xs px-2 py-0.5 shadow-2xs">
+          <Badge variant="info" className="font-semibold text-[11px] px-2 py-0.5">
             Supervisor
           </Badge>
         );
       case 'STAFF':
         return (
-          <Badge variant="warning" className="bg-orange-600 text-white border-orange-700 font-semibold text-xs px-2 py-0.5 shadow-2xs">
+          <Badge variant="soft" className="font-semibold text-[11px] px-2 py-0.5">
             Staff
           </Badge>
         );
       case 'OPERATOR':
         return (
-          <Badge variant="neutral" className="bg-slate-700 text-white border-slate-800 font-semibold text-xs px-2 py-0.5 shadow-2xs">
+          <Badge variant="neutral" className="font-semibold text-[11px] px-2 py-0.5">
             Operator
           </Badge>
         );
       default:
         return (
-          <Badge variant="neutral" className="text-xs px-2 py-0.5 font-medium">
+          <Badge variant="outline" className="text-[11px] px-2 py-0.5 font-medium">
             Viewer
           </Badge>
         );
@@ -197,7 +197,7 @@ export default function Navbar() {
 
   return (
     <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200">
-      <div className="max-w-[1680px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10">
+      <div className="max-w-[1760px] 2xl:max-w-[1880px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10">
         <div className="flex justify-between h-14 items-center">
           {/* Left: Brand Logo */}
           <div className="flex items-center space-x-6">
@@ -218,7 +218,7 @@ export default function Navbar() {
             {/* Desktop Navigation Groups (Hierarchical Menu with Dropdowns) */}
             {isGuestOnRequestPage ? (
               <nav className="flex items-center space-x-1">
-                <div className="px-3.5 py-1.5 rounded-full text-[13px] flex items-center gap-1.5 bg-orange-50 text-orange-700 font-semibold border border-orange-200/80 shadow-2xs">
+                <div className="px-3 py-1.5 rounded-lg text-[13px] flex items-center gap-1.5 bg-orange-50 text-orange-700 font-semibold border border-orange-200/80 shadow-2xs">
                   <Send className="w-4 h-4 text-orange-700 stroke-[2]" />
                   <span>Request Form</span>
                 </div>
@@ -231,7 +231,7 @@ export default function Navbar() {
                     <DropdownMenuTrigger asChild>
                       <button
                         type="button"
-                        className={`px-3 py-1.5 rounded-full text-[13px] transition-colors flex items-center gap-1.5 outline-none cursor-pointer ${isReportsActive
+                        className={`px-3 py-1.5 rounded-lg text-[13px] transition-colors flex items-center gap-1.5 outline-none cursor-pointer ${isReportsActive
                           ? 'bg-orange-50 text-orange-700 font-semibold'
                           : 'text-slate-700 hover:text-slate-950 hover:bg-slate-100 font-medium'
                           }`}
@@ -239,7 +239,7 @@ export default function Navbar() {
                         <FileText className={`w-4 h-4 stroke-[1.75] ${isReportsActive ? 'text-orange-700' : 'text-slate-500'}`} />
                         <span>Reports</span>
                         {canApprove && pendingApprovalsCount > 0 && (
-                          <span className="w-4 h-4 rounded-full bg-amber-500 text-white text-xs font-bold flex items-center justify-center shadow-xs">
+                          <span className="w-4 h-4 rounded-full bg-amber-500 text-white text-[11px] font-bold flex items-center justify-center shadow-xs">
                             {pendingApprovalsCount}
                           </span>
                         )}
@@ -303,7 +303,7 @@ export default function Navbar() {
                       <DropdownMenuTrigger asChild>
                         <button
                           type="button"
-                          className={`px-3 py-1.5 rounded-full text-[13px] transition-colors flex items-center gap-1.5 outline-none cursor-pointer ${isQueueActive
+                          className={`px-3 py-1.5 rounded-lg text-[13px] transition-colors flex items-center gap-1.5 outline-none cursor-pointer ${isQueueActive
                             ? 'bg-orange-50 text-orange-700 font-semibold'
                             : 'text-slate-700 hover:text-slate-950 hover:bg-slate-100 font-medium'
                             }`}
@@ -340,7 +340,7 @@ export default function Navbar() {
                   ) : (
                     <Link
                       href="/requests"
-                      className={`px-3 py-1.5 rounded-full text-[13px] transition-colors flex items-center gap-1.5 ${pathname === '/requests'
+                      className={`px-3 py-1.5 rounded-lg text-[13px] transition-colors flex items-center gap-1.5 ${pathname === '/requests'
                         ? 'bg-orange-50 text-orange-700 font-semibold'
                         : 'text-slate-700 hover:text-slate-950 hover:bg-slate-100 font-medium'
                         }`}
@@ -357,7 +357,7 @@ export default function Navbar() {
                     <DropdownMenuTrigger asChild>
                       <button
                         type="button"
-                        className={`px-3 py-1.5 rounded-full text-[13px] transition-colors flex items-center gap-1.5 outline-none cursor-pointer ${isMasterActive
+                        className={`px-3 py-1.5 rounded-lg text-[13px] transition-colors flex items-center gap-1.5 outline-none cursor-pointer ${isMasterActive
                           ? 'bg-orange-50 text-orange-700 font-semibold'
                           : 'text-slate-700 hover:text-slate-950 hover:bg-slate-100 font-medium'
                           }`}
@@ -414,7 +414,7 @@ export default function Navbar() {
                     <DropdownMenuTrigger asChild>
                       <button
                         type="button"
-                        className={`px-3 py-1.5 rounded-full text-[13px] transition-colors flex items-center gap-1.5 outline-none cursor-pointer ${isSystemActive
+                        className={`px-3 py-1.5 rounded-lg text-[13px] transition-colors flex items-center gap-1.5 outline-none cursor-pointer ${isSystemActive
                           ? 'bg-orange-50 text-orange-700 font-semibold'
                           : 'text-slate-700 hover:text-slate-950 hover:bg-slate-100 font-medium'
                           }`}
@@ -456,8 +456,8 @@ export default function Navbar() {
           {/* Right: User Profile & Role Chip */}
           {isGuestOnRequestPage ? (
             <div className="flex items-center space-x-2.5">
-              <div className="flex items-center space-x-1.5 px-3 py-1 bg-slate-100 border border-slate-200 rounded-full text-xs font-medium text-slate-700">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <div className="flex items-center space-x-1.5 px-2.5 py-1 bg-slate-100 border border-slate-200 rounded-md text-xs font-medium text-slate-700">
+                <span className="w-2 h-2 rounded-full bg-emerald-500" />
                 <span>Public Request Portal</span>
               </div>
               <Link
@@ -480,9 +480,9 @@ export default function Navbar() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-8 px-2 gap-2 text-slate-700 hover:text-slate-900 rounded-full"
+                        className="h-8 px-2 gap-2 text-slate-700 hover:text-slate-950 rounded-lg border border-transparent hover:border-slate-200"
                       >
-                        <div className="w-6 h-6 rounded-full bg-slate-900 text-white font-medium flex items-center justify-center text-xs">
+                        <div className="w-6 h-6 rounded-md bg-slate-900 text-white font-medium flex items-center justify-center text-xs">
                           {userInitials}
                         </div>
                         <span className="text-[13px] font-medium hidden md:inline-block max-w-[120px] truncate">
@@ -524,7 +524,7 @@ export default function Navbar() {
                   </DropdownMenu>
                 </div>
               ) : (
-                <div className="flex items-center space-x-1.5 px-2.5 py-1 bg-emerald-50 border border-emerald-200 rounded-full text-xs font-medium text-emerald-700">
+                <div className="flex items-center space-x-1.5 px-2.5 py-1 bg-emerald-50 border border-emerald-200 rounded-md text-xs font-medium text-emerald-700">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                   <span>Online</span>
                 </div>

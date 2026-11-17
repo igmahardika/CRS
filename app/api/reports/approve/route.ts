@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 import { requirePermission } from '@/lib/auth';
 import { sendTelegramNotification } from '@/lib/telegram';
 import { sendEmail, getDepartmentEmail, getHelpdeskEmail } from '@/lib/email';
@@ -31,7 +32,7 @@ export async function POST(req: NextRequest) {
     const isInternalOnly = !assignedDept || assignedDept === 'Internal NOC' || assignedDept === 'Network Operation';
 
     let nextStatus = 'APPROVED';
-    let updateData: any = {};
+    let updateData: Prisma.ReportUpdateInput = {};
     let notificationText = '';
     const nowStr = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
 
@@ -40,6 +41,13 @@ export async function POST(req: NextRequest) {
       if (!isNocUser && !isAdmin) {
         return NextResponse.json({
           error: 'Akses ditolak: Verifikasi teknis tahap 1 hanya dapat disetujui oleh Supervisor NOC.',
+        }, { status: 403 });
+      }
+
+      // Four-Eyes Principle / Anti Self-Approval Check
+      if (!isAdmin && report.generatedById && report.generatedById === auth.session.id) {
+        return NextResponse.json({
+          error: 'Akses ditolak (Four-Eyes Principle): Anda tidak dapat menyetujui laporan yang Anda buat sendiri. Wajib diverifikasi oleh Supervisor lain.',
         }, { status: 403 });
       }
 
@@ -103,6 +111,24 @@ export async function POST(req: NextRequest) {
         }, { status: 403 });
       }
 
+      // Check linked request for requester self-approval in Tier 2
+      const linkedRequestCheck = await prisma.reportRequest.findFirst({
+        where: {
+          OR: [
+            { processedReportId: report.id },
+            { processedMrtgReportId: report.id },
+            { processedSlaReportId: report.id },
+          ],
+        },
+        select: { requesterUserId: true },
+      });
+
+      if (!isAdmin && linkedRequestCheck?.requesterUserId && linkedRequestCheck.requesterUserId === auth.session.id) {
+        return NextResponse.json({
+          error: 'Akses ditolak (Four-Eyes Principle): Anda adalah pemohon awal tiket permintaan ini. Pengesahan akhir Tier 2 wajib dilakukan oleh Supervisor lain di departemen Anda.',
+        }, { status: 403 });
+      }
+
       nextStatus = 'APPROVED';
       updateData = {
         status: nextStatus,
@@ -131,10 +157,34 @@ export async function POST(req: NextRequest) {
       }, { status: 400 });
     }
 
-    const updated = await prisma.report.update({
-      where: { id },
-      data: updateData,
-    });
+    // Atomic transaction for Report Update + Audit Log Recording
+    const auditAction = currentStatus === 'PENDING_DEPT_APPROVAL'
+      ? 'DEPT_APPROVED'
+      : (isInternalOnly ? 'FINAL_APPROVED' : 'NOC_APPROVED');
+
+    const auditNotes = currentStatus === 'PENDING_DEPT_APPROVAL'
+      ? `Disahkan oleh Supervisor ${auth.session.department || assignedDept}`
+      : (isInternalOnly
+          ? 'Disetujui penuh oleh Supervisor NOC (Alur 1-Tier Internal)'
+          : `Disetujui secara teknis oleh Supervisor NOC dan diteruskan ke Supervisor ${assignedDept}`);
+
+    const [updated] = await prisma.$transaction([
+      prisma.report.update({
+        where: { id },
+        data: updateData,
+      }),
+      prisma.reportAuditLog.create({
+        data: {
+          reportId: id,
+          action: auditAction,
+          actorId: auth.session.id,
+          actorName: auth.session.name,
+          actorDept: auth.session.department || 'Network Operation',
+          actorRole: auth.session.role,
+          notes: auditNotes,
+        },
+      }),
+    ]);
 
     sendTelegramNotification({ text: notificationText }).catch((e) => console.error('[Telegram Approve Error]', e));
 
@@ -249,8 +299,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       message: nextStatus === 'PENDING_DEPT_APPROVAL'
-        ? `Laporan "${updated.customerName}" lolos verifikasi teknis NOC dan diteruskan ke Supervisor ${assignedDept}.`
-        : `Laporan "${updated.customerName}" telah disetujui penuh (Approved) dan siap diunduh!`,
+        ? `Report "${updated.customerName}" verified by NOC and forwarded to ${assignedDept} Supervisor.`
+        : `Report "${updated.customerName}" fully approved and ready for download!`,
       report: updated,
       nextStatus,
     });

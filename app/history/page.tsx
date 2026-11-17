@@ -57,6 +57,9 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
+  StatCard,
+  SegmentedControl,
+  InfoTooltip,
 } from '@/components/ui';
 
 interface SavedReport {
@@ -107,7 +110,17 @@ export default function HistoryPage() {
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [selectedReport, setSelectedReport] = useState<SavedReport | null>(null);
-  const [previewTab, setPreviewTab] = useState<'pdf' | 'data'>('pdf');
+  const [previewTab, setPreviewTab] = useState<'pdf' | 'data' | 'audit'>('pdf');
+  const [auditLogs, setAuditLogs] = useState<Array<{
+    id: string;
+    action: string;
+    actorName: string;
+    actorDept: string;
+    actorRole: string;
+    notes: string | null;
+    createdAt: string;
+  }>>([]);
+  const [loadingAuditLogs, setLoadingAuditLogs] = useState(false);
   const [copiedDocNum, setCopiedDocNum] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<{
     id: string;
@@ -149,6 +162,31 @@ export default function HistoryPage() {
     }
   };
 
+  const fetchAuditLogs = async (reportId: string) => {
+    setLoadingAuditLogs(true);
+    try {
+      const res = await fetch(`/api/reports?id=${reportId}&logs=1`);
+      const data = await res.json();
+      if (data?.auditLogs) {
+        setAuditLogs(data.auditLogs);
+      } else {
+        setAuditLogs([]);
+      }
+    } catch {
+      setAuditLogs([]);
+    } finally {
+      setLoadingAuditLogs(false);
+    }
+  };
+
+  useEffect(() => {
+    if (selectedReport?.id) {
+      fetchAuditLogs(selectedReport.id);
+    } else {
+      setAuditLogs([]);
+    }
+  }, [selectedReport?.id]);
+
   useEffect(() => {
     fetchReports();
     fetch('/api/auth/me')
@@ -156,7 +194,7 @@ export default function HistoryPage() {
       .then((data) => {
         if (data?.user) setCurrentUser(data.user);
       })
-      .catch(() => {});
+      .catch(() => { });
 
     // Read ?status= parameter from URL if opened via Approval Queue shortcut
     if (typeof window !== 'undefined') {
@@ -201,14 +239,14 @@ export default function HistoryPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to approve report');
-      toast.success(data.message || 'Laporan berhasil disetujui (Approved). Notifikasi Telegram terkirim.');
+      toast.success(data.message || 'Report approved successfully. Telegram notification sent.');
       fetchReports();
       if (selectedReport?.id === reportId) {
         setSelectedReport((prev) => (prev ? { ...prev, status: 'APPROVED', approvedByName: currentUser?.name || 'Supervisor' } : null));
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      toast.error(`Gagal menyetujui: ${msg}`);
+      toast.error(`Approval failed: ${msg}`);
     } finally {
       setApprovingId(null);
     }
@@ -234,8 +272,8 @@ export default function HistoryPage() {
       statusFilter === 'ALL'
         ? true
         : statusFilter === 'PENDING_APPROVAL'
-        ? isPending
-        : r.status === statusFilter;
+          ? isPending
+          : r.status === statusFilter;
     return matchesSearch && matchesType && matchesStatus;
   });
 
@@ -298,7 +336,7 @@ export default function HistoryPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to submit revision');
-      toast.success(data.message || 'Status laporan diubah menjadi Perlu Revisi. Notifikasi Telegram terkirim.');
+      toast.success(data.message || 'Report status changed to Revision Needed. Telegram notification sent.');
       fetchReports();
       const noteCopy = rejectionNotes;
       setRejectModalReport(null);
@@ -308,7 +346,7 @@ export default function HistoryPage() {
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      toast.error(`Gagal meminta revisi: ${msg}`);
+      toast.error(`Failed to request revision: ${msg}`);
     } finally {
       setIsSubmittingReject(false);
     }
@@ -344,9 +382,9 @@ export default function HistoryPage() {
   const avgSla =
     reports.length > 0
       ? (
-          reports.reduce((acc, curr) => acc + (curr.onlinePercent || 100), 0) /
-          reports.length
-        ).toFixed(2)
+        reports.reduce((acc, curr) => acc + (curr.onlinePercent || 100), 0) /
+        reports.length
+      ).toFixed(2)
       : '100.00';
 
   return (
@@ -370,40 +408,32 @@ export default function HistoryPage() {
         }
       />
 
-      {/* Compact summary inline — no redundant StatCard grid */}
-      {reports.length > 0 && (
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-1 text-xs text-slate-500">
-          <span className="font-mono tabular-nums font-semibold text-slate-700">{totalReports}</span>
-          <span>laporan tersimpan</span>
-          {isNocOrAdmin && (
-            <>
-              <span className="text-slate-300">·</span>
-              <span className="font-mono tabular-nums text-amber-600 font-semibold">{pendingReports}</span>
-              <span>pending</span>
-              <span className="text-slate-300">·</span>
-              <span className="font-mono tabular-nums text-emerald-600 font-semibold">{approvedReports}</span>
-              <span>approved</span>
-              {revisionReports > 0 && (
-                <>
-                  <span className="text-slate-300">·</span>
-                  <span className="font-mono tabular-nums text-rose-600 font-semibold">{revisionReports}</span>
-                  <span>revision</span>
-                </>
-              )}
-            </>
-          )}
-          {!isNocOrAdmin && (
-            <>
-              <span className="text-slate-300">·</span>
-              <span className="font-mono tabular-nums text-blue-600 font-semibold">{slaReports}</span>
-              <span>SLA</span>
-              <span className="text-slate-300">·</span>
-              <span className="font-mono tabular-nums text-slate-600 font-semibold">{mrtgReports}</span>
-              <span>MRTG</span>
-            </>
-          )}
-        </div>
-      )}
+      {/* 4 Standardized Metric StatCards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <StatCard
+          label="Total Reports"
+          value={totalReports}
+          icon={FileText}
+        />
+        <StatCard
+          label="Pending Approvals"
+          value={pendingReports}
+          icon={Clock}
+          badge={pendingReports > 0 ? <Badge variant="warning">{pendingReports}</Badge> : undefined}
+        />
+        <StatCard
+          label="Approved & Published"
+          value={approvedReports}
+          icon={CheckCircle2}
+          badge={<Badge variant="success">{totalReports > 0 ? Math.round((approvedReports / totalReports) * 100) : 0}%</Badge>}
+        />
+        <StatCard
+          label="Revision Needed"
+          value={revisionReports}
+          icon={AlertTriangle}
+          badge={revisionReports > 0 ? <Badge variant="destructive">{revisionReports}</Badge> : undefined}
+        />
+      </div>
 
       {/* Filter & Search Bar */}
       <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs flex flex-col md:flex-row items-center justify-between gap-3">
@@ -413,7 +443,7 @@ export default function HistoryPage() {
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Cari no. dokumen, nama pelanggan, atau service ID..."
+            placeholder="Search document number, customer name, or service ID..."
             className="pl-9 pr-9 h-9 text-[13px]"
           />
           {search && (
@@ -430,7 +460,7 @@ export default function HistoryPage() {
         </div>
 
         {/* Filter Tabs & Reset */}
-        <div className="flex flex-wrap items-center gap-2 self-start md:self-auto">
+        <div className="flex flex-wrap items-center gap-2.5 self-start md:self-auto">
           {(search || typeFilter !== 'ALL' || statusFilter !== 'ALL') && (
             <Button
               variant="ghost"
@@ -447,99 +477,32 @@ export default function HistoryPage() {
             </Button>
           )}
 
-          {/* Status Tabs (Hanya untuk NOC / Admin, karena non-NOC selalu Approved) */}
+          {/* Status Segmented Control (NOC / Admin only) */}
           {isNocOrAdmin && (
-            <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg border border-slate-200">
-              <Button
-                variant={statusFilter === 'ALL' ? 'secondary' : 'ghost'}
-                size="sm"
-                onClick={() => setStatusFilter('ALL')}
-                className={
-                  statusFilter === 'ALL'
-                    ? 'bg-white text-slate-900 shadow-xs h-7 px-2.5 text-xs font-semibold'
-                    : 'text-slate-600 hover:text-slate-900 h-7 px-2.5 text-xs'
-                }
-              >
-                <span>All ({totalReports})</span>
-              </Button>
-              <Button
-                variant={statusFilter === 'PENDING_APPROVAL' ? 'secondary' : 'ghost'}
-                size="sm"
-                onClick={() => setStatusFilter('PENDING_APPROVAL')}
-                className={
-                  statusFilter === 'PENDING_APPROVAL'
-                    ? 'bg-amber-500 text-white shadow-xs h-7 px-2.5 text-xs font-semibold hover:bg-amber-600 hover:text-white'
-                    : 'text-amber-700 hover:bg-amber-50 h-7 px-2.5 text-xs font-medium'
-                }
-              >
-                <span>Pending ({pendingReports})</span>
-              </Button>
-              <Button
-                variant={statusFilter === 'APPROVED' ? 'secondary' : 'ghost'}
-                size="sm"
-                onClick={() => setStatusFilter('APPROVED')}
-                className={
-                  statusFilter === 'APPROVED'
-                    ? 'bg-emerald-600 text-white shadow-xs h-7 px-2.5 text-xs font-semibold hover:bg-emerald-700 hover:text-white'
-                    : 'text-emerald-700 hover:bg-emerald-50 h-7 px-2.5 text-xs font-medium'
-                }
-              >
-                <span>Approved ({approvedReports})</span>
-              </Button>
-              <Button
-                variant={statusFilter === 'REVISION_NEEDED' ? 'secondary' : 'ghost'}
-                size="sm"
-                onClick={() => setStatusFilter('REVISION_NEEDED')}
-                className={
-                  statusFilter === 'REVISION_NEEDED'
-                    ? 'bg-rose-600 text-white shadow-xs h-7 px-2.5 text-xs font-semibold hover:bg-rose-700 hover:text-white'
-                    : 'text-rose-700 hover:bg-rose-50 h-7 px-2.5 text-xs font-medium'
-                }
-              >
-                <span>Revision ({revisionReports})</span>
-              </Button>
-            </div>
+            <SegmentedControl
+              size="sm"
+              value={statusFilter}
+              onChange={(val) => setStatusFilter(val as 'ALL' | 'PENDING_APPROVAL' | 'APPROVED' | 'REVISION_NEEDED')}
+              options={[
+                { value: 'ALL', label: `All (${totalReports})` },
+                { value: 'PENDING_APPROVAL', label: `Pending (${pendingReports})` },
+                { value: 'APPROVED', label: `Approved (${approvedReports})` },
+                { value: 'REVISION_NEEDED', label: `Revision (${revisionReports})` },
+              ]}
+            />
           )}
 
-          {/* Type Filter */}
-          <div className="flex items-center gap-1">
-            <Button
-              variant={typeFilter === 'ALL' ? 'secondary' : 'ghost'}
-              size="sm"
-              onClick={() => setTypeFilter('ALL')}
-              className={
-                typeFilter === 'ALL'
-                  ? 'bg-slate-900 text-white hover:bg-slate-800 hover:text-white border-slate-900 h-8 px-2.5 text-xs font-semibold'
-                  : 'text-slate-600 hover:bg-slate-100 h-8 px-2.5 text-xs'
-              }
-            >
-              <span>Type: All</span>
-            </Button>
-            <Button
-              variant={typeFilter === 'SLA' ? 'secondary' : 'ghost'}
-              size="sm"
-              onClick={() => setTypeFilter('SLA')}
-              className={
-                typeFilter === 'SLA'
-                  ? 'bg-slate-900 text-white hover:bg-slate-800 hover:text-white border-slate-900 h-8 px-2.5 text-xs font-semibold'
-                  : 'text-slate-600 hover:bg-slate-100 h-8 px-2.5 text-xs'
-              }
-            >
-              <span>SLA ({slaReports})</span>
-            </Button>
-            <Button
-              variant={typeFilter === 'MRTG' ? 'secondary' : 'ghost'}
-              size="sm"
-              onClick={() => setTypeFilter('MRTG')}
-              className={
-                typeFilter === 'MRTG'
-                  ? 'bg-slate-900 text-white hover:bg-slate-800 hover:text-white border-slate-900 h-8 px-2.5 text-xs font-semibold'
-                  : 'text-slate-600 hover:bg-slate-100 h-8 px-2.5 text-xs'
-              }
-            >
-              <span>MRTG ({mrtgReports})</span>
-            </Button>
-          </div>
+          {/* Type Segmented Control */}
+          <SegmentedControl
+            size="sm"
+            value={typeFilter}
+            onChange={(val) => setTypeFilter(val as 'ALL' | 'SLA' | 'MRTG')}
+            options={[
+              { value: 'ALL', label: 'All Types' },
+              { value: 'SLA', label: `SLA (${slaReports})` },
+              { value: 'MRTG', label: `MRTG (${mrtgReports})` },
+            ]}
+          />
         </div>
       </div>
 
@@ -548,7 +511,7 @@ export default function HistoryPage() {
         {loading && (
           <div className="py-16 text-center text-xs text-slate-500">
             <Spinner size="md" className="mx-auto text-orange-600 mb-2" />
-            <span>Memuat data riwayat laporan...</span>
+            <span>Loading report history...</span>
           </div>
         )}
 
@@ -556,11 +519,11 @@ export default function HistoryPage() {
           <div className="p-4">
             <EmptyState
               icon={SearchX}
-              title="Tidak Ada Laporan yang Cocok"
+              title="No Matching Reports"
               description={
                 search
-                  ? `Tidak ada laporan ditemukan dengan kata kunci "${search}" pada filter yang dipilih.`
-                  : `Tidak ada laporan pada kategori filter saat ini.`
+                  ? `No reports found matching "${search}" for the selected filter.`
+                  : `No reports found for the current filter category.`
               }
               actionLabel="Reset All Filters"
               onAction={() => {
@@ -629,21 +592,21 @@ export default function HistoryPage() {
                           </Badge>
                         ) : r.status === 'REVISION_NEEDED' ? (
                           <Badge variant="destructive" dot={true}>
-                            Perlu Revisi
+                            Revision Needed
                           </Badge>
                         ) : r.status === 'PENDING_DEPT_APPROVAL' ? (
                           <Badge variant="outline" dot={true} className="border-purple-300 bg-purple-50 text-purple-800">
-                            Menunggu Otorisasi
+                            Pending Approval
                           </Badge>
                         ) : (
                           <Badge variant="warning" dot={true}>
-                            Verifikasi NOC
+                            NOC Verification
                           </Badge>
                         )}
                       </TableCell>
 
                       {/* Document Number */}
-                      <TableCell className="text-xs font-mono font-semibold text-slate-900">
+                      <TableCell className="text-xs font-sans font-semibold text-slate-900">
                         <div className="flex items-center gap-1.5">
                           <span>{r.documentNumber}</span>
                           <Button
@@ -651,7 +614,7 @@ export default function HistoryPage() {
                             size="icon-sm"
                             onClick={() => handleCopyDocNum(r.documentNumber)}
                             className="h-6 w-6 text-slate-500 hover:text-slate-800"
-                            title="Salin nomor dokumen"
+                            title="Copy document number"
                           >
                             {copiedDocNum === r.documentNumber ? (
                               <Check className="w-3.5 h-3.5 text-emerald-600" />
@@ -665,13 +628,13 @@ export default function HistoryPage() {
                       {/* Customer Name & SID */}
                       <TableCell className="font-semibold text-slate-900">
                         {r.customerName}
-                        <div className="text-xs text-slate-500 font-normal font-mono">
+                        <div className="text-xs text-slate-500 font-normal font-sans">
                           SID: {r.serviceId || r.customerId}
                         </div>
                       </TableCell>
 
                       {/* Period */}
-                      <TableCell className="text-slate-600 font-mono font-medium text-xs tabular-nums">
+                      <TableCell className="text-slate-600 font-sans font-medium text-xs tabular-nums">
                         {r.reportPeriod}
                       </TableCell>
 
@@ -684,7 +647,7 @@ export default function HistoryPage() {
                                 ? 'success'
                                 : 'destructive'
                             }
-                            className="font-mono tabular-nums"
+                            className="font-sans tabular-nums"
                           >
                             {(r.onlinePercent || 100).toFixed(2)}%
                           </Badge>
@@ -705,7 +668,7 @@ export default function HistoryPage() {
                       </TableCell>
 
                       {/* Created Date */}
-                      <TableCell suppressHydrationWarning className="text-slate-500 text-xs font-mono tabular-nums">
+                      <TableCell suppressHydrationWarning className="text-slate-500 text-xs font-sans tabular-nums">
                         {new Date(r.createdAt).toLocaleDateString('en-US', {
                           day: '2-digit',
                           month: 'short',
@@ -730,17 +693,23 @@ export default function HistoryPage() {
                               <span>Download PDF</span>
                             </Button>
                           ) : r.status === 'REVISION_NEEDED' ? (
-                            <Link href={`/?revisingReportId=${r.id}`}>
-                              <Button
-                                variant="primary"
-                                size="sm"
-                                className="bg-rose-600 hover:bg-rose-700 text-white font-medium text-xs h-7 px-2.5 shadow-2xs"
-                                title="Open in Generator to adjust parameters and re-submit"
-                              >
-                                <Edit3 className="w-3 h-3 mr-1" />
-                                <span>Revisi di Generator</span>
-                              </Button>
-                            </Link>
+                            isNocOrAdmin ? (
+                              <Link href={`/?revisingReportId=${r.id}`}>
+                                <Button
+                                  variant="primary"
+                                  size="sm"
+                                  className="bg-rose-600 hover:bg-rose-700 text-white font-medium text-xs h-7 px-2.5 shadow-2xs"
+                                  title="Open in Generator to adjust parameters and re-submit"
+                                >
+                                  <Edit3 className="w-3 h-3 mr-1" />
+                                  <span>Revise in Generator</span>
+                                </Button>
+                              </Link>
+                            ) : (
+                              <Badge variant="destructive" className="text-xs h-7 px-2">
+                                Under Revision (NOC)
+                              </Badge>
+                            )
                           ) : (
                             <Button
                               variant="secondary"
@@ -753,7 +722,7 @@ export default function HistoryPage() {
                               title="Review PDF & Evaluate Details"
                             >
                               <Eye className="w-3.5 h-3.5 mr-1 text-slate-500" />
-                              <span>Review Dokumen</span>
+                              <span>Review Document</span>
                             </Button>
                           )}
 
@@ -764,7 +733,7 @@ export default function HistoryPage() {
                                 variant="ghost"
                                 size="icon-sm"
                                 className="h-7 w-7 text-slate-500 hover:text-slate-800"
-                                title="Pilihan Lainnya"
+                                title="More Options"
                               >
                                 <MoreVertical className="w-4 h-4" />
                               </Button>
@@ -778,7 +747,7 @@ export default function HistoryPage() {
                                 className="gap-2 cursor-pointer"
                               >
                                 <Eye className="w-3.5 h-3.5 text-slate-500" />
-                                <span>Pratinjau Lengkap</span>
+                                <span>Full Preview</span>
                               </DropdownMenuItem>
 
                               <DropdownMenuItem
@@ -786,7 +755,7 @@ export default function HistoryPage() {
                                 className="gap-2 cursor-pointer"
                               >
                                 <Copy className="w-3.5 h-3.5 text-slate-500" />
-                                <span>Salin No. Dokumen</span>
+                                <span>Copy Doc Number</span>
                               </DropdownMenuItem>
 
                               <DropdownMenuItem asChild>
@@ -797,7 +766,7 @@ export default function HistoryPage() {
                                   className="flex items-center gap-2 px-2 py-1.5 cursor-pointer text-slate-700 hover:text-slate-900"
                                 >
                                   <ExternalLink className="w-3.5 h-3.5 text-slate-500" />
-                                  <span>Buka Tab Baru</span>
+                                  <span>Open in New Tab</span>
                                 </a>
                               </DropdownMenuItem>
 
@@ -807,7 +776,7 @@ export default function HistoryPage() {
                                   className="gap-2 cursor-pointer text-slate-700"
                                 >
                                   <Download className="w-3.5 h-3.5 text-slate-500" />
-                                  <span>Unduh Draf PDF</span>
+                                  <span>Download Draft PDF</span>
                                 </DropdownMenuItem>
                               )}
 
@@ -819,7 +788,7 @@ export default function HistoryPage() {
                                     className="gap-2 cursor-pointer text-rose-600 focus:text-rose-700 focus:bg-rose-50"
                                   >
                                     <Trash2 className="w-3.5 h-3.5 text-rose-500" />
-                                    <span>Hapus Laporan</span>
+                                    <span>Delete Report</span>
                                   </DropdownMenuItem>
                                 </>
                               )}
@@ -848,22 +817,21 @@ export default function HistoryPage() {
                   </DialogTitle>
                   <Badge
                     variant="outline"
-                    className={`text-xs ${
-                      selectedReport?.status === 'APPROVED'
+                    className={`text-xs ${selectedReport?.status === 'APPROVED'
                         ? 'border-emerald-300 text-emerald-800 bg-emerald-50'
                         : selectedReport?.status === 'REVISION_NEEDED'
-                        ? 'border-rose-300 text-rose-800 bg-rose-50'
-                        : 'border-amber-300 text-amber-800 bg-amber-50'
-                    }`}
+                          ? 'border-rose-300 text-rose-800 bg-rose-50'
+                          : 'border-amber-300 text-amber-800 bg-amber-50'
+                      }`}
                   >
                     {selectedReport?.status === 'APPROVED'
                       ? 'Approved'
                       : selectedReport?.status === 'REVISION_NEEDED'
-                      ? 'Perlu Revisi'
-                      : 'Pending Approval'}
+                        ? 'Revision Needed'
+                        : 'Pending Approval'}
                   </Badge>
                 </div>
-                <div className="flex items-center gap-2 mt-0.5 text-xs text-slate-500 font-mono">
+                <div className="flex items-center gap-2 mt-0.5 text-xs text-slate-500 font-sans">
                   <span>{selectedReport?.documentNumber}</span>
                   <span>•</span>
                   <span>{selectedReport?.reportPeriod}</span>
@@ -881,24 +849,34 @@ export default function HistoryPage() {
                   variant={previewTab === 'pdf' ? 'secondary' : 'ghost'}
                   size="sm"
                   onClick={() => setPreviewTab('pdf')}
-                  className={`h-7 px-2.5 text-xs font-semibold ${
-                    previewTab === 'pdf' ? 'bg-white text-orange-700 shadow-xs' : 'text-slate-600'
-                  }`}
+                  className={`h-7 px-2.5 text-xs font-semibold ${previewTab === 'pdf' ? 'bg-white text-orange-700 shadow-xs' : 'text-slate-600'
+                    }`}
                 >
                   <FileText className="w-3.5 h-3.5 mr-1 text-orange-600" />
-                  <span>Pratinjau PDF</span>
+                  <span>PDF Preview</span>
                 </Button>
                 <Button
                   type="button"
                   variant={previewTab === 'data' ? 'secondary' : 'ghost'}
                   size="sm"
                   onClick={() => setPreviewTab('data')}
-                  className={`h-7 px-2.5 text-xs font-semibold ${
-                    previewTab === 'data' ? 'bg-white text-orange-700 shadow-xs' : 'text-slate-600'
-                  }`}
+                  className={`h-7 px-2.5 text-xs font-semibold ${previewTab === 'data' ? 'bg-white text-orange-700 shadow-xs' : 'text-slate-600'
+                    }`}
                 >
                   <ShieldCheck className="w-3.5 h-3.5 mr-1 text-orange-600" />
-                  <span>Data &amp; Ringkasan</span>
+                  <span>Data &amp; Summary</span>
+                </Button>
+                <Button
+                  type="button"
+                  variant={previewTab === 'audit' ? 'secondary' : 'ghost'}
+                  size="sm"
+                  onClick={() => setPreviewTab('audit')}
+                  className={`h-7 px-2.5 text-xs font-semibold ${previewTab === 'audit' ? 'bg-white text-orange-700 shadow-xs' : 'text-slate-600'
+                    }`}
+                  title="View full authorization and revision lifecycle history"
+                >
+                  <Clock className="w-3.5 h-3.5 mr-1 text-orange-600" />
+                  <span>Audit Trail ({auditLogs.length})</span>
                 </Button>
               </div>
 
@@ -909,10 +887,10 @@ export default function HistoryPage() {
                   target="_blank"
                   rel="noopener noreferrer"
                   className="hidden md:inline-flex items-center gap-1 text-xs text-slate-500 hover:text-slate-800 font-medium px-2 py-1 rounded hover:bg-slate-100 transition"
-                  title="Buka dokumen PDF di tab baru peramban"
+                  title="Open PDF document in new browser tab"
                 >
                   <ExternalLink className="w-3.5 h-3.5" />
-                  <span>Tab Baru</span>
+                  <span>New Tab</span>
                 </a>
               )}
 
@@ -925,7 +903,7 @@ export default function HistoryPage() {
                     size="icon-sm"
                     disabled={!hasPrev}
                     onClick={handlePrevReport}
-                    title="Laporan Sebelumnya (←)"
+                    title="Previous Report (←)"
                     className="h-7 w-7"
                   >
                     <ChevronLeft className="w-4 h-4" />
@@ -939,7 +917,7 @@ export default function HistoryPage() {
                     size="icon-sm"
                     disabled={!hasNext}
                     onClick={handleNextReport}
-                    title="Laporan Berikutnya (→)"
+                    title="Next Report (→)"
                     className="h-7 w-7"
                   >
                     <ChevronRight className="w-4 h-4" />
@@ -958,7 +936,7 @@ export default function HistoryPage() {
                     key={selectedReport.id}
                     src={`/api/reports/download?id=${selectedReport.id}&inline=1#toolbar=1`}
                     className="w-full h-full border-0 rounded-lg flex-1"
-                    title={`Pratinjau PDF - ${selectedReport.documentNumber}`}
+                    title={`PDF Preview - ${selectedReport.documentNumber}`}
                   />
                 </div>
               ) : (
@@ -969,11 +947,11 @@ export default function HistoryPage() {
                     <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-900 flex items-start gap-2.5">
                       <CheckCheck className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                       <div>
-                        <div className="font-semibold">Laporan Telah Disetujui (Approved)</div>
+                        <div className="font-semibold">Report Approved</div>
                         <div className="text-xs text-emerald-700">
-                          Disetujui oleh <strong>{selectedReport.approvedByName || 'Supervisor'}</strong>
-                          {selectedReport.approvedAt && ` pada ${new Date(selectedReport.approvedAt).toLocaleString('id-ID')}`}.
-                          Dokumen resmi siap dikirim ke pelanggan.
+                          Approved by <strong>{selectedReport.approvedByName || 'Supervisor'}</strong>
+                          {selectedReport.approvedAt && ` on ${new Date(selectedReport.approvedAt).toLocaleDateString('en-US')}`}.
+                          Official compliance document ready for customer release.
                         </div>
                       </div>
                     </div>
@@ -981,12 +959,12 @@ export default function HistoryPage() {
                     <div className="p-3 bg-rose-50 border border-rose-200 rounded-lg text-rose-900 space-y-1">
                       <div className="flex items-center gap-2 font-semibold">
                         <AlertTriangle className="w-4 h-4 text-rose-600" />
-                        <span>Laporan Membutuhkan Revisi</span>
+                        <span>Report Requires Revision</span>
                       </div>
                       <div className="text-xs text-rose-700">
-                        Catatan dari Supervisor:
+                        Supervisor Notes:
                         <div className="p-2 bg-white/80 rounded border border-rose-200 mt-1 italic font-medium">
-                          &quot;{selectedReport.rejectionNotes || 'Silakan cek kembali kesesuaian data SLA dan grafik.'}&quot;
+                          &quot;{selectedReport.rejectionNotes || 'Please verify SLA data and graph consistency.'}&quot;
                         </div>
                       </div>
                     </div>
@@ -994,9 +972,9 @@ export default function HistoryPage() {
                     <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg text-purple-900 flex items-start gap-2.5">
                       <Clock className="w-4 h-4 text-purple-600 shrink-0 mt-0.5" />
                       <div>
-                        <div className="font-semibold">Tahap 2: Menunggu Otorisasi {selectedReport.assignedDepartment}</div>
+                        <div className="font-semibold">Stage 2: Pending Approval ({selectedReport.assignedDepartment})</div>
                         <div className="text-xs text-purple-700">
-                          Dokumen telah lolos verifikasi teknis NOC dan sedang menunggu persetujuan akhir dari Supervisor departemen <strong>{selectedReport.assignedDepartment}</strong>.
+                          Document has passed NOC technical review and is awaiting final approval from <strong>{selectedReport.assignedDepartment}</strong> supervisor.
                         </div>
                       </div>
                     </div>
@@ -1004,9 +982,9 @@ export default function HistoryPage() {
                     <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-900 flex items-start gap-2.5">
                       <Clock className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                       <div>
-                        <div className="font-semibold">Tahap 1: Menunggu Verifikasi Teknis NOC</div>
+                        <div className="font-semibold">Stage 1: Pending NOC Technical Review</div>
                         <div className="text-xs text-amber-700">
-                          Dibuat oleh <strong>{selectedReport.generatedByName || 'Staf'}</strong>. Memerlukan verifikasi teknis Supervisor NOC sebelum diterbitkan.
+                          Generated by <strong>{selectedReport.generatedByName || 'Staff'}</strong>. Requires technical verification by NOC supervisor before release.
                         </div>
                       </div>
                     </div>
@@ -1014,44 +992,44 @@ export default function HistoryPage() {
 
                   <div className="grid grid-cols-2 gap-3 bg-slate-50 p-3 rounded-lg border border-slate-200">
                     <div>
-                      <span className="text-slate-500 text-xs block">Nama Pelanggan</span>
+                      <span className="text-slate-500 text-xs block">Customer Name</span>
                       <div className="font-semibold text-slate-900">{selectedReport.customerName}</div>
                     </div>
                     <div>
                       <span className="text-slate-500 text-xs block">Customer ID / Service ID</span>
-                      <div className="text-slate-700 font-mono text-xs">
+                      <div className="text-slate-700 font-sans text-xs">
                         {selectedReport.customerId} / {selectedReport.serviceId}
                       </div>
                     </div>
                     <div>
-                      <span className="text-slate-500 text-xs block">Periode Laporan</span>
-                      <div className="font-mono font-medium text-slate-800">{selectedReport.reportPeriod}</div>
+                      <span className="text-slate-500 text-xs block">Report Period</span>
+                      <div className="font-sans font-medium text-slate-800">{selectedReport.reportPeriod}</div>
                     </div>
                     <div>
-                      <span className="text-slate-500 text-xs block">Tipe Dokumen</span>
+                      <span className="text-slate-500 text-xs block">Document Type</span>
                       <div className="font-semibold text-orange-600">{selectedReport.reportType} Report</div>
                     </div>
                   </div>
 
                   {selectedReport.reportType === 'SLA' && (
                     <div>
-                      <div className="font-semibold text-slate-800 mb-2">Performa Layanan SLA</div>
+                      <div className="font-semibold text-slate-800 mb-2">SLA Service Performance</div>
                       <div className="grid grid-cols-3 gap-2 text-center">
                         <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-lg">
                           <div className="text-xs text-emerald-700 font-medium">Online</div>
-                          <div className="text-sm font-bold text-emerald-700 font-mono tabular-nums">
+                          <div className="text-sm font-bold text-emerald-700 font-sans tabular-nums">
                             {(selectedReport.onlinePercent || 100).toFixed(2)}%
                           </div>
                         </div>
                         <div className="p-2.5 bg-rose-50 border border-rose-200 rounded-lg">
                           <div className="text-xs text-rose-700 font-medium">Downtime</div>
-                          <div className="text-sm font-bold text-rose-700 font-mono tabular-nums">
+                          <div className="text-sm font-bold text-rose-700 font-sans tabular-nums">
                             {(selectedReport.downtimePercent || 0).toFixed(2)}%
                           </div>
                         </div>
                         <div className="p-2.5 bg-blue-50 border border-blue-200 rounded-lg">
                           <div className="text-xs text-blue-700 font-medium">Target SLA</div>
-                          <div className="text-sm font-bold text-blue-700 font-mono tabular-nums">
+                          <div className="text-sm font-bold text-blue-700 font-sans tabular-nums">
                             {selectedReport.targetSla && selectedReport.targetSla > 0
                               ? `${selectedReport.targetSla.toFixed(2)}%`
                               : 'No SLA'}
@@ -1060,13 +1038,13 @@ export default function HistoryPage() {
                       </div>
                       <div className="mt-2 text-slate-500 flex justify-between">
                         <span>
-                          Durasi Downtime:{' '}
+                          Downtime Duration:{' '}
                           <strong className="text-slate-700">{selectedReport.downtimeDurationStr || '-'}</strong>
                         </span>
                         <span>
-                          Total Menit:{' '}
+                          Total Minutes:{' '}
                           <strong className="text-slate-700 tabular-nums">
-                            {selectedReport.totalDowntimeMinutes || 0} mnt
+                            {selectedReport.totalDowntimeMinutes || 0} mins
                           </strong>
                         </span>
                       </div>
@@ -1077,20 +1055,96 @@ export default function HistoryPage() {
                     <div className="font-semibold text-slate-800 mb-1">Traffic Summary</div>
                     <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200 space-y-1 text-slate-700">
                       <div>
-                        Download: Rata-rata <strong>{selectedReport.dlAvg ?? '-'} {selectedReport.dlUnit || 'Mbps'}</strong>, Puncak <strong>{selectedReport.dlMax ?? '-'} {selectedReport.dlUnit || 'Mbps'}</strong>
+                        Download: Avg <strong>{selectedReport.dlAvg ?? '-'} {selectedReport.dlUnit || 'Mbps'}</strong>, Peak <strong>{selectedReport.dlMax ?? '-'} {selectedReport.dlUnit || 'Mbps'}</strong>
                       </div>
                       <div>
-                        Upload: Rata-rata <strong>{selectedReport.ulAvg ?? '-'} {selectedReport.ulUnit || 'Mbps'}</strong>, Puncak <strong>{selectedReport.ulMax ?? '-'} {selectedReport.ulUnit || 'Mbps'}</strong>
+                        Upload: Avg <strong>{selectedReport.ulAvg ?? '-'} {selectedReport.ulUnit || 'Mbps'}</strong>, Peak <strong>{selectedReport.ulMax ?? '-'} {selectedReport.ulUnit || 'Mbps'}</strong>
                       </div>
                     </div>
                   </div>
                 </div>
               )}
 
+              {/* Tab 3: Full Lifecycle Audit Trail */}
+              {previewTab === 'audit' && (
+                <div className="flex-1 overflow-y-auto pr-2 space-y-4 p-4 bg-slate-50/80 rounded-lg border border-slate-200">
+                  <div className="flex items-center justify-between pb-2 border-b border-slate-200">
+                    <div className="flex items-center gap-2">
+                      <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                      <h4 className="font-heading text-xs font-bold text-slate-900 uppercase tracking-wider">
+                        Document Lifecycle &amp; Audit Trail
+                      </h4>
+                    </div>
+                    <span className="text-xs text-slate-500 font-medium">
+                      {auditLogs.length} events recorded
+                    </span>
+                  </div>
+
+                  {loadingAuditLogs ? (
+                    <div className="py-12 flex flex-col items-center justify-center text-xs text-slate-500 space-y-2">
+                      <Spinner size="md" />
+                      <span>Loading audit history...</span>
+                    </div>
+                  ) : auditLogs.length === 0 ? (
+                    <div className="py-12 text-center text-xs text-slate-500">
+                      No recorded audit trail events found for this report document.
+                    </div>
+                  ) : (
+                    <div className="relative pl-6 space-y-5 before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200">
+                      {auditLogs.map((log) => {
+                        const isApproval = log.action.includes('APPROVED');
+                        const isRejection = log.action === 'REVISION_REQUESTED';
+                        const isRevised = log.action === 'REVISED';
+                        const badgeColor = isApproval
+                          ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
+                          : isRejection
+                            ? 'bg-rose-100 text-rose-800 border-rose-200'
+                            : isRevised
+                              ? 'bg-blue-100 text-blue-800 border-blue-200'
+                              : 'bg-slate-100 text-slate-800 border-slate-200';
+
+                        return (
+                          <div key={log.id} className="relative group">
+                            <div className={`absolute -left-6 top-1 w-3 h-3 rounded-full border-2 border-white shadow-xs ${
+                              isApproval ? 'bg-emerald-500' : isRejection ? 'bg-rose-500' : isRevised ? 'bg-blue-500' : 'bg-slate-400'
+                            }`} />
+                            <div className="p-3 bg-white rounded-lg border border-slate-200 shadow-xs space-y-1.5">
+                              <div className="flex items-center justify-between gap-2 flex-wrap">
+                                <span className={`px-2 py-0.5 rounded text-[11px] font-bold border ${badgeColor}`}>
+                                  {log.action.replace('_', ' ')}
+                                </span>
+                                <span className="text-[11px] text-slate-400 font-sans tabular-nums">
+                                  {new Date(log.createdAt).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })} WIB
+                                </span>
+                              </div>
+                              <div className="text-xs text-slate-700">
+                                <span className="font-semibold text-slate-900">{log.actorName}</span>
+                                <span className="text-slate-400"> · </span>
+                                <span className="text-slate-500">{log.actorRole} ({log.actorDept})</span>
+                              </div>
+                              {log.notes && (
+                                <div className={`p-2.5 rounded text-xs leading-relaxed ${
+                                  isRejection
+                                    ? 'bg-rose-50 text-rose-900 border border-rose-200/80 font-medium'
+                                    : 'bg-slate-50 text-slate-600 border border-slate-200/60'
+                                }`}>
+                                  {isRejection && <span className="font-bold block text-rose-800 mb-0.5">Supervisor Evaluation Notes:</span>}
+                                  {log.notes}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Modal Footer with Actions */}
               <DialogFooter className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2 flex-wrap shrink-0">
                 <Button variant="secondary" onClick={() => setSelectedReport(null)} className="text-xs h-8">
-                  Tutup
+                  Close
                 </Button>
 
                 <div className="flex items-center gap-2 flex-wrap">
@@ -1098,7 +1152,7 @@ export default function HistoryPage() {
                     <Link href={`/?revisingReportId=${selectedReport.id}`}>
                       <Button variant="primary" className="bg-orange-600 hover:bg-orange-700 text-white text-xs h-8">
                         <Edit3 className="w-3.5 h-3.5 mr-1" />
-                        <span>Revisi di Generator</span>
+                        <span>Revise in Generator</span>
                       </Button>
                     </Link>
                   )}
@@ -1112,24 +1166,24 @@ export default function HistoryPage() {
                           setRejectionNotes('');
                         }}
                         className="text-amber-700 hover:bg-amber-50 text-xs h-8"
-                        title="Shortcut keyboard: 'R'"
+                        title="Keyboard shortcut: 'R'"
                       >
                         <MessageSquare className="w-3.5 h-3.5 mr-1" />
-                        <span>Minta Revisi (R)</span>
+                        <span>Request Revision (R)</span>
                       </Button>
                       <Button
                         variant="primary"
                         onClick={handleApproveAndNext}
                         disabled={approvingId === selectedReport.id}
                         className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs h-8"
-                        title="Shortcut keyboard: 'A'"
+                        title="Keyboard shortcut: 'A'"
                       >
                         {approvingId === selectedReport.id ? (
                           <Spinner size="sm" className="mr-1 text-white" />
                         ) : (
                           <Check className="w-3.5 h-3.5 mr-1" />
                         )}
-                        <span>Setujui {hasNext ? '& Lanjut (A)' : '(A)'}</span>
+                        <span>Approve {hasNext ? '& Next (A)' : '(A)'}</span>
                       </Button>
                     </>
                   )}
@@ -1139,10 +1193,10 @@ export default function HistoryPage() {
                       variant="ghost"
                       onClick={() => handleDownloadPdf(selectedReport)}
                       className="text-slate-600 text-xs h-8"
-                      title="Unduh berkas PDF ke komputer jika diperlukan"
+                      title="Download PDF file to computer"
                     >
                       <Download className="w-3.5 h-3.5 mr-1 text-slate-500" />
-                      <span>{selectedReport.status === 'APPROVED' ? 'Unduh PDF' : 'Draf PDF'}</span>
+                      <span>{selectedReport.status === 'APPROVED' ? 'Download PDF' : 'Draft PDF'}</span>
                     </Button>
                   )}
                 </div>
@@ -1160,18 +1214,19 @@ export default function HistoryPage() {
             <p className="text-xs text-slate-500">{rejectModalReport?.documentNumber} - {rejectModalReport?.customerName}</p>
           </DialogHeader>
 
-          <div className="space-y-4 py-2">
-            <FormField label="Evaluation Notes / Required Changes" required>
+          <div className="space-y-3 py-2">
+            <div>
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <label className="text-xs font-medium text-slate-700">Evaluation Notes / Required Changes</label>
+                <InfoTooltip content="Notes will be saved to the report history and dispatched to the team's Telegram topic." />
+              </div>
               <Textarea
                 rows={4}
                 value={rejectionNotes}
                 onChange={(e) => setRejectionNotes(e.target.value)}
                 required
               />
-            </FormField>
-            <p className="text-xs text-slate-500">
-              These revision notes will be saved and dispatched to the team's Telegram topic.
-            </p>
+            </div>
           </div>
 
           <DialogFooter className="pt-3 border-t border-slate-100">

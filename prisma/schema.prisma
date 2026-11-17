@@ -269,3 +269,20 @@ model MonthlyScheduleTask {
   @@index([customerName])
   @@index([deadlineTime])
 }
+
+model ReportAuditLog {
+  id         String   @id @default(cuid())
+  reportId   String
+  action     String   // "CREATED", "NOC_APPROVED", "DEPT_APPROVED", "REVISION_REQUESTED", "REVISED"
+  actorId    String
+  actorName  String
+  actorDept  String
+  actorRole  String
+  notes      String?
+  createdAt  DateTime @default(now())
+
+  @@index([reportId])
+  @@index([actorId])
+  @@index([createdAt])
+}
+

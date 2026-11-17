@@ -31,6 +31,7 @@ import {
   SelectContent,
   SelectItem,
   Spinner,
+  InfoTooltip,
 } from '@/components/ui';
 
 interface AppConfigState {
@@ -193,12 +194,12 @@ export default function SettingsPage() {
       const data = await res.json();
       if (res.ok && data.config) {
         setConfig((prev) => ({ ...prev, ...data.config }));
-        toast.success('Pengaturan sistem berhasil disimpan.');
+        toast.success('System settings saved successfully.');
       } else {
-        toast.error(data.error || 'Gagal menyimpan konfigurasi.');
+        toast.error(data.error || 'Failed to save configuration.');
       }
     } catch {
-      toast.error('Terjadi kesalahan jaringan.');
+      toast.error('Network error occurred.');
     } finally {
       setSaving(false);
     }
@@ -206,7 +207,7 @@ export default function SettingsPage() {
 
   const handleUploadTemplate = async (templateKey: 'cover_mrtg' | 'cover_sla' | 'page_bg', file: File) => {
     if (!file) return;
-    setUploadStatus((prev) => ({ ...prev, [templateKey]: 'Mengunggah...' }));
+    setUploadStatus((prev) => ({ ...prev, [templateKey]: 'Uploading...' }));
 
     const formData = new FormData();
     formData.append('file', file);
@@ -219,16 +220,16 @@ export default function SettingsPage() {
       });
       const data = await res.json();
       if (res.ok && data.success) {
-        setUploadStatus((prev) => ({ ...prev, [templateKey]: 'Berhasil diunggah!' }));
+        setUploadStatus((prev) => ({ ...prev, [templateKey]: 'Uploaded successfully!' }));
         setCacheBuster(Date.now());
-        toast.success(`Template ${templateKey} berhasil diperbarui.`);
+        toast.success(`Template ${templateKey} updated successfully.`);
       } else {
-        setUploadStatus((prev) => ({ ...prev, [templateKey]: 'Gagal mengunggah' }));
-        toast.error(data.error || 'Gagal mengunggah template.');
+        setUploadStatus((prev) => ({ ...prev, [templateKey]: 'Upload failed' }));
+        toast.error(data.error || 'Failed to upload template.');
       }
     } catch {
-      setUploadStatus((prev) => ({ ...prev, [templateKey]: 'Kesalahan jaringan' }));
-      toast.error('Gagal mengunggah template.');
+      setUploadStatus((prev) => ({ ...prev, [templateKey]: 'Network error' }));
+      toast.error('Failed to upload template.');
     }
   };
 
@@ -253,19 +254,19 @@ export default function SettingsPage() {
       if (res.ok && data.success) {
         setTestResult({
           type: 'success',
-          message: `Terhubung sukses (${latency}ms) ke ${config.mrtgBaseUrl}`,
+          message: `Connected successfully (${latency}ms) to ${config.mrtgBaseUrl}`,
         });
       } else {
         setTestResult({
           type: 'error',
-          message: data.error || 'Gagal terhubung ke MRTG / Cacti.',
+          message: data.error || 'Failed to connect to MRTG / Cacti.',
         });
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       setTestResult({
         type: 'error',
-        message: `Koneksi gagal: ${msg}`,
+        message: `Connection failed: ${msg}`,
       });
     } finally {
       setTestingConnection(false);
@@ -293,24 +294,24 @@ export default function SettingsPage() {
       if (res.ok && data.success && !data.isFallback) {
         setPrtgTestResult({
           type: 'success',
-          message: `Terhubung sukses (${latency}ms) ke ${config.prtgBaseUrl}`,
+          message: `Connected successfully (${latency}ms) to ${config.prtgBaseUrl}`,
         });
       } else if (data.isFallback) {
         setPrtgTestResult({
           type: 'error',
-          message: data.error || `Server merespons tetapi sensor tidak ditemukan di ${config.prtgBaseUrl}.`,
+          message: data.error || `Server responded but sensor not found on ${config.prtgBaseUrl}.`,
         });
       } else {
         setPrtgTestResult({
           type: 'error',
-          message: data.error || 'Gagal terhubung ke PRTG Network Monitor.',
+          message: data.error || 'Failed to connect to PRTG Network Monitor.',
         });
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       setPrtgTestResult({
         type: 'error',
-        message: `Koneksi PRTG gagal: ${msg}`,
+        message: `PRTG connection failed: ${msg}`,
       });
     } finally {
       setTestingPrtgConnection(false);
@@ -334,21 +335,21 @@ export default function SettingsPage() {
       if (res.ok && data.success) {
         setTelegramTestResult({
           type: 'success',
-          message: data.message || 'Pesan uji coba berhasil dikirim ke grup Telegram!',
+          message: data.message || 'Test message sent successfully to Telegram group!',
         });
-        toast.success('Pesan uji coba berhasil terkirim ke Telegram.');
+        toast.success('Test message delivered to Telegram.');
       } else {
         setTelegramTestResult({
           type: 'error',
-          message: data.error || 'Gagal mengirim pesan Telegram. Periksa token dan Chat ID.',
+          message: data.error || 'Failed to send Telegram message. Please check Bot Token and Chat ID.',
         });
-        toast.error(data.error || 'Gagal mengirim pesan Telegram.');
+        toast.error(data.error || 'Failed to send Telegram message.');
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       setTelegramTestResult({
         type: 'error',
-        message: `Koneksi gagal: ${msg}`,
+        message: `Connection failed: ${msg}`,
       });
       toast.error(msg);
     } finally {
@@ -358,7 +359,7 @@ export default function SettingsPage() {
 
   const handleTestEmail = async () => {
     if (!testEmailTarget.trim()) {
-      toast.error('Masukkan alamat email penerima uji coba.');
+      toast.error('Enter recipient test email address.');
       return;
     }
     setTestingEmail(true);
@@ -382,21 +383,21 @@ export default function SettingsPage() {
       if (res.ok && data.success) {
         setEmailTestResult({
           type: 'success',
-          message: data.message || `Email uji coba berhasil dikirim ke ${testEmailTarget}!`,
+          message: data.message || `Test email sent successfully to ${testEmailTarget}!`,
         });
-        toast.success(`Email uji coba berhasil dikirim ke ${testEmailTarget}.`);
+        toast.success(`Test email sent successfully to ${testEmailTarget}.`);
       } else {
         setEmailTestResult({
           type: 'error',
-          message: data.error || 'Gagal mengirim email uji coba. Periksa kredensial SMTP.',
+          message: data.error || 'Failed to send test email. Please check SMTP credentials.',
         });
-        toast.error(data.error || 'Gagal mengirim email uji coba.');
+        toast.error(data.error || 'Failed to send test email.');
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       setEmailTestResult({
         type: 'error',
-        message: `Koneksi SMTP gagal: ${msg}`,
+        message: `SMTP connection failed: ${msg}`,
       });
       toast.error(msg);
     } finally {
@@ -407,12 +408,12 @@ export default function SettingsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Pengaturan Sistem"
-        description="Konfigurasi integrasi monitoring (MRTG/PRTG), notifikasi email SMTP & Telegram, distribusi departemen, dan template canvas PDF."
+        title="System Settings"
+        description="Configure telemetry integrations, alert notifications, department distribution, and PDF canvas templates."
         breadcrumb={
           <Link href="/" className="hover:text-slate-800 flex items-center gap-1 font-medium text-slate-500">
             <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Kembali ke Generator</span>
+            <span>Back to Generator</span>
           </Link>
         }
       />
@@ -446,7 +447,7 @@ export default function SettingsPage() {
               }`}
             >
               <Bell className="w-4 h-4 shrink-0 text-blue-600" />
-              <span>Notifikasi (Email & Telegram)</span>
+              <span>Notifications (Email & Telegram)</span>
             </Button>
 
             <Button
@@ -460,7 +461,7 @@ export default function SettingsPage() {
               }`}
             >
               <ImageIcon className="w-4 h-4 shrink-0" />
-              <span>Template Canvas PDF</span>
+              <span>PDF Canvas Templates</span>
             </Button>
 
             <Button
@@ -474,31 +475,29 @@ export default function SettingsPage() {
               }`}
             >
               <ShieldCheck className="w-4 h-4 shrink-0" />
-              <span>Standar Dokumen & SLA</span>
+              <span>Document Standards & SLA</span>
             </Button>
           </nav>
         </div>
 
         {/* Right Content Column */}
-        <div className="md:col-span-9 max-w-[760px]">
+        <div className="md:col-span-9 w-full">
           {loading ? (
             <div className="py-16 text-center text-xs text-slate-500 bg-white rounded-lg border border-slate-200">
               <Spinner size="md" className="mx-auto text-orange-600 mb-2" />
-              <p>Memuat pengaturan sistem...</p>
+              <p>Loading system settings...</p>
             </div>
           ) : activeTab === 'integrations' ? (
             /* ================= INTEGRATIONS TAB ================= */
             <form onSubmit={handleSaveConfig} className="space-y-6">
               {/* Cacti Integration Card */}
               <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-xs space-y-4">
-                <div className="border-b border-slate-100 pb-3">
+                <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
                   <h3 className="font-heading font-semibold text-slate-900 text-sm flex items-center gap-2">
                     <Server className="w-4 h-4 text-emerald-600" />
                     <span>Cacti / MRTG Engine</span>
                   </h3>
-                  <p className="text-xs text-slate-500 mt-1">
-                    Server Cacti digunakan untuk mengambil data grafik dan rekap trafik bulanan.
-                  </p>
+                  <InfoTooltip content="Telemetry source for MRTG bandwidth graphs and monthly metrics." />
                 </div>
 
                 <div className="space-y-3.5 text-xs">
@@ -512,7 +511,7 @@ export default function SettingsPage() {
                   </div>
 
                   <div>
-                    <label className="font-medium text-slate-700 block mb-1">Metode Autentikasi</label>
+                    <label className="font-medium text-slate-700 block mb-1">Authentication Method</label>
                     <Select
                       value={config.mrtgAuthType}
                       onValueChange={(val) => setConfig({ ...config, mrtgAuthType: val })}
@@ -529,7 +528,7 @@ export default function SettingsPage() {
 
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="font-medium text-slate-700 block mb-1">Username Cacti</label>
+                      <label className="font-medium text-slate-700 block mb-1">Cacti Username</label>
                       <Input
                         value={config.mrtgUsername}
                         onChange={(e) => setConfig({ ...config, mrtgUsername: e.target.value })}
@@ -537,7 +536,7 @@ export default function SettingsPage() {
                       />
                     </div>
                     <div>
-                      <label className="font-medium text-slate-700 block mb-1">Password Cacti</label>
+                      <label className="font-medium text-slate-700 block mb-1">Cacti Password</label>
                       <div className="relative">
                         <Input
                           type={showMrtgPassword ? 'text' : 'password'}
@@ -584,7 +583,7 @@ export default function SettingsPage() {
                       loading={testingConnection}
                     >
                       <Activity className="w-3.5 h-3.5 mr-1.5 text-emerald-600" />
-                      <span>Uji Koneksi Cacti</span>
+                      <span>Test Cacti Connection</span>
                     </Button>
                   </div>
                 </div>
@@ -592,14 +591,12 @@ export default function SettingsPage() {
 
               {/* PRTG Integration Card */}
               <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-xs space-y-4">
-                <div className="border-b border-slate-100 pb-3">
+                <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
                   <h3 className="font-heading font-semibold text-slate-900 text-sm flex items-center gap-2">
                     <Server className="w-4 h-4 text-blue-600" />
                     <span>PRTG Network Monitor</span>
                   </h3>
-                  <p className="text-xs text-slate-500 mt-1">
-                    Server PRTG digunakan untuk penarikan data sensor uptime dan downtime SLA.
-                  </p>
+                  <InfoTooltip content="PRTG Network Monitor sensor data source for uptime and SLA availability." />
                 </div>
 
                 <div className="space-y-3.5 text-xs">
@@ -613,7 +610,7 @@ export default function SettingsPage() {
                   </div>
 
                   <div>
-                    <label className="font-medium text-slate-700 block mb-1">Metode Autentikasi</label>
+                    <label className="font-medium text-slate-700 block mb-1">Authentication Method</label>
                     <Select
                       value={config.prtgAuthType}
                       onValueChange={(val) => setConfig({ ...config, prtgAuthType: val })}
@@ -630,7 +627,7 @@ export default function SettingsPage() {
 
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="font-medium text-slate-700 block mb-1">Username PRTG</label>
+                      <label className="font-medium text-slate-700 block mb-1">PRTG Username</label>
                       <Input
                         value={config.prtgUsername}
                         onChange={(e) => setConfig({ ...config, prtgUsername: e.target.value })}
@@ -638,7 +635,7 @@ export default function SettingsPage() {
                       />
                     </div>
                     <div>
-                      <label className="font-medium text-slate-700 block mb-1">Password / Passhash PRTG</label>
+                      <label className="font-medium text-slate-700 block mb-1">PRTG Password / Passhash</label>
                       <div className="relative">
                         <Input
                           type={showPrtgPassword ? 'text' : 'password'}
@@ -662,7 +659,7 @@ export default function SettingsPage() {
                   {/* Nginx Basic Auth Proxy */}
                   <div className="pt-2 border-t border-slate-100">
                     <label className="font-semibold text-slate-800 block mb-0.5">
-                      Nginx / HTTP Basic Auth Proxy (Opsional)
+                      HTTP Basic Auth Reverse Proxy (Optional)
                     </label>
                     <div className="grid grid-cols-2 gap-3 mt-1.5">
                       <div>
@@ -723,7 +720,7 @@ export default function SettingsPage() {
                       loading={testingPrtgConnection}
                     >
                       <Activity className="w-3.5 h-3.5 mr-1.5 text-blue-600" />
-                      <span>Uji Koneksi PRTG</span>
+                      <span>Test PRTG Connection</span>
                     </Button>
                   </div>
                 </div>
@@ -732,7 +729,7 @@ export default function SettingsPage() {
               <div className="flex justify-end pt-1">
                 <Button variant="primary" size="md" loading={saving} onClick={handleSaveConfig}>
                   <Save className="w-4 h-4 mr-1.5" />
-                  <span>Simpan Monitoring</span>
+                  <span>Save Monitoring Settings</span>
                 </Button>
               </div>
             </form>
@@ -742,14 +739,12 @@ export default function SettingsPage() {
               {/* 1. Email (SMTP) Integration Card */}
               <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-xs space-y-4">
                 <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
-                  <div>
+                  <div className="flex items-center gap-2">
                     <h3 className="font-heading font-semibold text-slate-900 text-sm flex items-center gap-2">
                       <Mail className="w-4 h-4 text-blue-600" />
-                      <span>Integrasi Email (SMTP) &bull; Single Thread</span>
+                      <span>Email (SMTP) Integration &bull; Single Thread</span>
                     </h3>
-                    <p className="text-xs text-slate-500 mt-0.5">
-                      Mengirimkan notifikasi formal tiket laporan dengan dukungan conversation threading RFC 2822.
-                    </p>
+                    <InfoTooltip content="Sends formal report notifications with RFC 2822 conversation threading support." />
                   </div>
                   <label className="flex items-center gap-2 cursor-pointer text-xs font-medium text-slate-700 bg-slate-50 px-2.5 py-1.5 rounded-md border border-slate-200">
                     <input
@@ -760,7 +755,7 @@ export default function SettingsPage() {
                       }
                       className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-4 h-4"
                     />
-                    <span>Aktifkan Notifikasi Email</span>
+                    <span>Enable Email Notifications</span>
                   </label>
                 </div>
 
@@ -768,13 +763,13 @@ export default function SettingsPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div className="sm:col-span-2">
                       <label className="font-medium text-slate-700 block mb-1">
-                        Host Server SMTP <span className="text-rose-500">*</span>
+                        SMTP Host Server <span className="text-rose-500">*</span>
                       </label>
                       <Input
                         placeholder="e.g. mail.nexa.net.id"
                         value={config.smtpHost}
                         onChange={(e) => setConfig({ ...config, smtpHost: e.target.value })}
-                        className="text-xs font-mono"
+                        className="text-xs font-sans"
                       />
                     </div>
                     <div>
@@ -784,7 +779,7 @@ export default function SettingsPage() {
                         placeholder="587"
                         value={config.smtpPort}
                         onChange={(e) => setConfig({ ...config, smtpPort: parseInt(e.target.value, 10) || 587 })}
-                        className="text-xs font-mono"
+                        className="text-xs font-sans tabular-nums"
                       />
                     </div>
                   </div>
@@ -797,13 +792,13 @@ export default function SettingsPage() {
                         onChange={(e) => setConfig({ ...config, smtpSecure: e.target.checked })}
                         className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5"
                       />
-                      <span>Gunakan SSL/TLS Langsung (Centang jika Port 465; Biarkan mati jika STARTTLS / Port 587)</span>
+                      <span>Enable Direct SSL/TLS (Check for Port 465; Uncheck for STARTTLS / Port 587)</span>
                     </label>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="font-medium text-slate-700 block mb-1">Username / Akun SMTP</label>
+                      <label className="font-medium text-slate-700 block mb-1">SMTP Username</label>
                       <Input
                         placeholder="e.g. noreply@nexa.net.id"
                         value={config.smtpUser}
@@ -812,11 +807,11 @@ export default function SettingsPage() {
                       />
                     </div>
                     <div>
-                      <label className="font-medium text-slate-700 block mb-1">Password SMTP</label>
+                      <label className="font-medium text-slate-700 block mb-1">SMTP Password</label>
                       <div className="relative">
                         <Input
                           type={showSmtpPassword ? 'text' : 'password'}
-                          placeholder="Password akun email..."
+                          placeholder="SMTP password..."
                           value={config.smtpPassword || ''}
                           onChange={(e) => setConfig({ ...config, smtpPassword: e.target.value })}
                           className="text-xs pr-8"
@@ -836,7 +831,7 @@ export default function SettingsPage() {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 border-t border-slate-100">
                     <div>
-                      <label className="font-medium text-slate-700 block mb-1">Email Pengirim (From)</label>
+                      <label className="font-medium text-slate-700 block mb-1">From Email Address</label>
                       <Input
                         placeholder="noreply-genre@nexa.net.id"
                         value={config.smtpFromEmail}
@@ -845,7 +840,7 @@ export default function SettingsPage() {
                       />
                     </div>
                     <div>
-                      <label className="font-medium text-slate-700 block mb-1">Nama Pengirim (Display Name)</label>
+                      <label className="font-medium text-slate-700 block mb-1">Sender Display Name</label>
                       <Input
                         placeholder="NEXA GENRE Reporting"
                         value={config.smtpFromName}
@@ -858,11 +853,11 @@ export default function SettingsPage() {
                   {/* Test Email Section */}
                   <div className="pt-3 border-t border-slate-100 bg-slate-50/70 p-3 rounded-lg space-y-2">
                     <label className="font-semibold text-slate-800 block text-xs">
-                      Uji Coba Pengiriman Email SMTP
+                      Test SMTP Email Delivery
                     </label>
                     <div className="flex gap-2">
                       <Input
-                        placeholder="Ketik email penerima (contoh: admin@nexa.net.id)"
+                        placeholder="Recipient email address (e.g. admin@nexa.net.id)"
                         value={testEmailTarget}
                         onChange={(e) => setTestEmailTarget(e.target.value)}
                         className="text-xs flex-1 bg-white"
@@ -876,7 +871,7 @@ export default function SettingsPage() {
                         disabled={!config.smtpHost.trim()}
                       >
                         <Send className="w-3.5 h-3.5 mr-1.5 text-blue-600" />
-                        <span>Kirim Uji Coba</span>
+                        <span>Send Test Email</span>
                       </Button>
                     </div>
 
@@ -902,14 +897,12 @@ export default function SettingsPage() {
 
               {/* 2. Department Email Distribution Lists */}
               <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-xs space-y-4">
-                <div className="border-b border-slate-100 pb-3">
+                <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
                   <h3 className="font-heading font-semibold text-slate-900 text-sm flex items-center gap-2">
                     <ShieldCheck className="w-4 h-4 text-indigo-600" />
-                    <span>Distribusi Email Berdasarkan Departemen</span>
+                    <span>Department Email Distribution</span>
                   </h3>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    Alamat email distribusi (milis/grup) yang menerima notifikasi sesuai departemen pemohon.
-                  </p>
+                  <InfoTooltip content="Mailing lists and group emails receiving reports per requester department." />
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
@@ -917,12 +910,11 @@ export default function SettingsPage() {
                     <label className="font-semibold text-slate-800 block">
                       Account Executive (Sales)
                     </label>
-                    <p className="text-slate-500 text-[11px]">Menerima laporan permintaan tim Sales / AE</p>
                     <Input
                       placeholder="sls@nexa.net.id"
                       value={config.emailDeptSales}
                       onChange={(e) => setConfig({ ...config, emailDeptSales: e.target.value })}
-                      className="text-xs bg-white font-mono"
+                      className="text-xs bg-white font-sans"
                     />
                   </div>
 
@@ -930,41 +922,38 @@ export default function SettingsPage() {
                     <label className="font-semibold text-slate-800 block">
                       Customer Experience (CE / CX)
                     </label>
-                    <p className="text-slate-500 text-[11px]">Menerima laporan permintaan tim CE / CX</p>
                     <Input
                       placeholder="cxe@nexa.net.id"
                       value={config.emailDeptCe}
                       onChange={(e) => setConfig({ ...config, emailDeptCe: e.target.value })}
-                      className="text-xs bg-white font-mono"
+                      className="text-xs bg-white font-sans"
                     />
                   </div>
 
                   <div className="p-3 rounded-lg border border-slate-100 bg-slate-50/50 space-y-1.5">
                     <label className="font-semibold text-slate-800 block">
-                      Finance (Penagihan &amp; AR)
+                      Finance (Billing &amp; AR)
                     </label>
-                    <p className="text-slate-500 text-[11px]">Menerima lampiran SLA untuk keperluan penagihan</p>
                     <Input
                       placeholder="finc@nexa.net.id"
                       value={config.emailDeptFinance}
                       onChange={(e) => setConfig({ ...config, emailDeptFinance: e.target.value })}
-                      className="text-xs bg-white font-mono"
+                      className="text-xs bg-white font-sans"
                     />
                   </div>
 
                   <div className="p-3 rounded-lg border border-emerald-100 bg-emerald-50/30 space-y-1.5">
                     <label className="font-semibold text-emerald-950 flex items-center justify-between">
-                      <span>Helpdesk NOC (Operasional)</span>
+                      <span>Helpdesk NOC (Operations)</span>
                       <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold">
-                        Wajib Tembusan
+                        Always CC
                       </span>
                     </label>
-                    <p className="text-slate-500 text-[11px]">Selalu menerima salinan setiap tiket dari awal s/d selesai</p>
                     <Input
                       placeholder="helpdesk@nexa.net.id"
                       value={config.emailDeptHelpdesk}
                       onChange={(e) => setConfig({ ...config, emailDeptHelpdesk: e.target.value })}
-                      className="text-xs bg-white font-mono"
+                      className="text-xs bg-white font-sans"
                     />
                   </div>
                 </div>
@@ -973,14 +962,12 @@ export default function SettingsPage() {
               {/* 3. Telegram Bot Notifications */}
               <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-xs space-y-4">
                 <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
-                  <div>
+                  <div className="flex items-center gap-2">
                     <h3 className="font-heading font-semibold text-slate-900 text-sm flex items-center gap-2">
-                      <Send className="w-4 h-4 text-[#0088cc]" />
-                      <span>Notifikasi Grup Telegram (NOC Operasional)</span>
+                      <Send className="w-4 h-4 text-sky-500" />
+                      <span>Telegram Group Notifications (Operations)</span>
                     </h3>
-                    <p className="text-xs text-slate-500 mt-0.5">
-                      Pesan instan cepat ke forum grup operasional Helpdesk NOC.
-                    </p>
+                    <InfoTooltip content="Real-time instant alert dispatch to NOC Helpdesk operations group forum topic." />
                   </div>
                   <label className="flex items-center gap-2 cursor-pointer text-xs font-medium text-slate-700 bg-slate-50 px-2.5 py-1.5 rounded-md border border-slate-200">
                     <input
@@ -991,7 +978,7 @@ export default function SettingsPage() {
                       }
                       className="rounded border-slate-300 text-orange-600 focus:ring-orange-500 w-4 h-4"
                     />
-                    <span>Aktifkan Telegram</span>
+                    <span>Enable Telegram</span>
                   </label>
                 </div>
 
@@ -1005,7 +992,7 @@ export default function SettingsPage() {
                         type={showTelegramToken ? 'text' : 'password'}
                         value={config.telegramBotToken}
                         onChange={(e) => setConfig({ ...config, telegramBotToken: e.target.value })}
-                        className="text-xs pr-8 font-mono"
+                        className="text-xs pr-8 font-sans"
                       />
                       <Button
                         type="button"
@@ -1027,18 +1014,18 @@ export default function SettingsPage() {
                       <Input
                         value={config.telegramChatId}
                         onChange={(e) => setConfig({ ...config, telegramChatId: e.target.value })}
-                        className="text-xs font-mono"
+                        className="text-xs font-sans tabular-nums"
                       />
                     </div>
 
                     <div>
                       <label className="font-medium text-slate-700 block mb-1">
-                        Topic Thread ID (Opsional)
+                        Topic Thread ID (Optional)
                       </label>
                       <Input
                         value={config.telegramThreadId}
                         onChange={(e) => setConfig({ ...config, telegramThreadId: e.target.value })}
-                        className="text-xs font-mono"
+                        className="text-xs font-sans tabular-nums"
                       />
                     </div>
                   </div>
@@ -1069,8 +1056,8 @@ export default function SettingsPage() {
                       loading={testingTelegram}
                       disabled={!config.telegramBotToken.trim() || !config.telegramChatId.trim()}
                     >
-                      <Send className="w-3.5 h-3.5 mr-1.5 text-[#0088cc]" />
-                      <span>Uji Notifikasi Telegram</span>
+                      <Send className="w-3.5 h-3.5 mr-1.5 text-sky-500" />
+                      <span>Test Telegram Message</span>
                     </Button>
                   </div>
                 </div>
@@ -1080,7 +1067,7 @@ export default function SettingsPage() {
               <div className="flex justify-end pt-1">
                 <Button variant="primary" size="md" loading={saving} onClick={handleSaveConfig}>
                   <Save className="w-4 h-4 mr-1.5" />
-                  <span>Simpan Konfigurasi Notifikasi</span>
+                  <span>Save Notification Settings</span>
                 </Button>
               </div>
             </form>
@@ -1088,21 +1075,18 @@ export default function SettingsPage() {
             /* ================= TEMPLATES TAB ================= */
             <div className="space-y-4">
               <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-xs space-y-4">
-                <div className="border-b border-slate-100 pb-3">
+                <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
                   <h3 className="font-heading font-semibold text-slate-900 text-sm flex items-center gap-2">
                     <ImageIcon className="w-4 h-4 text-orange-600" />
-                    <span>Template Canvas Laporan PDF</span>
+                    <span>Report Canvas PDF Templates</span>
                   </h3>
-                  <p className="text-xs text-slate-500 mt-1">
-                    Background beresolusi tinggi A4 (210mm x 297mm) yang digunakan sebagai latar cover dan isi laporan.
-                  </p>
+                  <InfoTooltip content="High-resolution A4 canvas templates (210mm x 297mm) used for covers and report page backgrounds." />
                 </div>
 
                 {/* Template Asset 1: MRTG Cover */}
                 <div className="border border-slate-200 rounded-lg p-4 bg-slate-50/50 space-y-3">
                   <div>
-                    <h4 className="font-semibold text-xs text-slate-900">Cover Laporan MRTG (Trafik)</h4>
-                    <p className="text-xs text-slate-500">Latar halaman sampul untuk laporan grafik MRTG</p>
+                    <h4 className="font-semibold text-xs text-slate-900">MRTG Cover Template (Traffic)</h4>
                   </div>
 
                   <div className="flex items-center gap-4">
@@ -1121,7 +1105,7 @@ export default function SettingsPage() {
                         onClick={() => mrtgFileRef.current?.click()}
                       >
                         <Upload className="w-3.5 h-3.5 mr-1.5 text-slate-500" />
-                        <span>Ganti Cover MRTG</span>
+                        <span>Change MRTG Cover</span>
                       </Button>
                       <Input
                         ref={mrtgFileRef}
@@ -1144,8 +1128,7 @@ export default function SettingsPage() {
                 {/* Template Asset 2: SLA Cover */}
                 <div className="border border-slate-200 rounded-lg p-4 bg-slate-50/50 space-y-3">
                   <div>
-                    <h4 className="font-semibold text-xs text-slate-900">Cover Laporan SLA (Ketersediaan)</h4>
-                    <p className="text-xs text-slate-500">Latar halaman sampul untuk laporan Service Level Agreement</p>
+                    <h4 className="font-semibold text-xs text-slate-900">SLA Cover Template (Availability)</h4>
                   </div>
 
                   <div className="flex items-center gap-4">
@@ -1164,7 +1147,7 @@ export default function SettingsPage() {
                         onClick={() => slaFileRef.current?.click()}
                       >
                         <Upload className="w-3.5 h-3.5 mr-1.5 text-slate-500" />
-                        <span>Ganti Cover SLA</span>
+                        <span>Change SLA Cover</span>
                       </Button>
                       <Input
                         ref={slaFileRef}
@@ -1187,8 +1170,7 @@ export default function SettingsPage() {
                 {/* Template Asset 3: Content Background */}
                 <div className="border border-slate-200 rounded-lg p-4 bg-slate-50/50 space-y-3">
                   <div>
-                    <h4 className="font-semibold text-xs text-slate-900">Background Isi Halaman Laporan</h4>
-                    <p className="text-xs text-slate-500">Latar belakang halaman rincian grafik dan tabel performa</p>
+                    <h4 className="font-semibold text-xs text-slate-900">Report Content Page Background</h4>
                   </div>
 
                   <div className="flex items-center gap-4">
@@ -1207,7 +1189,7 @@ export default function SettingsPage() {
                         onClick={() => pageBgFileRef.current?.click()}
                       >
                         <Upload className="w-3.5 h-3.5 mr-1.5 text-slate-500" />
-                        <span>Ganti Background Isi</span>
+                        <span>Change Page Background</span>
                       </Button>
                       <Input
                         ref={pageBgFileRef}
@@ -1235,13 +1217,13 @@ export default function SettingsPage() {
                 <div className="border-b border-slate-100 pb-3">
                   <h3 className="font-heading font-semibold text-slate-900 text-sm flex items-center gap-2">
                     <ShieldCheck className="w-4 h-4 text-orange-600" />
-                    <span>Standar Dokumen &amp; SLA Global</span>
+                    <span>Document Standards &amp; Global SLA</span>
                   </h3>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 text-xs">
                   <div>
-                    <label className="font-medium text-slate-700 block mb-1">Target SLA Default (%)</label>
+                    <label className="font-medium text-slate-700 block mb-1">Default Target SLA (%)</label>
                     <Input
                       type="number"
                       step="0.01"
@@ -1253,7 +1235,7 @@ export default function SettingsPage() {
                     />
                   </div>
                   <div>
-                    <label className="font-medium text-slate-700 block mb-1">Prefix Nomor Dokumen</label>
+                    <label className="font-medium text-slate-700 block mb-1">Document Number Prefix</label>
                     <Input
                       value={config.documentNumberPrefix}
                       onChange={(e) => setConfig({ ...config, documentNumberPrefix: e.target.value })}
@@ -1266,7 +1248,7 @@ export default function SettingsPage() {
               <div className="flex justify-end pt-1">
                 <Button variant="primary" size="md" loading={saving} onClick={handleSaveConfig}>
                   <Save className="w-4 h-4 mr-1.5" />
-                  <span>Simpan Standar Dokumen</span>
+                  <span>Save Document Standards</span>
                 </Button>
               </div>
             </form>

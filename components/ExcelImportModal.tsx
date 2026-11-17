@@ -19,6 +19,7 @@ import {
   Input,
   Checkbox,
   Badge,
+  InfoTooltip,
 } from '@/components/ui';
 
 export interface ExcelImportModalProps {
@@ -135,42 +136,31 @@ export default function ExcelImportModal({
 
         <div className="overflow-y-auto space-y-4 py-2 flex-1">
           {/* Template info card */}
-          <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg space-y-3">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <p className="text-[13px] font-semibold text-slate-900">
-                  Full Customer Import Template (All Columns Supported)
-                </p>
-                <p className="text-[12px] text-slate-500 mt-0.5">
-                  Mendukung seluruh atribut: identitas, node, target SLA, engine (MRTG/PRTG), sensor/graph ID, arah trafik, hingga jadwal rutin. Kolom opsional yang kosong akan otomatis dihitung oleh sistem.
-                </p>
-              </div>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={handleDownloadTemplate}
-              >
-                <Download className="w-3.5 h-3.5 mr-1.5" />
-                Template
-              </Button>
+          <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <FileSpreadsheet className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span className="text-xs font-semibold text-slate-800">
+                Customer Spreadsheet Template
+              </span>
+              <InfoTooltip
+                content={
+                  <div className="space-y-1">
+                    <p className="font-semibold text-white">Required columns (*):</p>
+                    <p>Customer Name, Customer ID, Service ID</p>
+                    <p className="text-slate-400 mt-1">Optional: Service Plan, Target SLA, Engine, Graph/Sensor ID</p>
+                  </div>
+                }
+              />
             </div>
-
-            <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
-              <span className="font-medium text-slate-700">Columns:</span>
-              <Badge variant="neutral" className="text-[11px]">1. Customer Name *</Badge>
-              <Badge variant="neutral" className="text-[11px]">2. Customer ID *</Badge>
-              <Badge variant="neutral" className="text-[11px]">3. Service ID *</Badge>
-              <Badge variant="neutral" className="text-[11px]">4. Service Name</Badge>
-              <Badge variant="neutral" className="text-[11px]">5. Node Count</Badge>
-              <Badge variant="neutral" className="text-[11px]">6. Target SLA (%)</Badge>
-              <Badge variant="neutral" className="text-[11px]">7. Preferred Engine</Badge>
-              <Badge variant="neutral" className="text-[11px]">8. Cacti Graph ID</Badge>
-              <Badge variant="neutral" className="text-[11px]">9. PRTG Sensor ID</Badge>
-              <Badge variant="neutral" className="text-[11px]">10. Traffic Direction</Badge>
-              <Badge variant="neutral" className="text-[11px]">11. Monthly Routine</Badge>
-              <Badge variant="neutral" className="text-[11px]">12. Routine Group</Badge>
-              <Badge variant="neutral" className="text-[11px]">13. Routine Report Type</Badge>
-            </div>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleDownloadTemplate}
+              className="h-7 text-xs"
+            >
+              <Download className="w-3.5 h-3.5 mr-1.5" />
+              Template
+            </Button>
           </div>
 
           {/* Dropzone */}

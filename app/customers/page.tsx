@@ -26,6 +26,7 @@ import {
   ChevronDown,
   X,
   Calendar,
+  Activity,
 } from 'lucide-react';
 import Link from 'next/link';
 import { CustomerData } from '@/components/CustomerFormModal';
@@ -57,13 +58,17 @@ import {
   TableRow,
   TableHead,
   TableCell,
+  StatCard,
+  SegmentedControl,
 } from '@/components/ui';
+
+type CustomerFilterTab = 'ALL' | 'ROUTINE' | 'HAS_CACTI' | 'HAS_PRTG' | 'HAS_BOTH' | 'NO_GRAPH';
 
 export default function CustomersPage() {
   const [customers, setCustomers] = useState<CustomerData[]>([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
-  const [filterTab, setFilterTab] = useState<'ALL' | 'ROUTINE' | 'HAS_CACTI' | 'HAS_PRTG' | 'HAS_BOTH' | 'NO_GRAPH'>('ALL');
+  const [filterTab, setFilterTab] = useState<CustomerFilterTab>('ALL');
   const [serviceFilter, setServiceFilter] = useState<string>('ALL');
   const [slaFilter, setSlaFilter] = useState<'ALL' | '99.5' | '98' | '95' | 'NO_SLA'>('ALL');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -254,7 +259,7 @@ export default function CustomersPage() {
     }
   };
 
-  // Sync SLA Otomatis untuk semua pelanggan berdasarkan nama layanan
+  // Auto-sync target SLA for all customers based on service name
   const handleAutoSyncAllSla = () => {
     setSyncSlaOpen(true);
   };
@@ -526,6 +531,35 @@ export default function CustomersPage() {
         }
       />
 
+      {/* 4 Standardized Metric StatCards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <StatCard
+          label="Total Customers"
+          value={customers.length}
+          icon={Users}
+          subtext="Enrolled enterprise clients"
+        />
+        <StatCard
+          label="Routine Schedule"
+          value={countRoutine}
+          icon={Calendar}
+          subtext="Automated monthly reporting"
+          badge={countRoutine > 0 ? <Badge variant="success">{countRoutine}</Badge> : undefined}
+        />
+        <StatCard
+          label="MRTG / Bandwidth"
+          value={countWithCacti}
+          icon={Activity}
+          subtext="Active telemetry graphs"
+        />
+        <StatCard
+          label="PRTG / Sensors"
+          value={countWithPrtg}
+          icon={ShieldCheck}
+          subtext="Active uptime sensors"
+        />
+      </div>
+
       {/* Filter & Search Bar Card */}
       <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs space-y-3">
         <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
@@ -535,7 +569,7 @@ export default function CustomersPage() {
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Cari nama pelanggan, CID, atau service ID..."
+              placeholder="Search by customer name, CID, or service ID..."
               className="pl-9 pr-9 h-9 text-[13px]"
             />
             {search && (
@@ -597,34 +631,16 @@ export default function CustomersPage() {
         </div>
 
         {/* Quick Filter Tabs & Active Filter Actions */}
-        <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100">
-          <div className="flex flex-wrap items-center gap-1.5">
-            {filterOptions.map((opt) => {
-              const isActive = filterTab === opt.id;
-              return (
-                <Button
-                  key={opt.id}
-                  variant={isActive ? 'secondary' : 'ghost'}
-                  size="sm"
-                  onClick={() => setFilterTab(opt.id)}
-                  className={
-                    isActive
-                      ? 'bg-slate-900 text-white hover:bg-slate-800 hover:text-white border-slate-900 h-7 px-2.5 text-xs font-semibold'
-                      : 'text-slate-600 hover:bg-slate-100 h-7 px-2.5 text-xs'
-                  }
-                >
-                  <span>{opt.label}</span>
-                  <span
-                    className={`ml-1 text-xs tabular-nums ${
-                      isActive ? 'text-slate-300' : 'text-slate-500 font-medium'
-                    }`}
-                  >
-                    ({opt.count})
-                  </span>
-                </Button>
-              );
-            })}
-          </div>
+        <div className="flex flex-wrap items-center justify-between gap-2.5 pt-2 border-t border-slate-100">
+          <SegmentedControl
+            size="sm"
+            value={filterTab}
+            onChange={(val) => setFilterTab(val as CustomerFilterTab)}
+            options={filterOptions.map((opt) => ({
+              value: opt.id,
+              label: `${opt.label} (${opt.count})`,
+            }))}
+          />
 
           {/* Reset Filters button */}
           {hasActiveFilters && (
@@ -632,9 +648,9 @@ export default function CustomersPage() {
               variant="ghost"
               size="sm"
               onClick={handleResetAllFilters}
-              className="text-xs text-orange-600 hover:text-orange-700 hover:bg-orange-50 h-7 px-2 font-medium"
+              className="text-xs text-orange-600 hover:text-orange-700 hover:bg-orange-50 h-8 px-2.5 font-medium"
             >
-              <RotateCcw className="w-3 h-3 mr-1" />
+              <RotateCcw className="w-3.5 h-3.5 mr-1" />
               <span>Reset Filters</span>
             </Button>
           )}
@@ -646,7 +662,7 @@ export default function CustomersPage() {
         <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3 animate-in fade-in slide-in-from-top-1">
           <div className="flex flex-wrap items-center gap-2 text-xs text-orange-950">
             <span className="font-semibold flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-orange-600 animate-pulse" />
+              <span className="w-2 h-2 rounded-full bg-orange-600" />
               {selectedIds.size.toLocaleString()} customer(s) selected
             </span>
             {selectedIds.size < filtered.length && (
@@ -896,8 +912,8 @@ export default function CustomersPage() {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell className="text-slate-600 text-xs font-mono tabular-nums">{c.customerId}</TableCell>
-                      <TableCell className="text-slate-600 text-xs font-mono tabular-nums">{c.serviceId}</TableCell>
+                      <TableCell className="text-slate-600 text-xs font-sans tabular-nums">{c.customerId}</TableCell>
+                      <TableCell className="text-slate-600 text-xs font-sans tabular-nums">{c.serviceId}</TableCell>
                       <TableCell className="text-slate-700">
                         <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-medium text-xs">
                           {c.serviceName}
@@ -924,7 +940,7 @@ export default function CustomersPage() {
                       </TableCell>
                       <TableCell>
                         {c.cactiGraphId || (c.graphType === 'MRTG' && c.graphId) ? (
-                          <span className="px-1.5 py-0.5 rounded font-medium text-xs font-mono bg-orange-50 text-orange-700 border border-orange-200">
+                          <span className="px-1.5 py-0.5 rounded font-medium text-xs font-sans bg-orange-50 text-orange-700 border border-orange-200 tabular-nums">
                             {c.cactiGraphId || c.graphId}
                           </span>
                         ) : (
@@ -933,7 +949,7 @@ export default function CustomersPage() {
                       </TableCell>
                       <TableCell>
                         {c.prtgSensorId || (c.graphType === 'PRTG' && c.graphId) ? (
-                          <span className="px-1.5 py-0.5 rounded font-medium text-xs font-mono bg-blue-50 text-blue-700 border border-blue-200">
+                          <span className="px-1.5 py-0.5 rounded font-medium text-xs font-sans bg-blue-50 text-blue-700 border border-blue-200 tabular-nums">
                             {c.prtgSensorId || c.graphId}
                           </span>
                         ) : (
@@ -954,9 +970,9 @@ export default function CustomersPage() {
                               c.customerId
                             )}&customerName=${encodeURIComponent(c.customerName)}`}
                             className="inline-flex items-center gap-1 px-2.5 py-1 bg-white hover:bg-orange-50 text-slate-700 hover:text-orange-700 border border-slate-200 hover:border-orange-300 rounded-md text-xs font-semibold transition-colors shadow-2xs"
-                            title="Buat Laporan untuk Pelanggan Ini di Generator"
+                            title="Generate report for this customer in Generator"
                           >
-                            <span>Buat Laporan</span>
+                            <span>Generate Report</span>
                             <ExternalLink className="w-3 h-3 text-orange-600" />
                           </Link>
                           <Button

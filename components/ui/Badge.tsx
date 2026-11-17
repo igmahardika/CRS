@@ -9,21 +9,21 @@ export interface BadgeProps extends React.HTMLAttributes<HTMLDivElement> {
 export const Badge = React.forwardRef<HTMLDivElement, BadgeProps>(
   ({ className, variant = 'neutral', dot = false, children, ...props }, ref) => {
     const variantClasses = {
-      neutral: 'bg-slate-100 text-slate-700 border-slate-200',
-      success: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-      destructive: 'bg-red-50 text-red-700 border-red-200',
-      warning: 'bg-amber-50 text-amber-700 border-amber-200',
-      info: 'bg-blue-50 text-blue-700 border-blue-200',
-      soft: 'bg-orange-50 text-orange-700 border-orange-200',
-      outline: 'bg-transparent text-slate-700 border-slate-200',
+      neutral: 'bg-slate-100/80 text-slate-700 border-slate-200/90',
+      success: 'bg-emerald-50 text-emerald-800 border-emerald-200/90',
+      destructive: 'bg-rose-50 text-rose-800 border-rose-200/90',
+      warning: 'bg-amber-50 text-amber-800 border-amber-200/90',
+      info: 'bg-blue-50 text-blue-800 border-blue-200/90',
+      soft: 'bg-orange-50 text-orange-800 border-orange-200/90',
+      outline: 'bg-transparent text-slate-700 border-slate-200/90',
     };
 
     const dotColorClasses = {
       neutral: 'bg-slate-400',
-      success: 'bg-emerald-500',
-      destructive: 'bg-red-500',
-      warning: 'bg-amber-500',
-      info: 'bg-blue-500',
+      success: 'bg-emerald-600',
+      destructive: 'bg-rose-600',
+      warning: 'bg-amber-600',
+      info: 'bg-blue-600',
       soft: 'bg-orange-600',
       outline: 'bg-slate-400',
     };
@@ -31,8 +31,9 @@ export const Badge = React.forwardRef<HTMLDivElement, BadgeProps>(
     return (
       <div
         ref={ref}
+        suppressHydrationWarning
         className={cn(
-          'inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[12px] font-sans font-medium border leading-none tracking-tight select-none',
+          'inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-sans font-semibold border leading-tight tracking-tight select-none',
           variantClasses[variant],
           className
         )}

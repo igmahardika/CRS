@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 import { sendTelegramNotification } from '@/lib/telegram';
 import { sendEmail, getDepartmentEmail, getHelpdeskEmail } from '@/lib/email';
 import { renderRequestReceivedHtml } from '@/lib/email-templates';
@@ -9,6 +10,11 @@ import { hasPermission, isValidDepartment } from '@/lib/permissions';
 const monthNames = [
   'January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December'
+];
+
+const monthShortNames = [
+  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
 ];
 
 export async function GET(req: NextRequest) {
@@ -22,7 +28,7 @@ export async function GET(req: NextRequest) {
     const status = searchParams.get('status');
     const search = searchParams.get('search');
 
-    const where: any = {};
+    const where: Prisma.ReportRequestWhereInput = {};
 
     // Department Scoping: Non-NOC only sees requests belonging to their department
     const canViewAll = hasPermission(auth.session, 'request:view_all');
@@ -117,9 +123,6 @@ export async function POST(req: NextRequest) {
 
     const customerName = String(body.customerName || '').trim();
     const reportType = String(body.reportType || 'SLA').toUpperCase();
-    const periodMonth = parseInt(body.periodMonth, 10) || new Date().getMonth() + 1;
-    const periodYear = parseInt(body.periodYear, 10) || new Date().getFullYear();
-    const periodsJson = body.periodsJson ? JSON.stringify(body.periodsJson) : null;
     const urgency = body.urgency === 'URGENT' ? 'URGENT' : 'NORMAL';
     const notes = String(body.notes || '').trim() || null;
     const requesterEmail = body.requesterEmail ? String(body.requesterEmail).trim() : (auth.session.email || null);
@@ -137,38 +140,46 @@ export async function POST(req: NextRequest) {
       }, { status: 400 });
     }
 
-    // Generate unique sequential ticket number: REQ-YYYYMM-XXXX
-    const now = new Date();
-    const yyyy = now.getFullYear();
-    const mm = String(now.getMonth() + 1).padStart(2, '0');
-    const prefix = `REQ-${yyyy}${mm}-`;
-
-    const existingRequests = await prisma.reportRequest.findMany({
-      where: {
-        ticketNumber: {
-          startsWith: prefix,
-        },
-      },
-      select: {
-        ticketNumber: true,
-      },
-    });
-
-    let maxSeq = 0;
-    for (const r of existingRequests) {
-      const parts = r.ticketNumber.split('-');
-      const num = parseInt(parts[parts.length - 1], 10);
-      if (!isNaN(num) && num > maxSeq) {
-        maxSeq = num;
-      }
+    // Parse requested periods (accept array of periods or single period)
+    let periods: Array<{ month: number; year: number }> = [];
+    if (Array.isArray(body.periods) && body.periods.length > 0) {
+      periods = body.periods
+        .map((p: any) => ({
+          month: parseInt(p.month, 10),
+          year: parseInt(p.year, 10),
+        }))
+        .filter((p: { month: number; year: number }) => !isNaN(p.month) && !isNaN(p.year) && p.month >= 1 && p.month <= 12);
+    } else if (Array.isArray(body.periodsJson)) {
+      periods = body.periodsJson
+        .map((p: any) => ({
+          month: parseInt(p.month, 10),
+          year: parseInt(p.year, 10),
+        }))
+        .filter((p: { month: number; year: number }) => !isNaN(p.month) && !isNaN(p.year) && p.month >= 1 && p.month <= 12);
+    } else {
+      const pm = parseInt(body.periodMonth, 10) || new Date().getMonth() + 1;
+      const py = parseInt(body.periodYear, 10) || new Date().getFullYear();
+      periods = [{ month: pm, year: py }];
     }
 
-    const nextSeq = String(maxSeq + 1).padStart(4, '0');
-    const ticketNumber = `${prefix}${nextSeq}`;
-    const emailThreadMessageId = `<${ticketNumber}@genre.nexa.net.id>`;
+    // Sort periods chronologically
+    periods.sort((a, b) => a.year - b.year || a.month - b.month);
 
-    // If requested for future schedule / routine, auto-enroll customer into Monthly Routine
-    if (isRoutineSchedule && customerId) {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1; // 1-12
+
+    // Segregate into past periods vs future/ongoing periods
+    const pastPeriods = periods.filter(
+      (p) => p.year < currentYear || (p.year === currentYear && p.month < currentMonth)
+    );
+    const futurePeriods = periods.filter(
+      (p) => p.year > currentYear || (p.year === currentYear && p.month >= currentMonth)
+    );
+
+    let enrolledRoutine = false;
+    // Auto-enroll customer into Monthly Routine if future periods requested or explicit flag
+    if ((futurePeriods.length > 0 || isRoutineSchedule) && customerId) {
       await prisma.customer.updateMany({
         where: { id: customerId },
         data: {
@@ -177,106 +188,174 @@ export async function POST(req: NextRequest) {
           routineReportType: reportType,
         },
       }).catch((e) => console.error('[Auto-enroll Routine Error]', e));
+      enrolledRoutine = true;
     }
 
-    const initialStatus = isRoutineSchedule ? 'SCHEDULED_ROUTINE' : 'PENDING';
+    // Determine target periods for queue creation:
+    // If past periods exist, create 1 ticket per past period with status PENDING.
+    // If only future periods were selected, create tickets with status SCHEDULED_ROUTINE.
+    const periodsToCreate = pastPeriods.length > 0 ? pastPeriods : futurePeriods;
+    const initialStatus = pastPeriods.length > 0 ? 'PENDING' : 'SCHEDULED_ROUTINE';
 
-    const created = await prisma.reportRequest.create({
-      data: {
-        ticketNumber,
-        requesterUserId: auth.session.id,
-        requesterName,
-        requesterEmail,
-        requesterDept,
-        salesPicName,
-        salesPicEmail,
-        cePicName,
-        cePicEmail,
-        reportType,
-        customerName,
-        customerId,
-        serviceId,
-        periodMonth,
-        periodYear,
-        periodsJson,
-        urgency,
-        notes,
-        status: initialStatus,
-        emailThreadMessageId,
-      },
-    });
+    // Generate unique sequential ticket numbers: REQ-YYYYMM-XXXX with transaction & collision retry
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const prefix = `REQ-${yyyy}${mm}-`;
 
-    // Notify Telegram group topic
-    const monthName = monthNames[periodMonth - 1] || `Bulan ${periodMonth}`;
-    const periodLabel = periodsJson
-      ? `${monthName} ${periodYear} (Multi-Bulan)`
-      : `${monthName} ${periodYear}`;
+    let createdRequests: any[] = [];
+    let attempts = 0;
+
+    while (createdRequests.length === 0 && attempts < 5) {
+      try {
+        createdRequests = await prisma.$transaction(async (tx) => {
+          const existingRequests = await tx.reportRequest.findMany({
+            where: {
+              ticketNumber: {
+                startsWith: prefix,
+              },
+            },
+            select: {
+              ticketNumber: true,
+            },
+          });
+
+          let maxSeq = 0;
+          for (const r of existingRequests) {
+            const parts = r.ticketNumber.split('-');
+            const num = parseInt(parts[parts.length - 1], 10);
+            if (!isNaN(num) && num > maxSeq) {
+              maxSeq = num;
+            }
+          }
+
+          const results = [];
+          for (let i = 0; i < periodsToCreate.length; i++) {
+            const targetPeriod = periodsToCreate[i];
+            const nextSeq = String(maxSeq + 1 + i + attempts).padStart(4, '0');
+            const ticketNumber = `${prefix}${nextSeq}`;
+            const emailThreadMessageId = `<${ticketNumber}@genre.nexa.net.id>`;
+
+            const reqRecord = await tx.reportRequest.create({
+              data: {
+                ticketNumber,
+                requesterUserId: auth.session.id,
+                requesterName,
+                requesterEmail,
+                requesterDept,
+                salesPicName,
+                salesPicEmail,
+                cePicName,
+                cePicEmail,
+                reportType,
+                customerName,
+                customerId,
+                serviceId,
+                periodMonth: targetPeriod.month,
+                periodYear: targetPeriod.year,
+                periodsJson: JSON.stringify([targetPeriod]),
+                urgency,
+                notes,
+                status: initialStatus,
+                emailThreadMessageId,
+              },
+            });
+            results.push(reqRecord);
+          }
+          return results;
+        });
+      } catch (err: any) {
+        if (err.code === 'P2002') {
+          attempts++;
+        } else {
+          throw err;
+        }
+      }
+    }
+
+    if (!createdRequests || createdRequests.length === 0) {
+      throw new Error('Gagal mengalokasikan nomor tiket unik setelah beberapa percobaan.');
+    }
+
+    const firstReq = createdRequests[0];
+    const periodLabel = createdRequests.length === 1
+      ? `${monthNames[firstReq.periodMonth - 1]} ${firstReq.periodYear}`
+      : `${createdRequests.length} Periods (${createdRequests.map((r) => `${monthShortNames[r.periodMonth - 1]} ${r.periodYear}`).join(', ')})`;
     const urgencyBadge = urgency === 'URGENT' ? '🔴 <b>URGENT (Butuh Cepat)</b>' : '🟢 Normal';
 
+    const ticketSummaryText = createdRequests.length === 1
+      ? `• <b>No. Tiket:</b> <code>${firstReq.ticketNumber}</code>\n`
+      : `• <b>No. Tiket (${createdRequests.length} Permintaan Terpisah):</b>\n` +
+        createdRequests
+          .map((r) => `  - <code>${r.ticketNumber}</code>: ${monthNames[r.periodMonth - 1]} ${r.periodYear}`)
+          .join('\n') + '\n';
+
+    // Notify Telegram group topic
     sendTelegramNotification({
       text:
         `📥 <b>[PERMINTAAN LAPORAN BARU DITERIMA]</b>\n\n` +
-        `• <b>No. Tiket:</b> <code>${created.ticketNumber}</code>\n` +
-        `• <b>Pemohon:</b> ${created.requesterName} (${created.requesterDept})\n` +
-        (created.salesPicName ? `• <b>PIC Sales:</b> ${created.salesPicName}\n` : '') +
-        (created.cePicName ? `• <b>PIC CE:</b> ${created.cePicName}\n` : '') +
-        (created.requesterEmail ? `• <b>Email/Kontak:</b> ${created.requesterEmail}\n` : '') +
-        `• <b>Pelanggan:</b> <b>${created.customerName}</b>\n` +
-        (created.serviceId ? `• <b>Service ID:</b> <code>${created.serviceId}</code>\n` : '') +
-        `• <b>Tipe Laporan:</b> ${created.reportType}\n` +
+        ticketSummaryText +
+        `• <b>Pemohon:</b> ${firstReq.requesterName} (${firstReq.requesterDept})\n` +
+        (firstReq.salesPicName ? `• <b>PIC Sales:</b> ${firstReq.salesPicName}\n` : '') +
+        (firstReq.cePicName ? `• <b>PIC CE:</b> ${firstReq.cePicName}\n` : '') +
+        (firstReq.requesterEmail ? `• <b>Email/Kontak:</b> ${firstReq.requesterEmail}\n` : '') +
+        `• <b>Pelanggan:</b> <b>${firstReq.customerName}</b>\n` +
+        (firstReq.serviceId ? `• <b>Service ID:</b> <code>${firstReq.serviceId}</code>\n` : '') +
+        `• <b>Tipe Laporan:</b> ${firstReq.reportType}\n` +
         `• <b>Periode:</b> ${periodLabel}\n` +
         `• <b>Urgensi:</b> ${urgencyBadge}\n` +
-        (isRoutineSchedule ? `• <b>Jadwal:</b> 🗓️ Terjadwal Rutin Bulanan\n` : '') +
-        `• <b>Catatan Pemohon:</b> <i>${created.notes || '-'}</i>\n\n` +
+        (enrolledRoutine ? `• <b>Jadwal Rutin:</b> 🗓️ Terdaftar Jadwal Rutin Bulanan (${futurePeriods.length} bulan mendatang)\n` : '') +
+        `• <b>Catatan Pemohon:</b> <i>${firstReq.notes || '-'}</i>\n\n` +
         `<i>Permintaan telah masuk antrean sistem. Staf dapat memproses melalui menu Antrean & Jadwal > Antrean Permintaan.</i>`,
     }).catch((e) => console.error('[Telegram Notify Request Error]', e));
 
     // Send Threaded Email (Milestone 1)
     (async () => {
       try {
-        const deptEmail = await getDepartmentEmail(created.requesterDept);
+        const deptEmail = await getDepartmentEmail(firstReq.requesterDept);
         const helpdeskEmail = await getHelpdeskEmail();
 
         // CC list: Helpdesk always receives copy + requesterEmail or salesPicEmail if valid
         const ccSet = new Set<string>();
         if (helpdeskEmail) ccSet.add(helpdeskEmail);
-        if (created.requesterEmail && created.requesterEmail.includes('@')) {
-          ccSet.add(created.requesterEmail.trim().toLowerCase());
+        if (firstReq.requesterEmail && firstReq.requesterEmail.includes('@')) {
+          ccSet.add(firstReq.requesterEmail.trim().toLowerCase());
         }
-        if (created.salesPicEmail && created.salesPicEmail.includes('@')) {
-          ccSet.add(created.salesPicEmail.trim().toLowerCase());
+        if (firstReq.salesPicEmail && firstReq.salesPicEmail.includes('@')) {
+          ccSet.add(firstReq.salesPicEmail.trim().toLowerCase());
         }
-        if (created.cePicEmail && created.cePicEmail.includes('@')) {
-          ccSet.add(created.cePicEmail.trim().toLowerCase());
+        if (firstReq.cePicEmail && firstReq.cePicEmail.includes('@')) {
+          ccSet.add(firstReq.cePicEmail.trim().toLowerCase());
         }
         // Remove recipient from CC if identical
         ccSet.delete(deptEmail.toLowerCase());
 
         const origin = req.nextUrl.origin || 'http://localhost:3000';
-        const appUrl = `${origin}/requests?ticket=${encodeURIComponent(created.ticketNumber)}`;
+        const appUrl = `${origin}/requests?ticket=${encodeURIComponent(firstReq.ticketNumber)}`;
 
         const emailHtml = renderRequestReceivedHtml({
-          ticketNumber: created.ticketNumber,
-          customerName: created.customerName,
-          serviceId: created.serviceId,
-          reportType: created.reportType,
+          ticketNumber: createdRequests.length === 1
+            ? firstReq.ticketNumber
+            : `${firstReq.ticketNumber} (+${createdRequests.length - 1} more)`,
+          customerName: firstReq.customerName,
+          serviceId: firstReq.serviceId,
+          reportType: firstReq.reportType,
           period: periodLabel,
-          urgency: created.urgency,
-          requesterName: created.requesterName,
-          requesterDept: created.requesterDept,
-          salesPicName: created.salesPicName,
-          cePicName: created.cePicName,
-          notes: created.notes,
+          urgency: firstReq.urgency,
+          requesterName: firstReq.requesterName,
+          requesterDept: firstReq.requesterDept,
+          salesPicName: firstReq.salesPicName,
+          cePicName: firstReq.cePicName,
+          notes: firstReq.notes,
           appUrl,
         });
 
         await sendEmail({
           to: deptEmail,
           cc: Array.from(ccSet),
-          subject: `[GENRE - Tiket ${created.ticketNumber}] Permintaan Laporan ${created.reportType} - ${created.customerName} (${periodLabel})`,
+          subject: `[GENRE - Tiket ${firstReq.ticketNumber}] Permintaan Laporan ${firstReq.reportType} - ${firstReq.customerName} (${periodLabel})`,
           html: emailHtml,
-          ticketNumber: created.ticketNumber,
-          messageId: emailThreadMessageId,
+          ticketNumber: firstReq.ticketNumber,
+          messageId: firstReq.emailThreadMessageId || undefined,
         });
       } catch (emailErr) {
         console.error('[Send Request Email Error]', emailErr);
@@ -285,10 +364,17 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: isRoutineSchedule
-        ? 'Permintaan laporan berhasil disubmit dan dijadwalkan ke Kalender Rutin Bulanan.'
-        : 'Permintaan laporan berhasil disubmit.',
-      request: created,
+      message: createdRequests.length > 1
+        ? `Successfully generated ${createdRequests.length} request tickets in queue.${enrolledRoutine ? ' Customer also enrolled in Monthly Routine Schedule.' : ''}`
+        : (initialStatus === 'SCHEDULED_ROUTINE'
+          ? 'Report request submitted and scheduled in Monthly Calendar.'
+          : 'Report request submitted successfully.'),
+      count: createdRequests.length,
+      request: firstReq,
+      requests: createdRequests,
+      enrolledRoutine,
+      futurePeriodsCount: futurePeriods.length,
+      pastPeriodsCount: pastPeriods.length,
     });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);

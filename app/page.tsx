@@ -59,6 +59,7 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
+  InfoTooltip,
 } from '@/components/ui';
 import { getSlaByServiceName } from '@/lib/service-sla';
 import { extractNodeFromServiceId } from '@/lib/service-utils';
@@ -126,7 +127,7 @@ function GeneratorPageContent() {
   const [nodeCount, setNodeCount] = useState<number>(1);
   const [targetSla, setTargetSla] = useState<number>(99.5);
 
-  // Period & Document Number (Secara default otomatis ke bulan pelaporan sebelumnya)
+  // Period & Document Number (Defaults automatically to previous reporting month)
   const now = new Date();
   const defaultReportingMonth = now.getMonth() === 0 ? 12 : now.getMonth();
   const defaultReportingYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
@@ -451,7 +452,7 @@ function GeneratorPageContent() {
             }
 
             if (r.rejectionNotes) setRevisionNotes(r.rejectionNotes);
-            toast.info(`Memuat data laporan yang direvisi: ${r.documentNumber}`);
+            toast.info(`Loading revision data for: ${r.documentNumber}`);
           }
         })
         .catch((e) => console.error('[Load Revising Report Error]', e));
@@ -748,10 +749,10 @@ function GeneratorPageContent() {
       a.click();
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
-      toast.success('Draf PDF berhasil diunduh dengan watermark preview!');
+      toast.success('Draft PDF downloaded with preview watermark.');
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      toast.error(`Gagal mengunduh draf PDF: ${msg}`);
+      toast.error(`Failed to download draft PDF: ${msg}`);
     } finally {
       setIsDownloadingDraft(false);
     }
@@ -790,12 +791,12 @@ function GeneratorPageContent() {
   // 5. Generate / Save Report Handler
   const handleGenerateReport = async () => {
     if (!customerName || !customerName.trim()) {
-      toast.error('Silakan pilih atau masukkan Nama Pelanggan terlebih dahulu.');
+      toast.error('Please select or enter Customer Name first.');
       setIsCustomerModalOpen(true);
       return;
     }
     if (!serviceId || !serviceId.trim()) {
-      toast.error('Service ID wajib diisi.');
+      toast.error('Service ID is required.');
       return;
     }
 
@@ -832,7 +833,7 @@ function GeneratorPageContent() {
           isRevision: true,
         });
 
-        toast.success(`Revisi laporan ${currentReportData.documentNumber} berhasil diperbarui dan dikirim ulang ke Supervisor!`);
+        toast.success(`Revision for report ${currentReportData.documentNumber} updated and resubmitted to Supervisor!`);
         setIsRevising(false);
         setRevisingReportId(null);
         setRevisionNotes(null);
@@ -897,21 +898,21 @@ function GeneratorPageContent() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             id: activeRequestId,
-            status: 'COMPLETED',
+            status: 'IN_PROGRESS', // Kept in IN_PROGRESS until reports are fully APPROVED
             processedMrtgReportId: data.report.id,
           }),
         }).catch((e) => console.error('[Update Request Step 2 Error]', e));
 
         setBothWizardStep(null);
-        toast.success('Laporan Step 2 (MRTG) selesai! Tiket permintaan BOTH kini COMPLETED.');
+        toast.success('Step 2 (MRTG) report created and submitted to approval queue! Request ticket remains active in progress.');
       } else if (activeRequestId && data.report?.id) {
-        // Standard single request completion
+        // Standard single request: update linked report ID, keep IN_PROGRESS until final approval
         await fetch('/api/requests', {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             id: activeRequestId,
-            status: 'COMPLETED',
+            status: 'IN_PROGRESS',
             processedReportId: data.report.id,
           }),
         }).catch((e) => console.error('[Update Request Status Error]', e));
@@ -934,13 +935,13 @@ function GeneratorPageContent() {
       fetchNextDocNumber(month, year, reportType);
 
       if (reportStatus === 'APPROVED') {
-        toast.success('Laporan berhasil di-generate dan langsung disetujui (Approved)!');
+        toast.success('Report generated and directly approved!');
       } else {
-        toast.success('Laporan berhasil di-generate dan masuk antrean persetujuan Supervisor.');
+        toast.success('Report generated and submitted to Supervisor approval queue.');
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      toast.error(`Gagal membuat laporan: ${msg}`);
+      toast.error(`Failed to generate report: ${msg}`);
     } finally {
       setIsSavingReport(false);
     }
@@ -952,9 +953,9 @@ function GeneratorPageContent() {
     if (queueIndex < queueTasks.length - 1) {
       const nextTask = queueTasks[queueIndex + 1];
       loadQueueTask(nextTask, queueIndex + 1);
-      toast.info(`Memuat antrean berikutnya: ${nextTask.customerName}`);
+      toast.info(`Loading next queue item: ${nextTask.customerName}`);
     } else {
-      toast.success('Semua antrean jadwal rutin pada periode ini telah selesai.');
+      toast.success('All scheduled routine queue tasks for this period are completed.');
     }
   };
 
@@ -964,7 +965,7 @@ function GeneratorPageContent() {
     setBothWizardStep('STEP2_MRTG');
     setReportType('MRTG');
     fetchNextDocNumber(month, year, 'MRTG');
-    toast.info('Step 2 (MRTG Report) aktif. Verifikasi grafik MRTG dan simpan untuk menyelesaikan tiket permintaan BOTH.');
+    toast.info('Step 2 (MRTG Report) active. Verify MRTG graph and save to complete the BOTH request ticket.');
   };
 
   // Keyboard shortcut listener
@@ -1016,11 +1017,11 @@ function GeneratorPageContent() {
   const ulDirectionLabel = trafficDirection === 'NORMAL' ? 'Outbound' : 'Inbound';
 
   return (
-    <div className="space-y-6 pb-28">
+    <div className="space-y-6 pb-36">
       {/* Page Header with Mode Switcher */}
       <PageHeader
         title="Report Generator"
-        description="Operator Workstation: telemetry automation, SLA compliance engine, and compliant A4 PDF output."
+        description="Telemetry automation and compliant PDF generation workstation."
         actions={
           <div className="flex bg-slate-100 p-0.5 rounded-lg border border-slate-200">
             <Button
@@ -1060,21 +1061,21 @@ function GeneratorPageContent() {
             <Edit3 className="w-4 h-4 text-rose-600 mt-0.5 shrink-0" />
             <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <span className="font-semibold text-rose-900">Mode Revisi Dokumen:</span>
-                <code className="bg-rose-100 text-rose-800 px-1.5 py-0.5 rounded font-mono font-bold text-xs border border-rose-200">
+                <span className="font-semibold text-rose-900">Document Revision Mode:</span>
+                <code className="bg-rose-100 text-rose-800 px-1.5 py-0.5 rounded font-sans font-bold text-xs border border-rose-200">
                   {documentNumber}
                 </code>
                 <Badge variant="outline" className="border-rose-200 text-rose-700 bg-rose-100/50 text-xs">
-                  Nomor Dokumen Terkunci
+                  Document Number Locked
                 </Badge>
               </div>
               {revisionNotes && (
                 <p className="text-rose-800 font-medium bg-white/70 p-2 rounded border border-rose-200/60">
-                  <span className="font-semibold">Catatan Supervisor:</span> &ldquo;{revisionNotes}&rdquo;
+                  <span className="font-semibold">Supervisor Review Notes:</span> &ldquo;{revisionNotes}&rdquo;
                 </p>
               )}
               <p className="text-xs text-rose-600">
-                Silakan sesuaikan data tiket atau telemetri, lalu klik <strong>&ldquo;Kirim Ulang Revisi&rdquo;</strong> di dock bawah untuk memperbarui dokumen arsip dan meminta persetujuan ulang.
+                Please adjust the ticket or telemetry data, then click <strong>&ldquo;Resubmit Revision&rdquo;</strong> in the bottom dock to update the archive and request re-approval.
               </p>
             </div>
           </div>
@@ -1091,7 +1092,7 @@ function GeneratorPageContent() {
             }}
             className="text-rose-600 hover:text-rose-800 hover:bg-rose-100/50 h-7 text-xs shrink-0"
           >
-            Batal Revisi
+            Cancel Revision
           </Button>
         </div>
       )}
@@ -1180,7 +1181,7 @@ function GeneratorPageContent() {
             <Inbox className="w-4 h-4 text-amber-600 shrink-0" />
             <div>
               <span className="font-semibold">Processing Request Ticket: </span>
-              <code className="bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-mono font-bold text-xs border border-amber-200">
+              <code className="bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-sans font-bold text-xs border border-amber-200">
                 {activeRequestTicket}
               </code>
               <span className="ml-2 text-amber-700 font-medium">({customerName})</span>
@@ -1210,7 +1211,7 @@ function GeneratorPageContent() {
           <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="font-heading font-semibold text-slate-900 text-sm flex items-center gap-2">
-                <span className="font-mono text-xs font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">01</span>
+                <span className="font-sans text-xs font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200 tabular-nums">01</span>
                 <span>Customer &amp; Report Period</span>
               </h3>
               <Button
@@ -1235,7 +1236,7 @@ function GeneratorPageContent() {
               <FormField label="Customer Name" required>
                 <Input
                   value={customerName}
-                  placeholder="Klik 'Select Customer' (Ctrl+Shift+K) atau ketik nama..."
+                  placeholder="Search or enter customer name..."
                   onChange={(e) => setCustomerName(e.target.value)}
                 />
               </FormField>
@@ -1244,14 +1245,14 @@ function GeneratorPageContent() {
                 <FormField label="Customer ID" required>
                   <Input
                     value={customerId}
-                    placeholder="Contoh: 01.2180.1124"
+                    placeholder="e.g. 01.2180.1124"
                     onChange={(e) => setCustomerId(e.target.value)}
                   />
                 </FormField>
                 <FormField label="Service ID" required>
                   <Input
                     value={serviceId}
-                    placeholder="Contoh: 01.2180.1"
+                    placeholder="e.g. 01.2180.1"
                     onChange={(e) => {
                       const newSid = e.target.value;
                       setServiceId(newSid);
@@ -1280,7 +1281,7 @@ function GeneratorPageContent() {
                   </div>
                   <Input
                     value={serviceName}
-                    placeholder="Contoh: Prime 300 Mbps"
+                    placeholder="e.g. Prime 300 Mbps"
                     onChange={(e) => {
                       const newServiceName = e.target.value;
                       setServiceName(newServiceName);
@@ -1306,7 +1307,7 @@ function GeneratorPageContent() {
               <div className="pt-2 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
                 {requestedPeriods.length > 1 && (
                   <div className="sm:col-span-12 flex items-center gap-2 flex-wrap p-2.5 bg-orange-50/80 border border-orange-200/80 rounded-lg text-xs mb-1">
-                    <span className="font-semibold text-orange-900">Periode Terpilih ({requestedPeriods.length}):</span>
+                    <span className="font-semibold text-orange-900">Selected Periods ({requestedPeriods.length}):</span>
                     {requestedPeriods.map((p, idx) => {
                       const isSelected = month === p.month && year === p.year;
                       return (
@@ -1324,7 +1325,7 @@ function GeneratorPageContent() {
                           }`}
                         >
                           <span>{monthNames[p.month - 1]} {p.year}</span>
-                          {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />}
+                          {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
                         </button>
                       );
                     })}
@@ -1367,7 +1368,12 @@ function GeneratorPageContent() {
                 </div>
                 <div className="sm:col-span-5">
                   <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-xs font-medium text-slate-700">Document Number</label>
+                    <div className="flex items-center gap-1.5">
+                      <label className="text-xs font-medium text-slate-700">Document Number</label>
+                      <InfoTooltip
+                        content={`Sequence format: {01}/${docPrefix}/{${reportType}}/{${String(creationMonth).padStart(2, '0')}}/{${creationYear}} (based on creation date)`}
+                      />
+                    </div>
                     {!isRevising && (
                       <Button
                         type="button"
@@ -1389,21 +1395,18 @@ function GeneratorPageContent() {
                       setDocumentNumber(e.target.value);
                       setIsManualDocNumber(true);
                     }}
-                    className={`text-xs ${isRevising ? 'bg-slate-50 font-mono text-slate-600 cursor-not-allowed' : ''}`}
+                    className={`text-xs ${isRevising ? 'bg-slate-50 font-sans text-slate-600 cursor-not-allowed' : ''}`}
                   />
+                  {(isRevising || isManualDocNumber) && (
+                    <div className="mt-1 text-xs flex items-center justify-end">
+                      {isRevising ? (
+                        <span className="text-rose-600 font-semibold">(Locked for Revision)</span>
+                      ) : (
+                        <span className="text-amber-600 font-medium">(Manually Edited)</span>
+                      )}
+                    </div>
+                  )}
                 </div>
-              </div>
-              <div className="text-xs text-slate-500 flex items-center justify-between">
-                <span>
-                  Format:{' '}
-                  <code>{`{01}/${docPrefix}/{${reportType}}/{${String(creationMonth).padStart(2, '0')}}/{${creationYear}}`}</code>
-                  <span className="text-slate-500 text-xs ml-1.5">(Berdasarkan tanggal pembuatan)</span>
-                </span>
-                {isRevising ? (
-                  <span className="text-rose-600 font-semibold">(Terkunci untuk Revisi)</span>
-                ) : isManualDocNumber ? (
-                  <span className="text-amber-600 font-medium">(Manually Edited)</span>
-                ) : null}
               </div>
 
               {/* Target Department & Approval Tier */}
@@ -1413,14 +1416,18 @@ function GeneratorPageContent() {
                     <Building2 className="w-4 h-4 text-slate-500" />
                   </div>
                   <div>
-                    <label className="text-xs font-semibold text-slate-800 block">
-                      Tujuan Departemen
-                    </label>
-                    <p className="text-xs text-slate-500">
-                      {targetDepartment === 'Internal NOC'
-                        ? 'Dokumen internal NOC (Selesai setelah verifikasi Supervisor NOC).'
-                        : `Dokumen akan diteruskan ke Supervisor ${targetDepartment} setelah verifikasi teknis NOC.`}
-                    </p>
+                    <div className="flex items-center gap-1.5">
+                      <label className="text-xs font-semibold text-slate-800 block">
+                        Target Department
+                      </label>
+                      <InfoTooltip
+                        content={
+                          targetDepartment === 'Internal NOC'
+                            ? 'Internal NOC document (completed after NOC supervisor review).'
+                            : `Forwarded to ${targetDepartment} supervisor after NOC review.`
+                        }
+                      />
+                    </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 sm:max-w-xs w-full sm:w-auto shrink-0">
@@ -1429,7 +1436,7 @@ function GeneratorPageContent() {
                     onValueChange={(val) => setTargetDepartment(val)}
                   >
                     <SelectTrigger className="h-9 text-xs w-full sm:w-56 bg-white border-slate-200 shadow-2xs">
-                      <SelectValue placeholder="Pilih Tujuan Departemen" />
+                      <SelectValue placeholder="Select Target Department" />
                     </SelectTrigger>
                     <SelectContent>
                       {TARGET_DEPARTMENTS.map((dept) => (
@@ -1440,12 +1447,20 @@ function GeneratorPageContent() {
                     </SelectContent>
                   </Select>
                   {targetDepartment === 'Internal NOC' ? (
-                    <Badge variant="outline" className="border-emerald-200 text-emerald-700 bg-emerald-50 text-xs whitespace-nowrap shrink-0 py-1 font-medium inline-flex items-center gap-1">
+                    <Badge
+                      variant="outline"
+                      className="border-emerald-200 text-emerald-700 bg-emerald-50 text-xs whitespace-nowrap shrink-0 py-1 font-medium inline-flex items-center gap-1"
+                      title="1-Tier: Direct NOC Supervisor review"
+                    >
                       <CheckCircle2 className="w-3 h-3 text-emerald-600 shrink-0" />
                       <span>1-Tier (Internal)</span>
                     </Badge>
                   ) : (
-                    <Badge variant="outline" className="border-amber-200 text-amber-700 bg-amber-50 text-xs whitespace-nowrap shrink-0 py-1 font-medium inline-flex items-center gap-1">
+                    <Badge
+                      variant="outline"
+                      className="border-amber-200 text-amber-700 bg-amber-50 text-xs whitespace-nowrap shrink-0 py-1 font-medium inline-flex items-center gap-1"
+                      title={`2-Tier: Routed to ${targetDepartment} supervisor`}
+                    >
                       <RefreshCw className="w-3 h-3 text-amber-600 shrink-0" />
                       <span>2-Tier (Dept)</span>
                     </Badge>
@@ -1459,7 +1474,7 @@ function GeneratorPageContent() {
           <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="font-heading font-semibold text-slate-900 text-sm flex items-center gap-2">
-                <span className="font-mono text-xs font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">02</span>
+                <span className="font-sans text-xs font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200 tabular-nums">02</span>
                 <span>Traffic Graph Integration</span>
               </h3>
               {isGraphIdSynced && (
@@ -1522,56 +1537,59 @@ function GeneratorPageContent() {
 
             <div className="space-y-3.5">
               <div>
-                <FormField
-                  label={graphEngine === 'PRTG' ? 'PRTG Sensor ID / Object ID' : 'Cacti Graph ID (Local Graph ID)'}
-                >
-                  <div className="flex gap-2">
-                    <Input
-                      value={graphId}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setGraphId(val);
-                        if (graphEngine === 'MRTG') {
-                          setCactiGraphId(val);
-                        } else {
-                          setPrtgSensorId(val);
-                        }
-                      }}
-                      className="flex-1 font-medium"
-                    />
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      onClick={graphEngine === 'PRTG' ? handleFetchPrtg : handleFetchCacti}
-                      disabled={
-                        graphEngine === 'PRTG'
-                          ? isFetchingPrtg || !graphId
-                          : isFetchingCacti || !graphId
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <label className="text-xs font-medium text-slate-700">
+                    {graphEngine === 'PRTG' ? 'PRTG Sensor ID / Object ID' : 'Cacti Graph ID (Local Graph ID)'}
+                  </label>
+                  <InfoTooltip
+                    content={
+                      graphEngine === 'PRTG'
+                        ? `PRTG graph queried via Historic Data & Chart API for ${monthNames[month - 1]} ${year}.`
+                        : `Graph query cycle: ${monthNames[month - 1]} ${year} (01/${String(month).padStart(2, '0')} 00:00 - End of Month 23:59 WIB).`
+                    }
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Input
+                    value={graphId}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setGraphId(val);
+                      if (graphEngine === 'MRTG') {
+                        setCactiGraphId(val);
+                      } else {
+                        setPrtgSensorId(val);
                       }
-                      className="shrink-0"
-                    >
-                      <RefreshCw
-                        className={`w-3.5 h-3.5 mr-1.5 ${
-                          (graphEngine === 'PRTG' ? isFetchingPrtg : isFetchingCacti) ? 'animate-spin' : ''
-                        }`}
-                      />
-                      <span>
-                        {graphEngine === 'PRTG'
-                          ? isFetchingPrtg
-                            ? 'Fetching...'
-                            : 'Fetch Graph'
-                          : isFetchingCacti
+                    }}
+                    className="flex-1 font-medium"
+                  />
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={graphEngine === 'PRTG' ? handleFetchPrtg : handleFetchCacti}
+                    disabled={
+                      graphEngine === 'PRTG'
+                        ? isFetchingPrtg || !graphId
+                        : isFetchingCacti || !graphId
+                    }
+                    className="shrink-0"
+                  >
+                    <RefreshCw
+                      className={`w-3.5 h-3.5 mr-1.5 ${
+                        (graphEngine === 'PRTG' ? isFetchingPrtg : isFetchingCacti) ? 'animate-spin' : ''
+                      }`}
+                    />
+                    <span>
+                      {graphEngine === 'PRTG'
+                        ? isFetchingPrtg
                           ? 'Fetching...'
-                          : 'Fetch Graph'}
-                      </span>
-                    </Button>
-                  </div>
-                </FormField>
-                <p className="text-xs text-slate-500 mt-1">
-                  {graphEngine === 'PRTG'
-                    ? `PRTG graph fetched via Historic Data & Chart API: ${monthNames[month - 1]} ${year}.`
-                    : `Graph query cycle: ${monthNames[month - 1]} ${year} (01/${String(month).padStart(2, '0')} 00:00 - End of Month 23:59 WIB).`}
-                </p>
+                          : 'Fetch Graph'
+                        : isFetchingCacti
+                        ? 'Fetching...'
+                        : 'Fetch Graph'}
+                    </span>
+                  </Button>
+                </div>
               </div>
 
               {/* Status Message */}
@@ -1608,9 +1626,9 @@ function GeneratorPageContent() {
 
               {/* Traffic Direction */}
               <div className="pt-2 border-t border-slate-100">
-                <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-1.5 mb-2">
                   <label className="text-xs font-medium text-slate-700">Traffic Direction ({graphEngine})</label>
-                  <span className="text-xs text-slate-500">Switch port or sensor mapping</span>
+                  <InfoTooltip content="Port mapping: Normal treats switch In as Download and Out as Upload. Reversed inverts this orientation." />
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <Button
@@ -1620,14 +1638,15 @@ function GeneratorPageContent() {
                       setTrafficDirection('NORMAL');
                       autoSaveGraphIdToMaster(customerId, graphId, 'NORMAL', graphEngine);
                     }}
-                    className={`h-auto p-2.5 rounded-lg flex-col items-center justify-center border transition ${
+                    className={`h-9 px-3 rounded-lg flex items-center justify-between border transition text-xs ${
                       trafficDirection === 'NORMAL'
                         ? 'bg-orange-50 text-orange-700 border-orange-500 font-semibold hover:bg-orange-50'
                         : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
                     }`}
+                    title="In: Download | Out: Upload"
                   >
-                    <div className="font-medium text-xs">Normal</div>
-                    <div className="text-xs text-slate-500 font-normal">In: DL | Out: UL</div>
+                    <span className="font-medium">Normal</span>
+                    <span className="text-[11px] text-slate-500 font-normal">In: DL &bull; Out: UL</span>
                   </Button>
                   <Button
                     type="button"
@@ -1636,23 +1655,24 @@ function GeneratorPageContent() {
                       setTrafficDirection('REVERSED');
                       autoSaveGraphIdToMaster(customerId, graphId, 'REVERSED', graphEngine);
                     }}
-                    className={`h-auto p-2.5 rounded-lg flex-col items-center justify-center border transition ${
+                    className={`h-9 px-3 rounded-lg flex items-center justify-between border transition text-xs ${
                       trafficDirection === 'REVERSED'
                         ? 'bg-orange-50 text-orange-700 border-orange-500 font-semibold hover:bg-orange-50'
                         : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
                     }`}
+                    title="Out: Download | In: Upload"
                   >
-                    <div className="font-medium text-xs">Reversed</div>
-                    <div className="text-xs text-slate-500 font-normal">Out: DL | In: UL</div>
+                    <span className="font-medium">Reversed</span>
+                    <span className="text-[11px] text-slate-500 font-normal">Out: DL &bull; In: UL</span>
                   </Button>
                 </div>
               </div>
 
               {/* Traffic Metrics */}
               <div className="pt-2 border-t border-slate-100 space-y-2.5">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
                   <span className="text-xs font-medium text-slate-700">Traffic Metrics (Average &amp; Maximum)</span>
-                  <span className="text-xs text-slate-500 font-medium">Auto-populated or manual</span>
+                  <InfoTooltip content="Values are automatically computed from telemetry or can be adjusted manually." />
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1752,10 +1772,10 @@ function GeneratorPageContent() {
                   <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                   <span>
                     {savedDocInfo.isRevision
-                      ? 'Revisi laporan berhasil disimpan dan diajukan ulang ke antrean Supervisor!'
+                      ? 'Report revision saved and resubmitted to Supervisor queue!'
                       : savedDocInfo.status === 'APPROVED'
-                      ? 'Laporan berhasil di-generate dan langsung disetujui (Approved)!'
-                      : 'Laporan berhasil di-generate dan masuk antrean persetujuan Supervisor!'}
+                      ? 'Report generated and directly approved!'
+                      : 'Report generated and submitted to Supervisor queue!'}
                   </span>
                 </div>
                 <Button
@@ -1764,18 +1784,18 @@ function GeneratorPageContent() {
                   size="icon-sm"
                   onClick={() => setSavedDocInfo(null)}
                   className="h-6 w-6 text-emerald-600 hover:text-emerald-800 hover:bg-emerald-100/50"
-                  title="Tutup pemberitahuan"
+                  title="Dismiss alert"
                 >
                   <X className="w-3.5 h-3.5" />
                 </Button>
               </div>
               <p className="text-xs text-emerald-700">
                 {savedDocInfo.isRevision
-                  ? <>Dokumen revisi <strong>{savedDocInfo.docNum}</strong> telah diperbarui di sistem dan menunggu pemeriksaan ulang Supervisor sebelum PDF resmi dapat diterbitkan.</>
-                  : <>Dokumen <strong>{savedDocInfo.docNum}</strong> tersimpan di riwayat arsip.{' '}
+                  ? <>Revision document <strong>{savedDocInfo.docNum}</strong> updated in system and awaiting Supervisor review.</>
+                  : <>Document <strong>{savedDocInfo.docNum}</strong> archived.{' '}
                     {savedDocInfo.status === 'APPROVED'
-                      ? 'Dokumen resmi telah disetujui dan siap didistribusikan.'
-                      : 'Dokumen membutuhkan verifikasi Supervisor sebelum PDF resmi dapat didistribusikan.'}
+                      ? 'Official document approved and ready for distribution.'
+                      : 'Document requires Supervisor verification before release.'}
                     </>
                 }
               </p>
@@ -1784,7 +1804,7 @@ function GeneratorPageContent() {
                   href="/history"
                   className="font-semibold text-emerald-800 underline hover:text-emerald-950 flex items-center gap-1"
                 >
-                  <span>Buka Riwayat &amp; Approval Laporan</span>
+                  <span>View Report History &amp; Approvals</span>
                   <ExternalLink className="w-3 h-3" />
                 </Link>
                 {savedDocInfo.status === 'APPROVED' && (
@@ -1824,7 +1844,7 @@ function GeneratorPageContent() {
                   }}
                   className="font-semibold text-slate-700 underline hover:text-slate-900 ml-auto"
                 >
-                  + Buat Laporan Baru
+                  + New Report
                 </button>
               </div>
             </div>
@@ -1842,19 +1862,19 @@ function GeneratorPageContent() {
       </div>
 
       {/* ================= STICKY OPERATOR ACTION DOCK ================= */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 px-4 sm:px-8 py-3 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 py-3 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
+        <div className="max-w-[1760px] 2xl:max-w-[1880px] w-full mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 flex flex-col sm:flex-row items-center justify-between gap-3">
           {/* Left: Metadata & Live Telemetry Compliance Summary */}
           <div className="flex items-center gap-3 w-full sm:w-auto overflow-x-auto">
             <div className="text-left shrink-0">
               <div className="text-xs font-semibold text-slate-900 flex items-center gap-1.5 truncate max-w-[200px] sm:max-w-[280px]">
                 <span className={`w-2 h-2 rounded-full shrink-0 ${customerName ? 'bg-orange-600' : 'bg-slate-300'}`} />
                 <span className={`truncate ${!customerName ? 'text-slate-500 italic' : ''}`}>
-                  {customerName || 'Pilih Pelanggan (Ctrl+Shift+K)'}
+                  {customerName || 'Select Customer (Ctrl+Shift+K)'}
                 </span>
               </div>
-              <div className="text-xs font-mono text-slate-500 truncate">
-                {documentNumber || 'Nomor Dokumen'}
+              <div className="text-xs font-sans text-slate-500 truncate">
+                {documentNumber || 'Document Number'}
               </div>
             </div>
 
@@ -1916,7 +1936,7 @@ function GeneratorPageContent() {
               ) : (
                 <Download className="w-3.5 h-3.5 mr-1.5 text-slate-500" />
               )}
-              <span>Draf PDF</span>
+              <span>Draft PDF</span>
             </Button>
 
             <Button
@@ -1954,12 +1974,12 @@ function GeneratorPageContent() {
                 {isSavingReport ? (
                   <>
                     <RefreshCw className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-                    <span>Menyimpan Revisi...</span>
+                    <span>Saving Revision...</span>
                   </>
                 ) : (
                   <>
                     <Save className="w-3.5 h-3.5 mr-1.5" />
-                    <span>Kirim Ulang Revisi</span>
+                    <span>Resubmit Revision</span>
                     <kbd className="hidden sm:inline-block ml-1.5 text-xs bg-white/20 text-white px-1 py-0.5 rounded font-medium">
                       Ctrl+↵
                     </kbd>
@@ -1976,7 +1996,7 @@ function GeneratorPageContent() {
                   disabled={isSavingReport}
                   className="h-9 px-3 text-xs font-medium text-slate-700"
                 >
-                  <span>Simpan Saja</span>
+                  <span>Save Only</span>
                 </Button>
                 <Button
                   type="button"
@@ -1989,12 +2009,12 @@ function GeneratorPageContent() {
                   {isSavingReport ? (
                     <>
                       <RefreshCw className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-                      <span>Menyimpan...</span>
+                      <span>Saving...</span>
                     </>
                   ) : (
                     <>
                       <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" />
-                      <span>Simpan &amp; Lanjut Antrean</span>
+                      <span>Save &amp; Next Queue</span>
                       <kbd className="hidden lg:inline-block ml-1.5 text-xs bg-white/20 text-white px-1 py-0.5 rounded font-medium">
                         Ctrl+Shift+↵
                       </kbd>
@@ -2009,7 +2029,7 @@ function GeneratorPageContent() {
                 size="sm"
                 onClick={handleGenerateReport}
                 disabled={isSavingReport || !customerName.trim()}
-                title={!customerName.trim() ? 'Pilih customer terlebih dahulu' : 'Generate Report (Ctrl+Enter)'}
+                title={!customerName.trim() ? 'Select a customer first' : 'Generate Report (Ctrl+Enter)'}
                 className="bg-orange-600 hover:bg-orange-700 text-white h-9 px-4 text-xs font-semibold shadow-xs disabled:opacity-50"
               >
                 {isSavingReport ? (
@@ -2038,11 +2058,11 @@ function GeneratorPageContent() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-slate-900">
               <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-              <span>Step 1 (SLA) Selesai Disimpan!</span>
+              <span>Step 1 (SLA) Saved!</span>
             </DialogTitle>
             <DialogDescription className="text-xs text-slate-600 leading-relaxed pt-1.5">
-              Tiket permintaan ini membutuhkan kedua jenis laporan (<strong>BOTH: MRTG &amp; SLA</strong>).
-              Laporan SLA telah tersimpan dan masuk antrean approval. Klik tombol di bawah untuk langsung beralih ke formulir <strong>Laporan MRTG (Step 2)</strong> dengan data customer yang sudah tersinkronisasi.
+              This request requires both report types (<strong>MRTG &amp; SLA</strong>).
+              SLA report has been saved. Proceed to MRTG Report (Step 2)?
             </DialogDescription>
           </DialogHeader>
 
@@ -2053,7 +2073,7 @@ function GeneratorPageContent() {
               onClick={() => setShowBothTransitionModal(false)}
               className="text-xs text-slate-500"
             >
-              Nanti Saja (Tutup)
+              Later
             </Button>
             <Button
               type="button"
@@ -2061,7 +2081,7 @@ function GeneratorPageContent() {
               onClick={handleProceedToBothStep2}
               className="bg-orange-600 hover:bg-orange-700 text-white text-xs font-semibold shadow-xs flex items-center gap-1.5"
             >
-              <span>Lanjut ke Step 2 (MRTG)</span>
+              <span>Continue to Step 2 (MRTG)</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Button>
           </DialogFooter>
@@ -2102,7 +2122,7 @@ function GeneratorPageContent() {
           setCases([]);
           setIsManualDocNumber(false);
           fetchNextDocNumber(month, year, reportType);
-          toast.info('Formulir berhasil dikosongkan.');
+          toast.info('Form cleared.');
         }}
       />
     </div>

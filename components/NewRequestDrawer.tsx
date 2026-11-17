@@ -14,6 +14,8 @@ import {
   Search,
   X,
   HelpCircle,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -44,6 +46,10 @@ interface CustomerSearchResult {
   serviceName: string;
   routineReportType?: string;
   targetSla?: number;
+  salesPicId?: string | null;
+  salesPicName?: string | null;
+  cePicId?: string | null;
+  cePicName?: string | null;
 }
 
 const monthNames = [
@@ -124,6 +130,7 @@ export default function NewRequestDrawer({
   const [isModalLoading, setIsModalLoading] = useState(false);
 
   // Smart Period State
+  const [activeYear, setActiveYear] = useState<number>(defaultPrevYear);
   const [selectedPeriods, setSelectedPeriods] = useState<PeriodItem[]>([
     { month: defaultPrevMonth, year: defaultPrevYear },
   ]);
@@ -134,15 +141,22 @@ export default function NewRequestDrawer({
 
   // Submission State
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submittedTicket, setSubmittedTicket] = useState<{
-    ticketNumber: string;
-    customerName: string;
-    reportType: string;
-    period: string;
-    urgency: string;
-    createdAt: string;
+  const [submittedResult, setSubmittedResult] = useState<{
+    count: number;
+    requests: Array<{
+      id: string;
+      ticketNumber: string;
+      customerName: string;
+      reportType: string;
+      periodMonth: number;
+      periodYear: number;
+      urgency: string;
+      createdAt: string;
+    }>;
+    enrolledRoutine: boolean;
+    futurePeriodsCount: number;
   } | null>(null);
-  const [copiedTicket, setCopiedTicket] = useState(false);
+  const [copiedTicket, setCopiedTicket] = useState<string | null>(null);
 
   // Fetch current user and staff directory
   useEffect(() => {
@@ -190,39 +204,6 @@ export default function NewRequestDrawer({
     }
   };
 
-  // Generate Relative Months (-5 to +2)
-  const relativeMonths = useMemo(() => {
-    const list: Array<{
-      month: number;
-      year: number;
-      label: string;
-      isPast: boolean;
-      isCurrent: boolean;
-      isFuture: boolean;
-      isPrevious: boolean;
-    }> = [];
-
-    const baseM = now.getMonth();
-    const baseY = now.getFullYear();
-
-    for (let offset = -5; offset <= 2; offset++) {
-      const d = new Date(baseY, baseM + offset, 1);
-      const m = d.getMonth() + 1;
-      const y = d.getFullYear();
-
-      list.push({
-        month: m,
-        year: y,
-        label: `${monthShortNames[m - 1]} ${y}`,
-        isPast: offset < 0,
-        isCurrent: offset === 0,
-        isFuture: offset > 0,
-        isPrevious: offset === -1,
-      });
-    }
-    return list;
-  }, [now]);
-
   // Period helpers
   const isPeriodSelected = useCallback(
     (month: number, year: number) => {
@@ -248,37 +229,56 @@ export default function NewRequestDrawer({
 
   // Presets
   const applyPresetPreviousMonth = () => {
+    setActiveYear(defaultPrevYear);
     setSelectedPeriods([{ month: defaultPrevMonth, year: defaultPrevYear }]);
   };
 
-  const applyPresetLast2Months = () => {
-    const p1 = new Date(currentYear, now.getMonth() - 2, 1);
-    const p2 = new Date(currentYear, now.getMonth() - 1, 1);
-    setSelectedPeriods([
-      { month: p1.getMonth() + 1, year: p1.getFullYear() },
-      { month: p2.getMonth() + 1, year: p2.getFullYear() },
-    ]);
+  const applyPresetLast3Months = () => {
+    const list: PeriodItem[] = [];
+    for (let i = 3; i >= 1; i--) {
+      const d = new Date(currentYear, now.getMonth() - i, 1);
+      list.push({ month: d.getMonth() + 1, year: d.getFullYear() });
+    }
+    setActiveYear(currentYear);
+    setSelectedPeriods(list);
   };
 
-  const applyPresetLastQuarter = () => {
-    const p1 = new Date(currentYear, now.getMonth() - 3, 1);
-    const p2 = new Date(currentYear, now.getMonth() - 2, 1);
-    const p3 = new Date(currentYear, now.getMonth() - 1, 1);
-    setSelectedPeriods([
-      { month: p1.getMonth() + 1, year: p1.getFullYear() },
-      { month: p2.getMonth() + 1, year: p2.getFullYear() },
-      { month: p3.getMonth() + 1, year: p3.getFullYear() },
-    ]);
+  const applyPresetAllPastInYear = () => {
+    const list: PeriodItem[] = [];
+    for (let m = 1; m <= 12; m++) {
+      if (activeYear < currentYear || (activeYear === currentYear && m < currentMonth)) {
+        list.push({ month: m, year: activeYear });
+      }
+    }
+    if (list.length > 0) {
+      setSelectedPeriods(list);
+    } else {
+      toast.info(`No past months in ${activeYear}.`);
+    }
   };
+
+  const applyPresetClear = () => {
+    setSelectedPeriods([{ month: defaultPrevMonth, year: defaultPrevYear }]);
+    setActiveYear(defaultPrevYear);
+  };
+
+  // Segregation of selected periods into Past (for Queue) vs Future/Ongoing (for Monthly Schedule)
+  const pastSelectedPeriods = useMemo(() => {
+    return selectedPeriods.filter(
+      (p) => p.year < currentYear || (p.year === currentYear && p.month < currentMonth)
+    );
+  }, [selectedPeriods, currentYear, currentMonth]);
+
+  const futureSelectedPeriods = useMemo(() => {
+    return selectedPeriods.filter(
+      (p) => p.year > currentYear || (p.year === currentYear && p.month >= currentMonth)
+    );
+  }, [selectedPeriods, currentYear, currentMonth]);
 
   // Check if any selected period is in the future or ongoing
   const hasFutureOrOngoing = useMemo(() => {
-    return selectedPeriods.some((p) => {
-      if (p.year > currentYear) return true;
-      if (p.year === currentYear && p.month >= currentMonth) return true;
-      return false;
-    });
-  }, [selectedPeriods, currentYear, currentMonth]);
+    return futureSelectedPeriods.length > 0;
+  }, [futureSelectedPeriods]);
 
   // Customer Autocomplete logic
   const fetchAutocompleteCustomers = useCallback(async (query: string) => {
@@ -345,9 +345,16 @@ export default function NewRequestDrawer({
 
   const handleCopyTicket = (ticket: string) => {
     navigator.clipboard.writeText(ticket);
-    setCopiedTicket(true);
-    toast.success('Ticket number copied to clipboard.');
-    setTimeout(() => setCopiedTicket(false), 2000);
+    setCopiedTicket(ticket);
+    toast.success(`Ticket ${ticket} copied to clipboard.`);
+    setTimeout(() => setCopiedTicket(null), 2000);
+  };
+
+  const handleCopyAllTickets = () => {
+    if (!submittedResult?.requests) return;
+    const text = submittedResult.requests.map((r) => r.ticketNumber).join('\n');
+    navigator.clipboard.writeText(text);
+    toast.success(`${submittedResult.requests.length} ticket numbers copied.`);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -365,13 +372,16 @@ export default function NewRequestDrawer({
 
     setIsSubmitting(true);
     try {
-      const primaryPeriod = selectedPeriods[selectedPeriods.length - 1];
+      const primaryPeriod = selectedPeriods[0];
       const isMulti = selectedPeriods.length > 1;
-      const periodsPayload = isMulti ? selectedPeriods : null;
 
-      const salesPicName = requesterDept === 'Account Executive' ? requesterName : null;
+      const salesPicName = requesterDept === 'Account Executive'
+        ? requesterName
+        : (selectedCustomer?.salesPicName || null);
       const salesPicEmail = requesterDept === 'Account Executive' ? requesterEmail : null;
-      const cePicName = requesterDept === 'Customer Experience' ? requesterName : null;
+      const cePicName = requesterDept === 'Customer Experience'
+        ? requesterName
+        : (selectedCustomer?.cePicName || null);
       const cePicEmail = requesterDept === 'Customer Experience' ? requesterEmail : null;
 
       const res = await fetch('/api/requests', {
@@ -391,7 +401,8 @@ export default function NewRequestDrawer({
           serviceId: serviceId.trim() || null,
           periodMonth: primaryPeriod.month,
           periodYear: primaryPeriod.year,
-          periodsJson: periodsPayload,
+          periods: selectedPeriods,
+          periodsJson: selectedPeriods,
           isRoutineSchedule: hasFutureOrOngoing,
           urgency,
           notes: notes.trim() || null,
@@ -403,22 +414,24 @@ export default function NewRequestDrawer({
         throw new Error(data.error || 'Failed to submit request.');
       }
 
-      const periodDisplay = isMulti
-        ? selectedPeriods.map((p) => `${monthShortNames[p.month - 1]} ${p.year}`).join(', ')
-        : `${monthNames[primaryPeriod.month - 1]} ${primaryPeriod.year}`;
+      const createdList = Array.isArray(data.requests) && data.requests.length > 0
+        ? data.requests
+        : (data.request ? [data.request] : []);
 
-      setSubmittedTicket({
-        ticketNumber: data.request.ticketNumber,
-        customerName: data.request.customerName,
-        reportType: data.request.reportType,
-        period: periodDisplay,
-        urgency: data.request.urgency,
-        createdAt: data.request.createdAt,
+      setSubmittedResult({
+        count: createdList.length,
+        requests: createdList,
+        enrolledRoutine: Boolean(data.enrolledRoutine),
+        futurePeriodsCount: data.futurePeriodsCount || 0,
       });
 
-      toast.success(data.message || `Request submitted successfully! Ticket: ${data.request.ticketNumber}`);
-      if (onSuccess) {
-        onSuccess(data.request.ticketNumber);
+      const successMsg = createdList.length > 1
+        ? `Successfully generated ${createdList.length} request tickets in queue!`
+        : `Request submitted successfully! Ticket: ${createdList[0]?.ticketNumber}`;
+
+      toast.success(data.message || successMsg);
+      if (onSuccess && createdList[0]) {
+        onSuccess(createdList[0].ticketNumber);
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -434,8 +447,9 @@ export default function NewRequestDrawer({
     setServiceId('');
     setNotes('');
     setUrgency('NORMAL');
+    setActiveYear(defaultPrevYear);
     setSelectedPeriods([{ month: defaultPrevMonth, year: defaultPrevYear }]);
-    setSubmittedTicket(null);
+    setSubmittedResult(null);
   };
 
   const handleClose = () => {
@@ -467,9 +481,6 @@ export default function NewRequestDrawer({
                 <h2 className="text-base font-heading font-bold text-slate-900 leading-tight">
                   New Report Request
                 </h2>
-                <p className="text-xs text-slate-500">
-                  Submit a ticket for official MRTG or SLA compliance report.
-                </p>
               </div>
             </div>
             <button
@@ -485,66 +496,166 @@ export default function NewRequestDrawer({
 
           {/* Drawer Body */}
           <div className="flex-1 overflow-y-auto p-6 space-y-6">
-            {submittedTicket ? (
-              /* Success View */
-              <div className="bg-white rounded-xl border border-emerald-200 shadow-xs p-6 space-y-6 animate-in fade-in zoom-in-95 duration-200">
-                <div className="flex flex-col items-center text-center space-y-2">
-                  <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shadow-xs">
-                    <CheckCircle2 className="w-7 h-7 stroke-[2.2]" />
+            {submittedResult ? (
+              /* Success View - Industrial Ticket Voucher */
+              <div className="bg-white rounded-xl border border-slate-200/90 shadow-2xs p-6 space-y-6 animate-in fade-in duration-150">
+                <div className="flex items-start justify-between pb-4 border-b border-slate-100">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 flex items-center justify-center shrink-0">
+                      <CheckCircle2 className="w-5 h-5 stroke-[2]" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-heading font-bold text-slate-900 leading-tight">
+                        {submittedResult.count > 1
+                          ? `${submittedResult.count} Requests Queued Successfully`
+                          : 'Request Queued Successfully'}
+                      </h3>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        {submittedResult.count > 1
+                          ? 'Each reporting month has been dispatched as an individual ticket.'
+                          : 'Ticket dispatched to queue processing pipeline.'}
+                      </p>
+                    </div>
                   </div>
-                  <h3 className="text-lg font-heading font-bold text-slate-900">
-                    Request Submitted Successfully!
-                  </h3>
-                  <p className="text-xs text-slate-600 max-w-sm">
-                    Your request ticket has been queued. Internal alerts and email notifications have been dispatched.
-                  </p>
+                  <Badge variant="success" dot className="shrink-0">
+                    QUEUED
+                  </Badge>
                 </div>
 
-                <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg space-y-3">
-                  <div className="flex items-center justify-between pb-3 border-b border-slate-200">
-                    <span className="text-xs text-slate-500 font-medium">Ticket Number</span>
-                    <div className="flex items-center gap-2">
-                      <code className="text-sm font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded border border-orange-200">
-                        {submittedTicket.ticketNumber}
-                      </code>
+                {/* Routine Schedule Enrollment Notification */}
+                {submittedResult.enrolledRoutine && (
+                  <div className="p-3 bg-blue-50/80 border border-blue-200 rounded-lg flex items-start gap-2.5 text-xs text-blue-900">
+                    <Calendar className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-semibold">Enrolled in Monthly Routine Schedule:</span>
+                      <p className="text-[11px] text-blue-700 mt-0.5">
+                        This customer is enrolled in the recurring Monthly Routine Schedule.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Multiple Tickets Table / Single Ticket Voucher */}
+                {submittedResult.count > 1 ? (
+                  <div className="p-4 bg-slate-50/80 border border-slate-200 rounded-lg space-y-3">
+                    <div className="flex items-center justify-between pb-2 border-b border-slate-200/70">
+                      <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                        Generated Tickets ({submittedResult.count})
+                      </span>
                       <Button
                         type="button"
-                        variant="ghost"
-                        size="icon-sm"
-                        onClick={() => handleCopyTicket(submittedTicket.ticketNumber)}
-                        className="h-7 w-7 text-slate-500 hover:text-slate-900"
-                        title="Copy ticket number"
+                        variant="secondary"
+                        size="sm"
+                        onClick={handleCopyAllTickets}
+                        className="text-xs h-7 px-2.5 font-medium"
                       >
-                        {copiedTicket ? (
-                          <Check className="w-3.5 h-3.5 text-emerald-600" />
-                        ) : (
-                          <Copy className="w-3.5 h-3.5" />
-                        )}
+                        <Copy className="w-3.5 h-3.5 mr-1.5" />
+                        <span>Copy All</span>
                       </Button>
                     </div>
-                  </div>
 
-                  <div className="grid grid-cols-2 gap-3 text-xs">
-                    <div>
-                      <span className="text-xs text-slate-500 font-medium block">Customer</span>
-                      <span className="font-semibold text-slate-800">{submittedTicket.customerName}</span>
+                    <div className="divide-y divide-slate-200/60 max-h-56 overflow-y-auto">
+                      {submittedResult.requests.map((reqItem) => (
+                        <div
+                          key={reqItem.id || reqItem.ticketNumber}
+                          className="py-2.5 flex items-center justify-between text-xs"
+                        >
+                          <div className="flex items-center gap-2">
+                            <code className="font-sans font-bold text-slate-900 tabular-nums">
+                              {reqItem.ticketNumber}
+                            </code>
+                            <span className="text-slate-400">•</span>
+                            <span className="font-medium text-slate-700">
+                              {monthNames[reqItem.periodMonth - 1]} {reqItem.periodYear}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="soft" className="text-[10px] py-0 px-1.5">
+                              {reqItem.reportType}
+                            </Badge>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon-sm"
+                              onClick={() => handleCopyTicket(reqItem.ticketNumber)}
+                              className="h-6 w-6 text-slate-500 hover:text-slate-800"
+                              title="Copy ticket"
+                            >
+                              {copiedTicket === reqItem.ticketNumber ? (
+                                <Check className="w-3.5 h-3.5 text-emerald-600" />
+                              ) : (
+                                <Copy className="w-3 h-3" />
+                              )}
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                    <div>
-                      <span className="text-xs text-slate-500 font-medium block">Report Type</span>
-                      <span className="font-semibold text-slate-800">{submittedTicket.reportType}</span>
-                    </div>
-                    <div>
-                      <span className="text-xs text-slate-500 font-medium block">Period</span>
-                      <span className="font-medium text-slate-700">{submittedTicket.period}</span>
-                    </div>
-                    <div>
-                      <span className="text-xs text-slate-500 font-medium block">Priority</span>
-                      <Badge variant={submittedTicket.urgency === 'URGENT' ? 'destructive' : 'info'} dot>
-                        {submittedTicket.urgency === 'URGENT' ? 'Urgent' : 'Normal'}
-                      </Badge>
+
+                    <div className="pt-2 border-t border-slate-200/60 grid grid-cols-2 gap-2 text-xs">
+                      <div>
+                        <span className="text-[11px] font-medium text-slate-500 block">Customer</span>
+                        <span className="font-semibold text-slate-900 truncate block">
+                          {submittedResult.requests[0]?.customerName}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-[11px] font-medium text-slate-500 block">Priority</span>
+                        <Badge variant={submittedResult.requests[0]?.urgency === 'URGENT' ? 'destructive' : 'neutral'} dot>
+                          {submittedResult.requests[0]?.urgency === 'URGENT' ? 'Urgent' : 'Normal'}
+                        </Badge>
+                      </div>
                     </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="p-4 bg-slate-50/80 border border-slate-200 rounded-lg space-y-4">
+                    <div className="flex items-center justify-between pb-3 border-b border-slate-200/70">
+                      <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Ticket Identifier</span>
+                      <div className="flex items-center gap-2">
+                        <code className="text-sm font-sans font-bold text-slate-900 bg-white px-2.5 py-1 rounded-md border border-slate-200 shadow-2xs tabular-nums">
+                          {submittedResult.requests[0]?.ticketNumber}
+                        </code>
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="icon-sm"
+                          onClick={() => handleCopyTicket(submittedResult.requests[0]?.ticketNumber)}
+                          className="h-7 w-7 text-slate-600 hover:text-slate-900"
+                          title="Copy ticket number"
+                        >
+                          {copiedTicket === submittedResult.requests[0]?.ticketNumber ? (
+                            <Check className="w-3.5 h-3.5 text-emerald-600" />
+                          ) : (
+                            <Copy className="w-3.5 h-3.5" />
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3.5 text-xs">
+                      <div>
+                        <span className="text-[11px] font-medium text-slate-500 block mb-0.5">Customer</span>
+                        <span className="font-semibold text-slate-900">{submittedResult.requests[0]?.customerName}</span>
+                      </div>
+                      <div>
+                        <span className="text-[11px] font-medium text-slate-500 block mb-0.5">Report Type</span>
+                        <span className="font-semibold text-slate-900">{submittedResult.requests[0]?.reportType}</span>
+                      </div>
+                      <div>
+                        <span className="text-[11px] font-medium text-slate-500 block mb-0.5">Period</span>
+                        <span className="font-sans text-slate-700">
+                          {submittedResult.requests[0] ? `${monthNames[submittedResult.requests[0].periodMonth - 1]} ${submittedResult.requests[0].periodYear}` : '-'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-[11px] font-medium text-slate-500 block mb-0.5">Priority</span>
+                        <Badge variant={submittedResult.requests[0]?.urgency === 'URGENT' ? 'destructive' : 'neutral'} dot>
+                          {submittedResult.requests[0]?.urgency === 'URGENT' ? 'Urgent' : 'Normal'}
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <div className="flex flex-col sm:flex-row items-center justify-end gap-2.5 pt-2">
                   <Button
@@ -667,7 +778,7 @@ export default function NewRequestDrawer({
                           value={requesterEmail}
                           onChange={(e) => setRequesterEmail(e.target.value)}
                           placeholder="e.g. staff@nexa.net.id"
-                          className="text-xs h-9 bg-white font-mono"
+                          className="text-xs h-9 bg-white font-sans"
                         />
                       </FormField>
                     </div>
@@ -757,9 +868,9 @@ export default function NewRequestDrawer({
                               </Badge>
                             </div>
                             <div className="text-[11px] text-emerald-700 mt-0.5 truncate">
-                              SID: <span className="font-mono font-semibold">{selectedCustomer.serviceId}</span>
+                              SID: <span className="font-sans font-semibold tabular-nums">{selectedCustomer.serviceId}</span>
                               <span className="mx-1">•</span>
-                              CID: <span className="font-mono">{selectedCustomer.customerId}</span>
+                              CID: <span className="font-sans tabular-nums">{selectedCustomer.customerId}</span>
                               <span className="mx-1">•</span>
                               <span>{selectedCustomer.serviceName}</span>
                             </div>
@@ -812,9 +923,9 @@ export default function NewRequestDrawer({
                                       {c.customerName}
                                     </div>
                                     <div className="text-[11px] text-slate-500 flex items-center gap-1.5 mt-0.5">
-                                      <span className="font-mono text-slate-700 font-medium">SID: {c.serviceId}</span>
+                                      <span className="font-sans text-slate-700 font-medium tabular-nums">SID: {c.serviceId}</span>
                                       <span>•</span>
-                                      <span className="font-mono text-slate-500">CID: {c.customerId}</span>
+                                      <span className="font-sans text-slate-500 tabular-nums">CID: {c.customerId}</span>
                                       <span>•</span>
                                       <span className="text-slate-600 truncate">{c.serviceName}</span>
                                     </div>
@@ -844,11 +955,11 @@ export default function NewRequestDrawer({
                       value={serviceId}
                       onChange={(e) => setServiceId(e.target.value)}
                       placeholder="Optional SID/CID reference"
-                      className="text-xs font-mono h-9 bg-white"
+                      className="text-xs font-sans h-9 bg-white tabular-nums"
                     />
                   </FormField>
 
-                  {/* Smart Time-Aware Period Selector */}
+                  {/* Smart Time-Aware Period Selector with Year Navigator */}
                   <div className="space-y-3 pt-2 border-t border-slate-200/60">
                     <div className="flex items-center justify-between">
                       <label className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
@@ -858,100 +969,211 @@ export default function NewRequestDrawer({
                       </label>
 
                       {/* Presets */}
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-1.5 flex-wrap">
                         <button
                           type="button"
                           onClick={applyPresetPreviousMonth}
-                          className="text-[11px] font-medium text-slate-600 hover:text-orange-600 bg-white hover:bg-orange-50 px-2 py-0.5 rounded border border-slate-200 transition"
+                          className="text-[11px] font-medium text-slate-600 hover:text-orange-600 bg-white hover:bg-orange-50 px-2 py-0.5 rounded border border-slate-200 transition cursor-pointer"
                         >
                           Previous Month
                         </button>
                         <button
                           type="button"
-                          onClick={applyPresetLast2Months}
-                          className="text-[11px] font-medium text-slate-600 hover:text-orange-600 bg-white hover:bg-orange-50 px-2 py-0.5 rounded border border-slate-200 transition"
+                          onClick={applyPresetLast3Months}
+                          className="text-[11px] font-medium text-slate-600 hover:text-orange-600 bg-white hover:bg-orange-50 px-2 py-0.5 rounded border border-slate-200 transition cursor-pointer"
                         >
-                          Last 2 Months
+                          Last 3 Months
                         </button>
                         <button
                           type="button"
-                          onClick={applyPresetLastQuarter}
-                          className="text-[11px] font-medium text-slate-600 hover:text-orange-600 bg-white hover:bg-orange-50 px-2 py-0.5 rounded border border-slate-200 transition"
+                          onClick={applyPresetAllPastInYear}
+                          className="text-[11px] font-medium text-slate-600 hover:text-orange-600 bg-white hover:bg-orange-50 px-2 py-0.5 rounded border border-slate-200 transition cursor-pointer"
                         >
-                          Last Quarter
+                          All Past ({activeYear})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={applyPresetClear}
+                          className="text-[11px] font-medium text-slate-500 hover:text-slate-800 bg-white px-2 py-0.5 rounded border border-slate-200 transition cursor-pointer"
+                        >
+                          Reset
                         </button>
                       </div>
                     </div>
 
-                    {/* Timeline Pills */}
-                    <div className="p-2.5 bg-white border border-slate-200 rounded-lg space-y-2">
-                      <div className="grid grid-cols-4 sm:grid-cols-8 gap-1.5">
-                        {relativeMonths.map((item) => {
-                          const isSelected = isPeriodSelected(item.month, item.year);
-                          const isFuture = item.isFuture;
-                          const isCurrent = item.isCurrent;
+                    {/* Interactive Year & Month Navigator Box */}
+                    <div className="p-3 bg-white border border-slate-200 rounded-lg space-y-3">
+                      {/* Year Bar */}
+                      <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => setActiveYear((y) => y - 1)}
+                            className="p-1 rounded text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition cursor-pointer"
+                            title="Previous Year"
+                          >
+                            <ChevronLeft className="w-4 h-4" />
+                          </button>
+                          <span className="text-xs font-bold text-slate-900 font-sans tabular-nums px-1 flex items-center gap-1.5">
+                            <span>{activeYear}</span>
+                            {activeYear === currentYear && (
+                              <span className="text-[10px] font-medium text-orange-700 bg-orange-100 px-1.5 py-0.5 rounded">
+                                This Year
+                              </span>
+                            )}
+                            {activeYear === currentYear + 1 && (
+                              <span className="text-[10px] font-medium text-blue-700 bg-blue-100 px-1.5 py-0.5 rounded">
+                                Next Year
+                              </span>
+                            )}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setActiveYear((y) => y + 1)}
+                            className="p-1 rounded text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition cursor-pointer"
+                            title="Next Year"
+                          >
+                            <ChevronRight className="w-4 h-4" />
+                          </button>
+                        </div>
+
+                        {/* Quick Year Jump Buttons */}
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => setActiveYear(currentYear)}
+                            className={`text-[10px] font-medium px-2 py-0.5 rounded border transition cursor-pointer ${
+                              activeYear === currentYear
+                                ? 'bg-orange-50 border-orange-300 text-orange-700 font-semibold'
+                                : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                            }`}
+                          >
+                            {currentYear} (Current)
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setActiveYear(currentYear + 1)}
+                            className={`text-[10px] font-medium px-2 py-0.5 rounded border transition cursor-pointer ${
+                              activeYear === currentYear + 1
+                                ? 'bg-blue-50 border-blue-300 text-blue-700 font-semibold'
+                                : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                            }`}
+                          >
+                            {currentYear + 1} (Next)
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* 12-Month Calendar Grid */}
+                      <div className="grid grid-cols-3 sm:grid-cols-4 gap-1.5">
+                        {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => {
+                          const isSelected = isPeriodSelected(m, activeYear);
+                          const isPrev = activeYear === defaultPrevYear && m === defaultPrevMonth;
+                          const isCurrent = activeYear === currentYear && m === currentMonth;
+                          const isPast = activeYear < currentYear || (activeYear === currentYear && m < currentMonth);
+                          const isFuture = activeYear > currentYear || (activeYear === currentYear && m > currentMonth);
 
                           return (
                             <button
-                              key={`${item.year}-${item.month}`}
+                              key={`${activeYear}-${m}`}
                               type="button"
-                              onClick={() => togglePeriod(item.month, item.year)}
+                              onClick={() => togglePeriod(m, activeYear)}
                               title={
                                 isFuture
-                                  ? 'Future period - will automatically enroll into Monthly Routine Schedule'
+                                  ? `${monthNames[m - 1]} ${activeYear} (Future) - Auto-enrolls into Monthly Routine Schedule`
                                   : isCurrent
-                                  ? 'Ongoing month'
-                                  : 'Completed historical period'
+                                  ? `${monthNames[m - 1]} ${activeYear} (Ongoing Month)`
+                                  : isPrev
+                                  ? `${monthNames[m - 1]} ${activeYear} (Closed Previous Month - Recommended SLA period)`
+                                  : `${monthNames[m - 1]} ${activeYear} (Historical Closed Period)`
                               }
-                              className={`py-1.5 px-1 rounded text-xs font-semibold text-center border transition flex flex-col items-center justify-center select-none cursor-pointer ${
+                              className={`py-2 px-1 rounded-md text-xs font-semibold text-center border transition flex flex-col items-center justify-center select-none cursor-pointer ${
                                 isSelected
-                                  ? isFuture
-                                    ? 'bg-blue-600 text-white border-blue-700 shadow-2xs'
-                                    : 'bg-orange-600 text-white border-orange-700 shadow-2xs'
-                                  : isFuture
-                                  ? 'bg-blue-50/50 text-blue-800 border-blue-200 hover:bg-blue-100/60'
+                                  ? isPast
+                                    ? 'bg-orange-600 text-white border-orange-700 shadow-2xs'
+                                    : 'bg-blue-600 text-white border-blue-700 shadow-2xs'
+                                  : isPrev
+                                  ? 'bg-amber-50/80 text-amber-900 border-amber-300 hover:bg-amber-100 ring-1 ring-amber-200'
                                   : isCurrent
-                                  ? 'bg-amber-50/60 text-amber-900 border-amber-200 hover:bg-amber-100'
+                                  ? 'bg-slate-100 text-slate-800 border-slate-300 hover:bg-slate-200'
+                                  : isFuture
+                                  ? 'bg-blue-50/30 text-blue-800 border-blue-100 hover:bg-blue-100/60'
                                   : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
                               }`}
                             >
-                              <span className="text-[11px]">{item.label}</span>
+                              <span className="text-[11px] font-sans">{monthShortNames[m - 1]}</span>
                               <span className="text-[9px] opacity-80 mt-0.5">
-                                {item.isPrevious
-                                  ? '★ Prev'
-                                  : item.isCurrent
-                                  ? 'Ongoing'
-                                  : item.isFuture
-                                  ? '🗓️ Future'
-                                  : 'Past'}
+                                {isPrev ? '★ Prev' : isCurrent ? 'Ongoing' : isFuture ? '🗓️ Future' : 'Past'}
                               </span>
                             </button>
                           );
                         })}
                       </div>
 
-                      {/* Period Status Indicator */}
-                      <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
-                        <div className="flex items-center gap-2">
-                          <span className="text-slate-500 font-medium">Selected:</span>
-                          <span className="font-semibold text-slate-900">
-                            {selectedPeriods.length === 1
-                              ? `${monthNames[selectedPeriods[0].month - 1]} ${selectedPeriods[0].year}`
-                              : `${selectedPeriods.length} months (${selectedPeriods
-                                  .map((p) => `${monthShortNames[p.month - 1]} ${p.year}`)
-                                  .join(', ')})`}
+                      {/* Dual Routing Summary Feedback */}
+                      <div className="pt-2 border-t border-slate-100 space-y-2">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-slate-500 font-medium">Selected Periods:</span>
+                          <span className="font-semibold text-slate-900 font-sans tabular-nums">
+                            {selectedPeriods.length} {selectedPeriods.length === 1 ? 'month' : 'months'}
                           </span>
                         </div>
 
-                        {hasFutureOrOngoing ? (
-                          <Badge variant="info" className="text-[10px] py-0 px-2 bg-blue-50 text-blue-700 border-blue-200">
-                            🗓️ Routine Schedule
-                          </Badge>
-                        ) : (
-                          <Badge variant="success" className="text-[10px] py-0 px-2 bg-emerald-50 text-emerald-700 border-emerald-200">
-                            Ready for NOC (24H SLA)
-                          </Badge>
-                        )}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          {/* Past Months -> Queue */}
+                          <div
+                            className={`p-2 rounded border text-xs transition ${
+                              pastSelectedPeriods.length > 0
+                                ? 'bg-orange-50/70 border-orange-200 text-orange-950'
+                                : 'bg-slate-50 border-slate-200/60 text-slate-400'
+                            }`}
+                          >
+                            <div className="font-semibold flex items-center justify-between">
+                              <span className="flex items-center gap-1.5">
+                                <span className={`w-2 h-2 rounded-full ${pastSelectedPeriods.length > 0 ? 'bg-orange-500' : 'bg-slate-300'}`} />
+                                <span>Request Queue</span>
+                              </span>
+                              <Badge
+                                variant={pastSelectedPeriods.length > 0 ? 'warning' : 'outline'}
+                                className="text-[10px] px-1.5 py-0 font-sans tabular-nums"
+                              >
+                                {pastSelectedPeriods.length} Ticket{pastSelectedPeriods.length !== 1 ? 's' : ''}
+                              </Badge>
+                            </div>
+                            <p className="text-[11px] text-slate-600 mt-1 leading-snug">
+                              {pastSelectedPeriods.length > 0
+                                ? `Creates ${pastSelectedPeriods.length} distinct ticket(s) in queue for SLA processing.`
+                                : 'No past months selected.'}
+                            </p>
+                          </div>
+
+                          {/* Future Months -> Schedule */}
+                          <div
+                            className={`p-2 rounded border text-xs transition ${
+                              futureSelectedPeriods.length > 0
+                                ? 'bg-blue-50/70 border-blue-200 text-blue-950'
+                                : 'bg-slate-50 border-slate-200/60 text-slate-400'
+                            }`}
+                          >
+                            <div className="font-semibold flex items-center justify-between">
+                              <span className="flex items-center gap-1.5">
+                                <span className={`w-2 h-2 rounded-full ${futureSelectedPeriods.length > 0 ? 'bg-blue-500' : 'bg-slate-300'}`} />
+                                <span>Monthly Routine</span>
+                              </span>
+                              <Badge
+                                variant={futureSelectedPeriods.length > 0 ? 'info' : 'outline'}
+                                className="text-[10px] px-1.5 py-0 font-sans tabular-nums"
+                              >
+                                {futureSelectedPeriods.length} Month{futureSelectedPeriods.length !== 1 ? 's' : ''}
+                              </Badge>
+                            </div>
+                            <p className="text-[11px] text-slate-600 mt-1 leading-snug">
+                              {futureSelectedPeriods.length > 0
+                                ? `Auto-enrolls customer into Monthly Routine Schedule.`
+                                : 'No future months selected.'}
+                            </p>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1004,7 +1226,7 @@ export default function NewRequestDrawer({
                       rows={3}
                       value={notes}
                       onChange={(e) => setNotes(e.target.value)}
-                      placeholder="e.g. Include specific maintenance downtime note for client meeting..."
+                      placeholder="Optional notes or instructions..."
                       className="text-xs bg-white"
                     />
                   </FormField>
@@ -1014,7 +1236,7 @@ export default function NewRequestDrawer({
           </div>
 
           {/* Drawer Footer (Sticky) */}
-          {!submittedTicket && (
+          {!submittedResult && (
             <div className="px-6 py-3.5 border-t border-slate-200 bg-slate-50/80 flex items-center justify-between shrink-0">
               <Button
                 type="button"
@@ -1099,9 +1321,9 @@ export default function NewRequestDrawer({
                         {c.customerName}
                       </div>
                       <div className="text-[11px] text-slate-500 flex items-center gap-2 mt-0.5">
-                        <span className="font-mono text-slate-700 font-medium">SID: {c.serviceId}</span>
+                        <span className="font-sans text-slate-700 font-medium tabular-nums">SID: {c.serviceId}</span>
                         <span>•</span>
-                        <span className="font-mono text-slate-500">CID: {c.customerId}</span>
+                        <span className="font-sans text-slate-500 tabular-nums">CID: {c.customerId}</span>
                         <span>•</span>
                         <span className="text-slate-600 truncate">{c.serviceName}</span>
                       </div>

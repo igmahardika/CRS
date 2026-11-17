@@ -481,7 +481,7 @@ export default function DiscoveryPage() {
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Cari perangkat, interface, SID, atau nama pelanggan..."
+            placeholder="Search device, interface, SID, or customer..."
             className="pl-9 pr-9 h-9 text-[13px]"
           />
           {search && (
@@ -571,7 +571,7 @@ export default function DiscoveryPage() {
                               <Server className="w-3.5 h-3.5 text-blue-500 shrink-0" />
                               <span className="text-xs font-medium text-slate-800">{device.deviceName}</span>
                               {device.deviceIp && (
-                                <span className="text-xs text-slate-500 font-mono hidden sm:inline tabular-nums">
+                                <span className="text-xs text-slate-500 font-sans hidden sm:inline tabular-nums">
                                   ({device.deviceIp})
                                 </span>
                               )}
@@ -598,7 +598,7 @@ export default function DiscoveryPage() {
                                 <div className="flex items-center gap-2 flex-1 min-w-0">
                                   <Network className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                                   <span
-                                    className="text-xs text-slate-800 font-mono font-medium truncate max-w-[280px]"
+                                    className="text-xs text-slate-800 font-sans font-medium truncate max-w-[280px]"
                                     title={iface.fullTitle}
                                   >
                                     {iface.interfaceName}
@@ -618,12 +618,12 @@ export default function DiscoveryPage() {
                                 </div>
 
                                 <div className="flex flex-wrap items-center gap-2 shrink-0">
-                                  <span className="text-xs font-mono font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 tabular-nums">
+                                  <span className="text-xs font-sans font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 tabular-nums">
                                     ID: {iface.targetId}
                                   </span>
 
                                   {iface.detectedSid && (
-                                    <span className="text-xs font-mono font-semibold px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 tabular-nums">
+                                    <span className="text-xs font-sans font-semibold px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 tabular-nums">
                                       SID: {iface.detectedSid}
                                     </span>
                                   )}
@@ -693,8 +693,9 @@ export default function DiscoveryPage() {
               </div>
 
               {mapping.searching ? (
-                <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg text-slate-500 text-center animate-pulse">
-                  Searching customer directory for Service ID...
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg text-slate-500 text-center flex items-center justify-center gap-2 text-xs">
+                  <Spinner size="sm" />
+                  <span>Searching customer directory for Service ID...</span>
                 </div>
               ) : mapping.matched ? (
                 <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg space-y-1">

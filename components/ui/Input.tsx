@@ -13,6 +13,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
         ref={ref}
         type={type}
         disabled={disabled}
+        suppressHydrationWarning
         className={cn(
           'w-full bg-white text-slate-900 placeholder:text-slate-400 font-sans text-[13px] border rounded-lg transition-colors duration-150',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-0',

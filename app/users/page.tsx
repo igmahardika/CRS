@@ -139,7 +139,7 @@ export default function UsersManagementPage() {
       if (res.ok && data.users) {
         setUsers(data.users);
       } else {
-        setFeedback({ type: 'error', message: data.error || 'Gagal memuat akun pengguna.' });
+        setFeedback({ type: 'error', message: data.error || 'Failed to load user accounts.' });
       }
     } catch (err: unknown) {
       setFeedback({ type: 'error', message: String(err) });
@@ -225,9 +225,9 @@ export default function UsersManagementPage() {
         body: JSON.stringify(formData),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Gagal membuat user.');
+      if (!res.ok) throw new Error(data.error || 'Failed to create user.');
 
-      toast.success(data.message || 'Akun pengguna berhasil dibuat.');
+      toast.success(data.message || 'User account created successfully.');
       setIsCreateModalOpen(false);
       setFormData({
         username: '',
@@ -265,9 +265,9 @@ export default function UsersManagementPage() {
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Gagal memperbarui user.');
+      if (!res.ok) throw new Error(data.error || 'Failed to update user.');
 
-      toast.success(data.message || 'Akun berhasil diperbarui.');
+      toast.success(data.message || 'Account updated successfully.');
       setEditingUser(null);
       fetchUsers();
     } catch (err: unknown) {
@@ -292,9 +292,9 @@ export default function UsersManagementPage() {
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Gagal reset password.');
+      if (!res.ok) throw new Error(data.error || 'Failed to reset password.');
 
-      toast.success(`Password untuk ${passwordModalUser.name} berhasil diperbarui.`);
+      toast.success(`Password for ${passwordModalUser.name} updated successfully.`);
       setPasswordModalUser(null);
       setNewPassword('');
     } catch (err: unknown) {
@@ -310,9 +310,9 @@ export default function UsersManagementPage() {
     try {
       const res = await fetch(`/api/users?id=${deletingUser.id}`, { method: 'DELETE' });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Gagal menghapus user.');
+      if (!res.ok) throw new Error(data.error || 'Failed to delete user.');
 
-      toast.success(`Akun "${deletingUser.name}" berhasil dihapus.`);
+      toast.success(`Account "${deletingUser.name}" deleted successfully.`);
       setDeletingUser(null);
       fetchUsers();
     } catch (err: unknown) {
@@ -332,9 +332,9 @@ export default function UsersManagementPage() {
         body: JSON.stringify(staffFormData),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Gagal menambah staf.');
+      if (!res.ok) throw new Error(data.error || 'Failed to add staff member.');
 
-      toast.success(data.message || 'Staf berhasil ditambahkan.');
+      toast.success(data.message || 'Staff member added successfully.');
       setIsCreateStaffModalOpen(false);
       setStaffFormData({
         name: '',
@@ -364,9 +364,9 @@ export default function UsersManagementPage() {
         body: JSON.stringify(editingStaff),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Gagal memperbarui staf.');
+      if (!res.ok) throw new Error(data.error || 'Failed to update staff member.');
 
-      toast.success(data.message || 'Data staf berhasil diperbarui.');
+      toast.success(data.message || 'Staff data updated successfully.');
       setEditingStaff(null);
       fetchStaff();
     } catch (err: unknown) {
@@ -382,9 +382,9 @@ export default function UsersManagementPage() {
     try {
       const res = await fetch(`/api/staff?id=${deletingStaff.id}`, { method: 'DELETE' });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Gagal menghapus staf.');
+      if (!res.ok) throw new Error(data.error || 'Failed to delete staff member.');
 
-      toast.success('Data staf berhasil dihapus.');
+      toast.success('Staff member deleted successfully.');
       setDeletingStaff(null);
       fetchStaff();
     } catch (err: unknown) {
@@ -460,7 +460,7 @@ export default function UsersManagementPage() {
           }`}
         >
           <Users className="w-4 h-4" />
-          <span>Akun Login Sistem ({users.length})</span>
+          <span>System User Accounts ({users.length})</span>
         </button>
 
         <button
@@ -473,7 +473,7 @@ export default function UsersManagementPage() {
           }`}
         >
           <Briefcase className="w-4 h-4" />
-          <span>Direktori Staf / PIC Sales &amp; CE ({staffList.length})</span>
+          <span>Staff Directory ({staffList.length})</span>
         </button>
       </div>
 
@@ -481,10 +481,10 @@ export default function UsersManagementPage() {
       {activeSection === 'users' && (
         <div className="space-y-6">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-            <StatCard label="Total Akun" value={users.length} icon={Users} subtext="Pengguna terdaftar" />
-            <StatCard label="Staff" value={staffRoleCount} icon={Sliders} subtext="Generator &amp; pembuat" />
-            <StatCard label="Supervisor" value={supervisorCount} icon={Shield} subtext="Verifikasi &amp; approval" />
-            <StatCard label="Administrator" value={adminCount} icon={Shield} subtext="Akses penuh sistem" />
+            <StatCard label="Total Accounts" value={users.length} icon={Users} subtext="Registered users" />
+            <StatCard label="Staff" value={staffRoleCount} icon={Sliders} subtext="Generator & creator" />
+            <StatCard label="Supervisor" value={supervisorCount} icon={Shield} subtext="Verification & approvals" />
+            <StatCard label="Administrator" value={adminCount} icon={Shield} subtext="Full system access" />
           </div>
 
           {/* Feedback Banner */}
@@ -522,7 +522,7 @@ export default function UsersManagementPage() {
               <Input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Cari nama user, username, atau email..."
+                placeholder="Search by name, username, or email..."
                 className="pl-9 pr-9 h-9 text-[13px]"
               />
               {search && (
@@ -544,7 +544,7 @@ export default function UsersManagementPage() {
                 onClick={() => setRoleFilter('ALL')}
                 className={roleFilter === 'ALL' ? 'bg-slate-900 text-white hover:bg-slate-800 h-8 px-2.5 text-xs font-semibold' : 'text-slate-600 h-8 px-2.5 text-xs'}
               >
-                Semua ({users.length})
+                All ({users.length})
               </Button>
               <Button
                 variant={roleFilter === 'STAFF' ? 'secondary' : 'ghost'}
@@ -578,13 +578,13 @@ export default function UsersManagementPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[180px]">Nama Lengkap</TableHead>
+                  <TableHead className="w-[180px]">Full Name</TableHead>
                   <TableHead className="w-[120px]">Username</TableHead>
-                  <TableHead className="w-[130px]">Departemen</TableHead>
-                  <TableHead className="w-[110px]">Jabatan</TableHead>
-                  <TableHead>Email Akun</TableHead>
+                  <TableHead className="w-[130px]">Department</TableHead>
+                  <TableHead className="w-[110px]">Role</TableHead>
+                  <TableHead>Email</TableHead>
                   <TableHead className="w-[80px]">Status</TableHead>
-                  <TableHead className="text-right w-[100px]">Aksi</TableHead>
+                  <TableHead className="text-right w-[100px]">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -592,7 +592,7 @@ export default function UsersManagementPage() {
                   <TableRow>
                     <TableCell colSpan={7} className="h-40 text-center">
                       <Spinner size="md" className="mx-auto text-orange-600 mb-2" />
-                      <p className="text-xs text-slate-500">Memuat data pengguna...</p>
+                      <p className="text-xs text-slate-500">Loading user accounts...</p>
                     </TableCell>
                   </TableRow>
                 ) : filteredUsers.length === 0 ? (
@@ -600,8 +600,8 @@ export default function UsersManagementPage() {
                     <TableCell colSpan={7} className="h-48 text-center">
                       <EmptyState
                         icon={Users}
-                        title="Tidak ada pengguna ditemukan"
-                        description="Sesuaikan kata kunci pencarian atau filter peranan."
+                        title="No users found"
+                        description="Adjust search keywords or role filters."
                       />
                     </TableCell>
                   </TableRow>
@@ -609,15 +609,15 @@ export default function UsersManagementPage() {
                   filteredUsers.map((u) => (
                     <TableRow key={u.id} className="hover:bg-slate-50/70">
                       <TableCell className="font-semibold text-slate-900">{u.name}</TableCell>
-                      <TableCell className="font-mono text-xs text-slate-600">@{u.username}</TableCell>
+                      <TableCell className="font-sans text-xs text-slate-600">@{u.username}</TableCell>
                       <TableCell>{getDeptBadge(u.department)}</TableCell>
                       <TableCell>{getRoleBadge(u.role)}</TableCell>
                       <TableCell className="text-xs text-slate-600">{u.email || '-'}</TableCell>
                       <TableCell>
                         {u.isActive ? (
-                          <Badge variant="success">Aktif</Badge>
+                          <Badge variant="success">Active</Badge>
                         ) : (
-                          <Badge variant="neutral">Nonaktif</Badge>
+                          <Badge variant="neutral">Inactive</Badge>
                         )}
                       </TableCell>
                       <TableCell className="text-right">
@@ -644,7 +644,7 @@ export default function UsersManagementPage() {
                             variant="ghost"
                             size="icon-sm"
                             onClick={() => setDeletingUser(u)}
-                            title="Hapus User"
+                            title="Delete User"
                             className="text-red-500 hover:text-red-700 hover:bg-red-50"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -664,10 +664,10 @@ export default function UsersManagementPage() {
       {activeSection === 'staff' && (
         <div className="space-y-6">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-            <StatCard label="Total Staf PIC" value={staffList.length} icon={UserCheck} subtext="PIC komersial &amp; internal" />
-            <StatCard label="Account Executive" value={salesStaffCount} icon={Briefcase} subtext="PIC Sales / Bisnis" />
-            <StatCard label="Customer Experience" value={ceStaffCount} icon={Users} subtext="PIC Layanan Pelanggan" />
-            <StatCard label="Finance" value={finStaffCount} icon={Shield} subtext="PIC Penagihan / AR" />
+            <StatCard label="Total Staff" value={staffList.length} icon={UserCheck} subtext="Commercial &amp; internal PICs" />
+            <StatCard label="Account Executive" value={salesStaffCount} icon={Briefcase} subtext="Sales &amp; Business PIC" />
+            <StatCard label="Customer Experience" value={ceStaffCount} icon={Users} subtext="Customer Care PIC" />
+            <StatCard label="Finance" value={finStaffCount} icon={Shield} subtext="Billing &amp; AR PIC" />
           </div>
 
           {/* Search & Filter */}
@@ -677,7 +677,7 @@ export default function UsersManagementPage() {
               <Input
                 value={staffSearch}
                 onChange={(e) => setStaffSearch(e.target.value)}
-                placeholder="Cari nama staf PIC, email, atau jabatan..."
+                placeholder="Search staff name, email, or role..."
                 className="pl-9 pr-9 h-9 text-[13px]"
               />
               {staffSearch && (
@@ -699,7 +699,7 @@ export default function UsersManagementPage() {
                 onClick={() => setStaffDeptFilter('ALL')}
                 className={staffDeptFilter === 'ALL' ? 'bg-slate-900 text-white hover:bg-slate-800 h-8 px-2.5 text-xs font-semibold' : 'text-slate-600 h-8 px-2.5 text-xs'}
               >
-                Semua Dept ({staffList.length})
+                All Depts ({staffList.length})
               </Button>
               <Button
                 variant={staffDeptFilter === 'Account Executive' ? 'secondary' : 'ghost'}
@@ -733,13 +733,13 @@ export default function UsersManagementPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[180px]">Nama Lengkap PIC</TableHead>
-                  <TableHead className="w-[140px]">Departemen</TableHead>
-                  <TableHead className="w-[150px]">Jabatan / Peran</TableHead>
-                  <TableHead>Email Resmi</TableHead>
-                  <TableHead className="w-[130px]">No. Telepon / WA</TableHead>
+                  <TableHead className="w-[180px]">Full Name</TableHead>
+                  <TableHead className="w-[140px]">Department</TableHead>
+                  <TableHead className="w-[150px]">Role / Title</TableHead>
+                  <TableHead>Official Email</TableHead>
+                  <TableHead className="w-[130px]">Phone / WA</TableHead>
                   <TableHead className="w-[80px]">Status</TableHead>
-                  <TableHead className="text-right w-[90px]">Aksi</TableHead>
+                  <TableHead className="text-right w-[90px]">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -747,7 +747,7 @@ export default function UsersManagementPage() {
                   <TableRow>
                     <TableCell colSpan={7} className="h-40 text-center">
                       <Spinner size="md" className="mx-auto text-orange-600 mb-2" />
-                      <p className="text-xs text-slate-500">Memuat data staf PIC...</p>
+                      <p className="text-xs text-slate-500">Loading staff directory...</p>
                     </TableCell>
                   </TableRow>
                 ) : filteredStaff.length === 0 ? (
@@ -755,8 +755,8 @@ export default function UsersManagementPage() {
                     <TableCell colSpan={7} className="h-48 text-center">
                       <EmptyState
                         icon={UserCheck}
-                        title="Belum ada staf PIC"
-                        description="Tambahkan data staf Sales dan CE agar otomatis muncul pada form permintaan laporan."
+                        title="No staff members registered"
+                        description="Add Sales and CE staff members to auto-populate report request forms."
                       />
                     </TableCell>
                   </TableRow>
@@ -766,13 +766,13 @@ export default function UsersManagementPage() {
                       <TableCell className="font-semibold text-slate-900">{s.name}</TableCell>
                       <TableCell>{getDeptBadge(s.department)}</TableCell>
                       <TableCell className="text-xs font-medium text-slate-700">{s.roleTitle || '-'}</TableCell>
-                      <TableCell className="text-xs text-slate-600 font-mono">{s.email}</TableCell>
+                      <TableCell className="text-xs text-slate-600 font-sans">{s.email}</TableCell>
                       <TableCell className="text-xs text-slate-600">{s.phone || '-'}</TableCell>
                       <TableCell>
                         {s.isActive ? (
-                          <Badge variant="success">Aktif</Badge>
+                          <Badge variant="success">Active</Badge>
                         ) : (
-                          <Badge variant="neutral">Nonaktif</Badge>
+                          <Badge variant="neutral">Inactive</Badge>
                         )}
                       </TableCell>
                       <TableCell className="text-right">
@@ -781,7 +781,7 @@ export default function UsersManagementPage() {
                             variant="ghost"
                             size="icon-sm"
                             onClick={() => setEditingStaff(s)}
-                            title="Edit Data Staf"
+                            title="Edit Staff Data"
                             className="text-slate-500 hover:text-slate-900"
                           >
                             <Edit2 className="w-3.5 h-3.5" />
@@ -790,7 +790,7 @@ export default function UsersManagementPage() {
                             variant="ghost"
                             size="icon-sm"
                             onClick={() => setDeletingStaff(s)}
-                            title="Hapus Staf"
+                            title="Delete Staff"
                             className="text-red-500 hover:text-red-700 hover:bg-red-50"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -810,10 +810,10 @@ export default function UsersManagementPage() {
       <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Buat Akun Pengguna Baru</DialogTitle>
+            <DialogTitle>Create User Account</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleCreateUser} className="space-y-4 py-2">
-            <FormField label="Nama Lengkap" required>
+            <FormField label="Full Name" required>
               <Input
                 placeholder="e.g. Budi Santoso"
                 value={formData.name}
@@ -829,7 +829,7 @@ export default function UsersManagementPage() {
                 required
               />
             </FormField>
-            <FormField label="Email Akun">
+            <FormField label="Email">
               <Input
                 type="email"
                 placeholder="e.g. budi@nexa.net.id"
@@ -840,7 +840,7 @@ export default function UsersManagementPage() {
             <FormField label="Password" required>
               <Input
                 type="password"
-                placeholder="Minimal 6 karakter"
+                placeholder="Minimum 6 characters"
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 required
@@ -848,7 +848,7 @@ export default function UsersManagementPage() {
               />
             </FormField>
             <div className="grid grid-cols-2 gap-3">
-              <FormField label="Departemen" required>
+              <FormField label="Department" required>
                 <Select
                   value={formData.department}
                   onValueChange={(val) => setFormData({ ...formData, department: val as Department })}
@@ -861,7 +861,7 @@ export default function UsersManagementPage() {
                   </SelectContent>
                 </Select>
               </FormField>
-              <FormField label="Peran (Role)" required>
+              <FormField label="Role" required>
                 <Select
                   value={formData.role}
                   onValueChange={(val) => setFormData({ ...formData, role: val as UserRole })}
@@ -876,8 +876,8 @@ export default function UsersManagementPage() {
               </FormField>
             </div>
             <DialogFooter className="pt-3 border-t border-slate-100">
-              <Button variant="secondary" onClick={() => setIsCreateModalOpen(false)}>Batal</Button>
-              <Button variant="primary" type="submit" loading={actionLoading}>Simpan Akun</Button>
+              <Button variant="secondary" onClick={() => setIsCreateModalOpen(false)}>Cancel</Button>
+              <Button variant="primary" type="submit" loading={actionLoading}>Create User</Button>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -887,11 +887,11 @@ export default function UsersManagementPage() {
       <Dialog open={Boolean(editingUser)} onOpenChange={(open) => !open && setEditingUser(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Edit Akun Pengguna</DialogTitle>
+            <DialogTitle>Edit User Account</DialogTitle>
           </DialogHeader>
           {editingUser && (
             <form onSubmit={handleUpdateUser} className="space-y-4 py-2">
-              <FormField label="Nama Lengkap" required>
+              <FormField label="Full Name" required>
                 <Input
                   value={editingUser.name}
                   onChange={(e) => setEditingUser({ ...editingUser, name: e.target.value })}
@@ -906,7 +906,7 @@ export default function UsersManagementPage() {
                 />
               </FormField>
               <div className="grid grid-cols-2 gap-3">
-                <FormField label="Departemen" required>
+                <FormField label="Department" required>
                   <Select
                     value={editingUser.department || 'Network Operation'}
                     onValueChange={(val) => setEditingUser({ ...editingUser, department: val })}
@@ -919,7 +919,7 @@ export default function UsersManagementPage() {
                     </SelectContent>
                   </Select>
                 </FormField>
-                <FormField label="Peran" required>
+                <FormField label="Role" required>
                   <Select
                     value={editingUser.role}
                     onValueChange={(val) => setEditingUser({ ...editingUser, role: val as UserRole })}
@@ -940,12 +940,12 @@ export default function UsersManagementPage() {
                   onCheckedChange={(c) => setEditingUser({ ...editingUser, isActive: !!c })}
                 />
                 <label htmlFor="editIsActive" className="text-xs text-slate-800 cursor-pointer">
-                  Akun Aktif
+                  Active Account
                 </label>
               </div>
               <DialogFooter className="pt-3 border-t border-slate-100">
-                <Button variant="secondary" onClick={() => setEditingUser(null)}>Batal</Button>
-                <Button variant="primary" type="submit" loading={actionLoading}>Simpan Perubahan</Button>
+                <Button variant="secondary" onClick={() => setEditingUser(null)}>Cancel</Button>
+                <Button variant="primary" type="submit" loading={actionLoading}>Save Changes</Button>
               </DialogFooter>
             </form>
           )}
@@ -961,9 +961,9 @@ export default function UsersManagementPage() {
           {passwordModalUser && (
             <form onSubmit={handleResetPassword} className="space-y-4 py-2">
               <p className="text-xs text-slate-600">
-                Reset password untuk <strong>{passwordModalUser.name}</strong> (@{passwordModalUser.username}).
+                Reset password for <strong>{passwordModalUser.name}</strong> (@{passwordModalUser.username}).
               </p>
-              <FormField label="Password Baru" required>
+              <FormField label="New Password" required>
                 <Input
                   type="password"
                   required
@@ -973,9 +973,9 @@ export default function UsersManagementPage() {
                 />
               </FormField>
               <DialogFooter className="pt-3 border-t border-slate-100">
-                <Button variant="secondary" onClick={() => setPasswordModalUser(null)}>Batal</Button>
+                <Button variant="secondary" onClick={() => setPasswordModalUser(null)}>Cancel</Button>
                 <Button variant="primary" type="submit" loading={actionLoading} disabled={!newPassword}>
-                  Perbarui Password
+                  Update Password
                 </Button>
               </DialogFooter>
             </form>
@@ -987,10 +987,10 @@ export default function UsersManagementPage() {
       <Dialog open={isCreateStaffModalOpen} onOpenChange={setIsCreateStaffModalOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Tambah Staf PIC Baru</DialogTitle>
+            <DialogTitle>Add Staff Member</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleCreateStaff} className="space-y-4 py-2">
-            <FormField label="Nama Lengkap Staf" required>
+            <FormField label="Full Name" required>
               <Input
                 placeholder="e.g. Dimas Prasetya"
                 value={staffFormData.name}
@@ -998,7 +998,7 @@ export default function UsersManagementPage() {
                 required
               />
             </FormField>
-            <FormField label="Alamat Email Resmi" required>
+            <FormField label="Official Email" required>
               <Input
                 type="email"
                 placeholder="e.g. dimas@nexa.net.id"
@@ -1008,7 +1008,7 @@ export default function UsersManagementPage() {
               />
             </FormField>
             <div className="grid grid-cols-2 gap-3">
-              <FormField label="Departemen" required>
+              <FormField label="Department" required>
                 <Select
                   value={staffFormData.department}
                   onValueChange={(val) => setStaffFormData({ ...staffFormData, department: val as Department })}
@@ -1021,7 +1021,7 @@ export default function UsersManagementPage() {
                   </SelectContent>
                 </Select>
               </FormField>
-              <FormField label="Jabatan / Peran">
+              <FormField label="Job Title / Role">
                 <Input
                   placeholder="e.g. Account Manager"
                   value={staffFormData.roleTitle}
@@ -1029,7 +1029,7 @@ export default function UsersManagementPage() {
                 />
               </FormField>
             </div>
-            <FormField label="Nomor Telepon / WhatsApp (Opsional)">
+            <FormField label="Phone / WhatsApp (Optional)">
               <Input
                 placeholder="e.g. 081234567890"
                 value={staffFormData.phone}
@@ -1037,8 +1037,8 @@ export default function UsersManagementPage() {
               />
             </FormField>
             <DialogFooter className="pt-3 border-t border-slate-100">
-              <Button variant="secondary" onClick={() => setIsCreateStaffModalOpen(false)}>Batal</Button>
-              <Button variant="primary" type="submit" loading={actionLoading}>Simpan Staf PIC</Button>
+              <Button variant="secondary" onClick={() => setIsCreateStaffModalOpen(false)}>Cancel</Button>
+              <Button variant="primary" type="submit" loading={actionLoading}>Add Staff</Button>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -1048,18 +1048,18 @@ export default function UsersManagementPage() {
       <Dialog open={Boolean(editingStaff)} onOpenChange={(open) => !open && setEditingStaff(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Edit Data Staf PIC</DialogTitle>
+            <DialogTitle>Edit Staff Member</DialogTitle>
           </DialogHeader>
           {editingStaff && (
             <form onSubmit={handleUpdateStaff} className="space-y-4 py-2">
-              <FormField label="Nama Lengkap Staf" required>
+              <FormField label="Full Name" required>
                 <Input
                   value={editingStaff.name}
                   onChange={(e) => setEditingStaff({ ...editingStaff, name: e.target.value })}
                   required
                 />
               </FormField>
-              <FormField label="Alamat Email Resmi" required>
+              <FormField label="Official Email" required>
                 <Input
                   type="email"
                   value={editingStaff.email}
@@ -1068,7 +1068,7 @@ export default function UsersManagementPage() {
                 />
               </FormField>
               <div className="grid grid-cols-2 gap-3">
-                <FormField label="Departemen" required>
+                <FormField label="Department" required>
                   <Select
                     value={editingStaff.department}
                     onValueChange={(val) => setEditingStaff({ ...editingStaff, department: val })}
@@ -1081,14 +1081,14 @@ export default function UsersManagementPage() {
                     </SelectContent>
                   </Select>
                 </FormField>
-                <FormField label="Jabatan / Peran">
+                <FormField label="Job Title / Role">
                   <Input
                     value={editingStaff.roleTitle || ''}
                     onChange={(e) => setEditingStaff({ ...editingStaff, roleTitle: e.target.value })}
                   />
                 </FormField>
               </div>
-              <FormField label="Nomor Telepon / WA">
+              <FormField label="Phone / WhatsApp">
                 <Input
                   value={editingStaff.phone || ''}
                   onChange={(e) => setEditingStaff({ ...editingStaff, phone: e.target.value })}
@@ -1101,12 +1101,12 @@ export default function UsersManagementPage() {
                   onCheckedChange={(c) => setEditingStaff({ ...editingStaff, isActive: !!c })}
                 />
                 <label htmlFor="editStaffIsActive" className="text-xs text-slate-800 cursor-pointer">
-                  Staf Aktif
+                  Active Staff
                 </label>
               </div>
               <DialogFooter className="pt-3 border-t border-slate-100">
-                <Button variant="secondary" onClick={() => setEditingStaff(null)}>Batal</Button>
-                <Button variant="primary" type="submit" loading={actionLoading}>Simpan Perubahan</Button>
+                <Button variant="secondary" onClick={() => setEditingStaff(null)}>Cancel</Button>
+                <Button variant="primary" type="submit" loading={actionLoading}>Save Changes</Button>
               </DialogFooter>
             </form>
           )}
@@ -1117,9 +1117,9 @@ export default function UsersManagementPage() {
       <ConfirmDialog
         open={Boolean(deletingUser)}
         onOpenChange={(open) => !open && setDeletingUser(null)}
-        title="Hapus Akun Pengguna"
-        description={`Hapus permanen akun "${deletingUser?.name}" (@${deletingUser?.username})? Tindakan ini tidak dapat dibatalkan.`}
-        confirmLabel="Hapus Akun"
+        title="Delete User Account"
+        description={`Permanently delete account "${deletingUser?.name}" (@${deletingUser?.username})? This action cannot be undone.`}
+        confirmLabel="Delete User"
         variant="destructive"
         onConfirm={handleConfirmDeleteUser}
       />
@@ -1127,9 +1127,9 @@ export default function UsersManagementPage() {
       <ConfirmDialog
         open={Boolean(deletingStaff)}
         onOpenChange={(open) => !open && setDeletingStaff(null)}
-        title="Hapus Staf PIC"
-        description={`Hapus permanen data staf "${deletingStaff?.name}" (${deletingStaff?.department})? Tindakan ini tidak dapat dibatalkan.`}
-        confirmLabel="Hapus Staf"
+        title="Delete Staff Member"
+        description={`Permanently delete staff member "${deletingStaff?.name}" (${deletingStaff?.department})? This action cannot be undone.`}
+        confirmLabel="Delete Staff"
         variant="destructive"
         onConfirm={handleConfirmDeleteStaff}
       />

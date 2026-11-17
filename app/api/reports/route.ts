@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 import { generatePdfBuffer } from '@/lib/pdf-generator';
 import { ReportData } from '@/lib/pdf-template';
 import {
@@ -24,6 +25,8 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
+    const queue = searchParams.get('queue');
+    const includeLogs = searchParams.get('logs') === '1';
 
     const canViewAllStatus = hasPermission(auth.session, 'report:view_all_status');
 
@@ -43,11 +46,43 @@ export async function GET(req: NextRequest) {
         );
       }
 
-      return NextResponse.json({ report });
+      let auditLogs = undefined;
+      if (includeLogs) {
+        auditLogs = await prisma.reportAuditLog.findMany({
+          where: { reportId: id },
+          orderBy: { createdAt: 'desc' },
+        });
+      }
+
+      return NextResponse.json({ report, auditLogs });
     }
 
     // List reports with department scoping
-    const where: any = {};
+    const where: Prisma.ReportWhereInput = {};
+
+    // Dedicated Pending Queue Mode (Ensures zero truncation for Approval Desk)
+    if (queue === 'pending') {
+      const isNoc = auth.session.department === 'Network Operation' || auth.session.role === 'ADMIN';
+
+      if (auth.session.role === 'ADMIN') {
+        where.status = { in: ['PENDING_NOC_APPROVAL', 'PENDING_APPROVAL', 'PENDING_DEPT_APPROVAL'] };
+      } else if (isNoc) {
+        where.status = { in: ['PENDING_NOC_APPROVAL', 'PENDING_APPROVAL'] };
+      } else if (auth.session.role === 'SUPERVISOR') {
+        where.status = 'PENDING_DEPT_APPROVAL';
+        where.assignedDepartment = auth.session.department;
+      } else {
+        // Non-supervisor non-NOC cannot access pending queue
+        return NextResponse.json({ reports: [] });
+      }
+
+      const pendingReports = await prisma.report.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        take: 500, // Large capacity to prevent queue truncation
+      });
+      return NextResponse.json({ reports: pendingReports });
+    }
 
     if (!canViewAllStatus) {
       // Non-NOC (AE, CX, Finance) can see APPROVED reports requested by their own department,
@@ -123,9 +158,15 @@ export async function POST(req: NextRequest) {
     const downtimeDurationStr = body.downtimeDurationStr || computedSla.downtimeDurationStr;
 
     // Determine approval status
-    const isDirectApprove = Boolean(body.directApprove) && (auth.session.role === 'ADMIN' || auth.session.role === 'SUPERVISOR');
-    const initialStatus = isDirectApprove ? 'APPROVED' : 'PENDING_APPROVAL';
     const assignedDepartment = String(body.assignedDepartment || 'Internal NOC').trim();
+    const isInternalTarget = assignedDepartment === 'Internal NOC' || assignedDepartment === 'Network Operation';
+
+    // Direct Approve is strictly allowed ONLY for Admin or for Internal NOC reports by an NOC Supervisor
+    const isDirectApprove = Boolean(body.directApprove) && (
+      auth.session.role === 'ADMIN' || 
+      (auth.session.role === 'SUPERVISOR' && isInternalTarget)
+    );
+    const initialStatus = isDirectApprove ? 'APPROVED' : 'PENDING_NOC_APPROVAL';
 
     // Ensure document number is strictly unique and collision-free
     let finalDocNumber = String(body.documentNumber || '').trim();
@@ -141,54 +182,91 @@ export async function POST(req: NextRequest) {
     }
     body.documentNumber = finalDocNumber;
 
-    // 1. Create database record
-    const created = await prisma.report.create({
-      data: {
-        reportType: body.reportType,
-        graphType: (body.graphType || 'MRTG') as string,
-        documentNumber: finalDocNumber,
-        customerName: body.customerName,
-        customerId: body.customerId,
-        serviceId: body.serviceId,
-        serviceName: body.serviceName || 'Prime 300 Mbps',
-        nodeCount: parseInt(body.nodeCount, 10) || 1,
-        targetSla: parseFloat(body.targetSla) || 99.5,
-        reportPeriod: body.reportPeriod,
-        periodMonth,
-        periodYear,
-        graphId: body.graphId || null,
-        cactiGraphId: body.cactiGraphId || null,
-        prtgSensorId: body.prtgSensorId || null,
-        graphImage: body.graphImage || null,
-        dlAvg: body.dlAvg !== undefined && body.dlAvg !== null ? parseFloat(body.dlAvg) : null,
-        dlMax: body.dlMax !== undefined && body.dlMax !== null ? parseFloat(body.dlMax) : null,
-        ulAvg: body.ulAvg !== undefined && body.ulAvg !== null ? parseFloat(body.ulAvg) : null,
-        ulMax: body.ulMax !== undefined && body.ulMax !== null ? parseFloat(body.ulMax) : null,
-        dlUnit: body.dlUnit || 'Mbps',
-        ulUnit: body.ulUnit || 'Mbps',
-        trafficDirection: body.trafficDirection || 'NORMAL',
-        onlinePercent,
-        downtimePercent,
-        availabilityPercent,
-        totalDowntimeMinutes,
-        downtimeDurationStr,
-        tickets: body.tickets ? (typeof body.tickets === 'string' ? body.tickets : JSON.stringify(body.tickets)) : null,
-        cases: body.cases ? (typeof body.cases === 'string' ? body.cases : JSON.stringify(body.cases)) : null,
-        status: initialStatus,
-        assignedDepartment,
-        generatedById: auth.session.id,
-        generatedByName: auth.session.name,
-        nocApprovedById: isDirectApprove ? auth.session.id : null,
-        nocApprovedByName: isDirectApprove ? auth.session.name : null,
-        nocApprovedAt: isDirectApprove ? new Date() : null,
-        deptApprovedById: isDirectApprove ? auth.session.id : null,
-        deptApprovedByName: isDirectApprove ? auth.session.name : null,
-        deptApprovedAt: isDirectApprove ? new Date() : null,
-        approvedById: isDirectApprove ? auth.session.id : null,
-        approvedByName: isDirectApprove ? auth.session.name : null,
-        approvedAt: isDirectApprove ? new Date() : null,
-      },
-    });
+    // 1. Create database record with collision-retry loop (handles concurrent race conditions)
+    let created;
+    let attempts = 0;
+    while (!created && attempts < 3) {
+      try {
+        const rep = await prisma.report.create({
+          data: {
+            reportType: body.reportType,
+            graphType: (body.graphType || 'MRTG') as string,
+            documentNumber: finalDocNumber,
+            customerName: body.customerName,
+            customerId: body.customerId,
+            serviceId: body.serviceId,
+            serviceName: body.serviceName || 'Prime 300 Mbps',
+            nodeCount: parseInt(body.nodeCount, 10) || 1,
+            targetSla: parseFloat(body.targetSla) || 99.5,
+            reportPeriod: body.reportPeriod,
+            periodMonth,
+            periodYear,
+            graphId: body.graphId || null,
+            cactiGraphId: body.cactiGraphId || null,
+            prtgSensorId: body.prtgSensorId || null,
+            graphImage: body.graphImage || null,
+            dlAvg: body.dlAvg !== undefined && body.dlAvg !== null ? parseFloat(body.dlAvg) : null,
+            dlMax: body.dlMax !== undefined && body.dlMax !== null ? parseFloat(body.dlMax) : null,
+            ulAvg: body.ulAvg !== undefined && body.ulAvg !== null ? parseFloat(body.ulAvg) : null,
+            ulMax: body.ulMax !== undefined && body.ulMax !== null ? parseFloat(body.ulMax) : null,
+            dlUnit: body.dlUnit || 'Mbps',
+            ulUnit: body.ulUnit || 'Mbps',
+            trafficDirection: body.trafficDirection || 'NORMAL',
+            onlinePercent,
+            downtimePercent,
+            availabilityPercent,
+            totalDowntimeMinutes,
+            downtimeDurationStr,
+            tickets: body.tickets ? (typeof body.tickets === 'string' ? body.tickets : JSON.stringify(body.tickets)) : null,
+            cases: body.cases ? (typeof body.cases === 'string' ? body.cases : JSON.stringify(body.cases)) : null,
+            status: initialStatus,
+            assignedDepartment,
+            generatedById: auth.session.id,
+            generatedByName: auth.session.name,
+            nocApprovedById: isDirectApprove ? auth.session.id : null,
+            nocApprovedByName: isDirectApprove ? auth.session.name : null,
+            nocApprovedAt: isDirectApprove ? new Date() : null,
+            deptApprovedById: isDirectApprove ? auth.session.id : null,
+            deptApprovedByName: isDirectApprove ? auth.session.name : null,
+            deptApprovedAt: isDirectApprove ? new Date() : null,
+            approvedById: isDirectApprove ? auth.session.id : null,
+            approvedByName: isDirectApprove ? auth.session.name : null,
+            approvedAt: isDirectApprove ? new Date() : null,
+          },
+        });
+
+        // Log creation into ReportAuditLog
+        await prisma.reportAuditLog.create({
+          data: {
+            reportId: rep.id,
+            action: isDirectApprove ? 'FINAL_APPROVED' : 'CREATED',
+            actorId: auth.session.id,
+            actorName: auth.session.name,
+            actorDept: auth.session.department || 'Network Operation',
+            actorRole: auth.session.role,
+            notes: isDirectApprove
+              ? 'Laporan dibuat dan disetujui langsung (Internal NOC).'
+              : `Laporan dibuat dan diajukan ke antrean verifikasi NOC (${assignedDepartment}).`,
+          },
+        }).catch((e) => console.error('[ReportAuditLog Create Error]', e));
+
+        created = rep;
+      } catch (err: any) {
+        if (err.code === 'P2002') {
+          // Document number collision detected under race condition -> re-allocate unique sequence
+          attempts++;
+          const allocated = await getNextUniqueDocumentNumber(body.reportType);
+          finalDocNumber = allocated.documentNumber;
+          body.documentNumber = finalDocNumber;
+        } else {
+          throw err;
+        }
+      }
+    }
+
+    if (!created) {
+      throw new Error('Gagal mengalokasikan nomor dokumen unik setelah beberapa percobaan.');
+    }
 
     // Notify Telegram topic about new report
     const nowStr = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
@@ -196,7 +274,7 @@ export async function POST(req: NextRequest) {
       ? '1-Tier (Verifikasi Supervisor NOC)'
       : `2-Tier (NOC → Supervisor ${assignedDepartment})`;
 
-    if (initialStatus === 'PENDING_APPROVAL') {
+    if (initialStatus === 'PENDING_NOC_APPROVAL') {
       sendTelegramNotification({
         text:
           `📋 <b>[LAPORAN MASUK ANTRIAN APPROVAL]</b>\n\n` +
@@ -341,57 +419,75 @@ export async function PUT(req: NextRequest) {
       : computedSla.totalDowntimeMinutes;
     const downtimeDurationStr = body.downtimeDurationStr || computedSla.downtimeDurationStr;
 
-    // Determine status: if supervisor/admin directly approving during revision, otherwise PENDING_NOC_APPROVAL
-    const isDirectApprove = Boolean(body.directApprove) && (auth.session.role === 'ADMIN' || auth.session.role === 'SUPERVISOR');
+    // Determine status: Direct approve is ONLY allowed for Admin or Internal NOC by NOC Supervisor
+    const targetDept = body.assignedDepartment || existing.assignedDepartment;
+    const isInternalTarget = targetDept === 'Internal NOC' || targetDept === 'Network Operation';
+    const isDirectApprove = Boolean(body.directApprove) && (
+      auth.session.role === 'ADMIN' || 
+      (auth.session.role === 'SUPERVISOR' && isInternalTarget)
+    );
     const newStatus = isDirectApprove ? 'APPROVED' : 'PENDING_NOC_APPROVAL';
 
-    // 1. Update database record
-    const updated = await prisma.report.update({
-      where: { id },
-      data: {
-        reportType: body.reportType || existing.reportType,
-        graphType: (body.graphType || existing.graphType) as string,
-        customerName: body.customerName || existing.customerName,
-        customerId: body.customerId || existing.customerId,
-        serviceId: body.serviceId || existing.serviceId,
-        serviceName: body.serviceName || existing.serviceName,
-        nodeCount: parseInt(body.nodeCount, 10) || existing.nodeCount,
-        targetSla: parseFloat(body.targetSla) || existing.targetSla,
-        reportPeriod: body.reportPeriod || existing.reportPeriod,
-        periodMonth,
-        periodYear,
-        graphId: body.graphId !== undefined ? body.graphId : existing.graphId,
-        cactiGraphId: body.cactiGraphId !== undefined ? body.cactiGraphId : existing.cactiGraphId,
-        prtgSensorId: body.prtgSensorId !== undefined ? body.prtgSensorId : existing.prtgSensorId,
-        graphImage: body.graphImage !== undefined ? body.graphImage : existing.graphImage,
-        dlAvg: body.dlAvg !== undefined && body.dlAvg !== null ? parseFloat(body.dlAvg) : null,
-        dlMax: body.dlMax !== undefined && body.dlMax !== null ? parseFloat(body.dlMax) : null,
-        ulAvg: body.ulAvg !== undefined && body.ulAvg !== null ? parseFloat(body.ulAvg) : null,
-        ulMax: body.ulMax !== undefined && body.ulMax !== null ? parseFloat(body.ulMax) : null,
-        dlUnit: body.dlUnit || existing.dlUnit,
-        ulUnit: body.ulUnit || existing.ulUnit,
-        trafficDirection: body.trafficDirection || existing.trafficDirection,
-        onlinePercent,
-        downtimePercent,
-        availabilityPercent,
-        totalDowntimeMinutes,
-        downtimeDurationStr,
-        tickets: body.tickets ? (typeof body.tickets === 'string' ? body.tickets : JSON.stringify(body.tickets)) : null,
-        cases: body.cases ? (typeof body.cases === 'string' ? body.cases : JSON.stringify(body.cases)) : null,
-        status: newStatus,
-        assignedDepartment: body.assignedDepartment || existing.assignedDepartment,
-        rejectionNotes: null, // Cleared after revision
-        nocApprovedById: isDirectApprove ? auth.session.id : null,
-        nocApprovedByName: isDirectApprove ? auth.session.name : null,
-        nocApprovedAt: isDirectApprove ? new Date() : null,
-        deptApprovedById: isDirectApprove ? auth.session.id : null,
-        deptApprovedByName: isDirectApprove ? auth.session.name : null,
-        deptApprovedAt: isDirectApprove ? new Date() : null,
-        approvedById: isDirectApprove ? auth.session.id : null,
-        approvedByName: isDirectApprove ? auth.session.name : null,
-        approvedAt: isDirectApprove ? new Date() : null,
-      },
-    });
+    // 1. Update database record with Audit Trail logging in transaction
+    const [updated] = await prisma.$transaction([
+      prisma.report.update({
+        where: { id },
+        data: {
+          reportType: body.reportType || existing.reportType,
+          graphType: (body.graphType || existing.graphType) as string,
+          customerName: body.customerName || existing.customerName,
+          customerId: body.customerId || existing.customerId,
+          serviceId: body.serviceId || existing.serviceId,
+          serviceName: body.serviceName || existing.serviceName,
+          nodeCount: parseInt(body.nodeCount, 10) || existing.nodeCount,
+          targetSla: parseFloat(body.targetSla) || existing.targetSla,
+          reportPeriod: body.reportPeriod || existing.reportPeriod,
+          periodMonth,
+          periodYear,
+          graphId: body.graphId !== undefined ? body.graphId : existing.graphId,
+          cactiGraphId: body.cactiGraphId !== undefined ? body.cactiGraphId : existing.cactiGraphId,
+          prtgSensorId: body.prtgSensorId !== undefined ? body.prtgSensorId : existing.prtgSensorId,
+          graphImage: body.graphImage !== undefined ? body.graphImage : existing.graphImage,
+          dlAvg: body.dlAvg !== undefined && body.dlAvg !== null ? parseFloat(body.dlAvg) : null,
+          dlMax: body.dlMax !== undefined && body.dlMax !== null ? parseFloat(body.dlMax) : null,
+          ulAvg: body.ulAvg !== undefined && body.ulAvg !== null ? parseFloat(body.ulAvg) : null,
+          ulMax: body.ulMax !== undefined && body.ulMax !== null ? parseFloat(body.ulMax) : null,
+          dlUnit: body.dlUnit || existing.dlUnit,
+          ulUnit: body.ulUnit || existing.ulUnit,
+          trafficDirection: body.trafficDirection || existing.trafficDirection,
+          onlinePercent,
+          downtimePercent,
+          availabilityPercent,
+          totalDowntimeMinutes,
+          downtimeDurationStr,
+          tickets: body.tickets ? (typeof body.tickets === 'string' ? body.tickets : JSON.stringify(body.tickets)) : null,
+          cases: body.cases ? (typeof body.cases === 'string' ? body.cases : JSON.stringify(body.cases)) : null,
+          status: newStatus,
+          assignedDepartment: targetDept,
+          rejectionNotes: null, // Cleared after revision
+          nocApprovedById: isDirectApprove ? auth.session.id : null,
+          nocApprovedByName: isDirectApprove ? auth.session.name : null,
+          nocApprovedAt: isDirectApprove ? new Date() : null,
+          deptApprovedById: isDirectApprove ? auth.session.id : null,
+          deptApprovedByName: isDirectApprove ? auth.session.name : null,
+          deptApprovedAt: isDirectApprove ? new Date() : null,
+          approvedById: isDirectApprove ? auth.session.id : null,
+          approvedByName: isDirectApprove ? auth.session.name : null,
+          approvedAt: isDirectApprove ? new Date() : null,
+        },
+      }),
+      prisma.reportAuditLog.create({
+        data: {
+          reportId: id,
+          action: 'REVISED',
+          actorId: auth.session.id,
+          actorName: auth.session.name,
+          actorDept: auth.session.department || 'Network Operation',
+          actorRole: auth.session.role,
+          notes: body.revisionRemarks || 'Laporan disesuaikan di Generator dan diajukan ulang ke antrean verifikasi NOC.',
+        },
+      }),
+    ]);
 
     // 2. Regenerate physical PDF
     try {
@@ -451,7 +547,7 @@ export async function PUT(req: NextRequest) {
 
       return NextResponse.json({
         success: true,
-        message: `Laporan "${updated.documentNumber}" berhasil direvisi dan dikirim ulang.`,
+        message: `Report "${updated.documentNumber}" revised and resubmitted successfully.`,
         report: { ...updated, pdfPath: filename },
         downloadUrl: `/api/reports/download?id=${updated.id}`,
       });

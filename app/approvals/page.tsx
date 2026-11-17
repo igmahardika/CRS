@@ -36,11 +36,13 @@ import {
   Badge,
   PageHeader,
   Spinner,
+  SegmentedControl,
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  InfoTooltip,
 } from '@/components/ui';
 
 interface PendingReport {
@@ -89,6 +91,7 @@ export default function ApprovalDeskPage() {
 
   // Action states
   const [isApproving, setIsApproving] = useState(false);
+  const [approveConfirmModalOpen, setApproveConfirmModalOpen] = useState(false);
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
   const [rejectionNotes, setRejectionNotes] = useState('');
   const [isSubmittingReject, setIsSubmittingReject] = useState(false);
@@ -105,35 +108,14 @@ export default function ApprovalDeskPage() {
   const currentUserRef = React.useRef(currentUser);
   currentUserRef.current = currentUser;
 
-  // Fetch pending reports based on user's approval tier
-  const fetchPendingReports = useCallback(async (userSession?: { role: string; department: string }) => {
+  // Fetch pending reports directly from dedicated server queue endpoint
+  const fetchPendingReports = useCallback(async (_userSession?: { role: string; department: string }) => {
     setLoading(true);
     try {
-      const res = await fetch('/api/reports');
+      const res = await fetch('/api/reports?queue=pending');
       const data = await res.json();
       if (data?.reports) {
-        const u = userSession || currentUserRef.current;
-        const isNoc = !u || u.department === 'Network Operation' || u.role === 'ADMIN';
-
-        const pending = data.reports.filter((r: PendingReport) => {
-          if (u?.role === 'ADMIN') {
-            return (
-              r.status === 'PENDING_NOC_APPROVAL' ||
-              r.status === 'PENDING_APPROVAL' ||
-              r.status === 'PENDING_DEPT_APPROVAL'
-            );
-          }
-          // Tier 1: NOC Supervisor reviews PENDING_NOC_APPROVAL (and legacy PENDING_APPROVAL)
-          if (isNoc) {
-            return r.status === 'PENDING_NOC_APPROVAL' || r.status === 'PENDING_APPROVAL';
-          }
-          // Tier 2: Department Supervisor (CX / AE / Finance) reviews PENDING_DEPT_APPROVAL for their department
-          return (
-            r.status === 'PENDING_DEPT_APPROVAL' &&
-            r.assignedDepartment === u?.department
-          );
-        });
-        setReports(pending);
+        setReports(data.reports);
       }
     } catch (err) {
       console.error(err);
@@ -223,6 +205,7 @@ export default function ApprovalDeskPage() {
 
       // Remove approved report from local state immediately
       setReports((prev) => prev.filter((r) => r.id !== targetReport.id));
+      setApproveConfirmModalOpen(false);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       toast.error(`Approval Error: ${msg}`);
@@ -276,21 +259,32 @@ export default function ApprovalDeskPage() {
     if (selectedIndex < filteredReports.length - 1) setSelectedIndex((prev) => prev + 1);
   }, [selectedIndex, filteredReports.length]);
 
+  const isSelfGenerated = Boolean(
+    activeReport?.generatedById &&
+    activeReport.generatedById === currentUser?.id &&
+    currentUser?.role !== 'ADMIN'
+  );
+
   // Global Keyboard Shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Ignore if typing inside text inputs
+      // Ignore if typing inside text inputs or modal open
       if (
         document.activeElement?.tagName === 'INPUT' ||
         document.activeElement?.tagName === 'TEXTAREA' ||
-        rejectModalOpen
+        rejectModalOpen ||
+        approveConfirmModalOpen
       ) {
         return;
       }
 
       if (e.key === 'a' || e.key === 'A') {
         e.preventDefault();
-        handleApproveAndNext();
+        if (isSelfGenerated) {
+          toast.error('Four-Eyes Principle: You cannot approve a report you created yourself.');
+          return;
+        }
+        setApproveConfirmModalOpen(true);
       } else if (e.key === 'r' || e.key === 'R') {
         e.preventDefault();
         setRejectModalOpen(true);
@@ -305,10 +299,10 @@ export default function ApprovalDeskPage() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activeReport, isApproving, rejectModalOpen, selectedIndex, filteredReports.length, handlePrev, handleNext]);
+  }, [activeReport, isApproving, rejectModalOpen, approveConfirmModalOpen, isSelfGenerated, selectedIndex, filteredReports.length, handlePrev, handleNext]);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* Page Header */}
       <PageHeader
         title="Approval Desk"
@@ -361,7 +355,7 @@ export default function ApprovalDeskPage() {
               Review Queue Clear
             </h2>
             <p className="text-xs text-slate-500 leading-relaxed">
-              No reports currently awaiting review. All compliance documents in the queue have been verified and published.
+              All compliance documents in the queue have been verified and authorized.
             </p>
           </div>
 
@@ -382,9 +376,9 @@ export default function ApprovalDeskPage() {
         </div>
       ) : (
         /* ================= SPLIT-PANE REVIEW WORKSTATION ================= */
-        <div className="flex flex-col lg:flex-row bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden h-[calc(100vh-12rem)] min-h-[650px]">
+        <div className="flex flex-col lg:flex-row bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden h-[calc(100vh-8.5rem)]">
           {/* ================= LEFT SIDEBAR: PENDING QUEUE ================= */}
-          <div className="w-full lg:w-80 xl:w-96 border-b lg:border-b-0 lg:border-r border-slate-200 flex flex-col bg-white shrink-0">
+          <div className="w-full lg:w-[400px] xl:w-[440px] border-b lg:border-b-0 lg:border-r border-slate-200 flex flex-col bg-white shrink-0">
             {/* Queue Header & Filters */}
             <div className="p-3.5 border-b border-slate-100 space-y-2.5 bg-slate-50/50">
               <div className="flex items-center justify-between">
@@ -405,7 +399,7 @@ export default function ApprovalDeskPage() {
                 <Input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Cari pelanggan, no. dokumen, atau SID..."
+                  placeholder="Search customer, document number, or SID..."
                   className="pl-8 h-8 text-xs bg-white"
                 />
                 {search && (
@@ -419,38 +413,19 @@ export default function ApprovalDeskPage() {
                 )}
               </div>
 
-              {/* Type Filter Pills */}
-              <div className="flex items-center gap-1 pt-0.5">
-                <button
-                  type="button"
-                  onClick={() => setTypeFilter('ALL')}
-                  className={`px-2.5 py-1 rounded text-xs font-medium transition cursor-pointer ${typeFilter === 'ALL'
-                      ? 'bg-slate-900 text-white'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                    }`}
-                >
-                  All ({reports.length})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setTypeFilter('SLA')}
-                  className={`px-2.5 py-1 rounded text-xs font-medium transition cursor-pointer ${typeFilter === 'SLA'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                    }`}
-                >
-                  SLA ({reports.filter((r) => r.reportType === 'SLA').length})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setTypeFilter('MRTG')}
-                  className={`px-2.5 py-1 rounded text-xs font-medium transition cursor-pointer ${typeFilter === 'MRTG'
-                      ? 'bg-purple-600 text-white'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                    }`}
-                >
-                  MRTG ({reports.filter((r) => r.reportType === 'MRTG').length})
-                </button>
+              {/* Type Filter Segmented Control */}
+              <div className="w-full">
+                <SegmentedControl
+                  size="sm"
+                  value={typeFilter}
+                  onChange={(val) => setTypeFilter(val as 'ALL' | 'SLA' | 'MRTG')}
+                  className="w-full justify-between"
+                  options={[
+                    { value: 'ALL', label: `All (${reports.length})` },
+                    { value: 'SLA', label: `SLA (${reports.filter((r) => r.reportType === 'SLA').length})` },
+                    { value: 'MRTG', label: `MRTG (${reports.filter((r) => r.reportType === 'MRTG').length})` },
+                  ]}
+                />
               </div>
             </div>
 
@@ -474,17 +449,17 @@ export default function ApprovalDeskPage() {
                         <div className="font-semibold text-xs text-slate-900 truncate">
                           {r.customerName}
                         </div>
-                        <div className="text-xs text-slate-500 font-mono truncate mt-0.5">
+                        <div className="text-xs text-slate-500 font-sans truncate mt-0.5">
                           {r.documentNumber}
                         </div>
                         <div className="mt-1 flex items-center gap-1.5 flex-wrap">
                           {r.status === 'PENDING_DEPT_APPROVAL' ? (
                             <span className="text-[10px] font-semibold text-purple-700 bg-purple-50 border border-purple-200 px-1.5 py-0.5 rounded leading-none">
-                              Tahap 2: Otorisasi {r.assignedDepartment}
+                              Stage 2: {r.assignedDepartment} Authorization
                             </span>
                           ) : (
                             <span className="text-[10px] font-semibold text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded leading-none">
-                              Tahap 1: Verifikasi NOC
+                              Stage 1: NOC Verification
                             </span>
                           )}
                         </div>
@@ -495,10 +470,10 @@ export default function ApprovalDeskPage() {
                     </div>
 
                     <div className="flex items-center justify-between text-xs text-slate-500 mt-2">
-                      <span className="font-mono tabular-nums">{r.reportPeriod}</span>
+                      <span className="font-sans tabular-nums">{r.reportPeriod}</span>
                       {isSla && r.onlinePercent !== undefined ? (
                         <span
-                          className={`font-mono font-semibold tabular-nums ${r.onlinePercent >= (r.targetSla || 99.5)
+                          className={`font-sans font-semibold tabular-nums ${r.onlinePercent >= (r.targetSla || 99.5)
                               ? 'text-emerald-700'
                               : 'text-rose-600'
                             }`}
@@ -527,23 +502,23 @@ export default function ApprovalDeskPage() {
             {/* Bottom Keyboard Hint Bar */}
             <div className="p-2.5 bg-slate-50 border-t border-slate-200 text-xs text-slate-500 flex items-center justify-between shrink-0">
               <span className="flex items-center gap-1">
-                <kbd className="px-1.5 py-0.5 bg-white border border-slate-200 rounded font-mono font-semibold text-slate-700 shadow-2xs">
+                <kbd className="px-1.5 py-0.5 bg-white border border-slate-200 rounded font-sans font-semibold text-slate-700 shadow-2xs">
                   ↑
                 </kbd>
-                <kbd className="px-1.5 py-0.5 bg-white border border-slate-200 rounded font-mono font-semibold text-slate-700 shadow-2xs">
+                <kbd className="px-1.5 py-0.5 bg-white border border-slate-200 rounded font-sans font-semibold text-slate-700 shadow-2xs">
                   ↓
                 </kbd>
                 <span>Navigate</span>
               </span>
               <span className="flex items-center gap-1.5">
                 <span className="flex items-center gap-1">
-                  <kbd className="px-1.5 py-0.5 bg-white border border-slate-200 rounded font-mono font-semibold text-emerald-700 shadow-2xs">
+                  <kbd className="px-1.5 py-0.5 bg-white border border-slate-200 rounded font-sans font-semibold text-emerald-700 shadow-2xs">
                     A
                   </kbd>
                   <span>Approve</span>
                 </span>
                 <span className="flex items-center gap-1">
-                  <kbd className="px-1.5 py-0.5 bg-white border border-slate-200 rounded font-mono font-semibold text-rose-700 shadow-2xs">
+                  <kbd className="px-1.5 py-0.5 bg-white border border-slate-200 rounded font-sans font-semibold text-rose-700 shadow-2xs">
                     R
                   </kbd>
                   <span>Revise</span>
@@ -569,7 +544,7 @@ export default function ApprovalDeskPage() {
                     ) : activeReport.assignedDepartment === 'Internal NOC' ? (
                       <Badge variant="outline" className="border-emerald-300 bg-emerald-50 text-emerald-800 text-xs inline-flex items-center gap-1">
                         <CheckCircle2 className="w-3 h-3 text-emerald-700 shrink-0" />
-                        <span>Stage 1: Internal NOC (1-Tier Selesai)</span>
+                        <span>Stage 1: Internal NOC (Single-Tier Completed)</span>
                       </Badge>
                     ) : (
                       <Badge variant="outline" className="border-amber-300 bg-amber-50 text-amber-800 text-xs">
@@ -578,7 +553,7 @@ export default function ApprovalDeskPage() {
                     )}
                   </div>
                   <div className="text-xs text-slate-500 flex items-center gap-2 flex-wrap">
-                    <span className="font-mono font-medium text-slate-800 flex items-center gap-1">
+                    <span className="font-sans font-medium text-slate-800 flex items-center gap-1">
                       {activeReport.documentNumber}
                       <button
                         type="button"
@@ -594,7 +569,7 @@ export default function ApprovalDeskPage() {
                       </button>
                     </span>
                     <span>•</span>
-                    <span>SID: <strong className="text-slate-700 font-mono">{activeReport.serviceId || activeReport.customerId}</strong></span>
+                    <span>SID: <strong className="text-slate-700 font-sans">{activeReport.serviceId || activeReport.customerId}</strong></span>
                     <span>•</span>
                     <span>Period: <strong className="text-slate-700">{activeReport.reportPeriod}</strong></span>
                   </div>
@@ -667,6 +642,13 @@ export default function ApprovalDeskPage() {
 
                 {/* Primary Decision Actions */}
                 <div className="flex items-center gap-2">
+                  {isSelfGenerated && (
+                    <div className="flex items-center gap-1.5 text-xs text-amber-700 bg-amber-50 px-2.5 py-1 rounded-md border border-amber-200" title="Four-Eyes Principle: You generated this report, another supervisor must verify it.">
+                      <AlertTriangle className="w-3.5 h-3.5" />
+                      <span>Self-approval blocked</span>
+                    </div>
+                  )}
+
                   <Button
                     type="button"
                     variant="secondary"
@@ -679,7 +661,7 @@ export default function ApprovalDeskPage() {
                   >
                     <MessageSquare className="w-4 h-4 mr-1.5" />
                     <span>Request Revision</span>
-                    <kbd className="ml-1.5 px-1 py-0.2 bg-amber-100/80 border border-amber-300/60 rounded text-xs font-mono font-bold text-amber-800">
+                    <kbd className="ml-1.5 px-1 py-0.2 bg-amber-100/80 border border-amber-300/60 rounded text-xs font-sans font-bold text-amber-800">
                       R
                     </kbd>
                   </Button>
@@ -687,10 +669,16 @@ export default function ApprovalDeskPage() {
                   <Button
                     type="button"
                     variant="primary"
-                    onClick={handleApproveAndNext}
-                    disabled={isApproving}
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs h-9 px-4 shadow-xs"
-                    title="Press 'A' on keyboard"
+                    onClick={() => {
+                      if (isSelfGenerated) {
+                        toast.error('Four-Eyes Principle: You cannot approve a report you created yourself.');
+                        return;
+                      }
+                      setApproveConfirmModalOpen(true);
+                    }}
+                    disabled={isApproving || isSelfGenerated}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs h-9 px-4 shadow-xs disabled:opacity-50"
+                    title={isSelfGenerated ? 'Self-approval disabled' : "Press 'A' on keyboard to authorize"}
                   >
                     {isApproving ? (
                       <Spinner size="sm" className="mr-1.5 text-white" />
@@ -698,13 +686,11 @@ export default function ApprovalDeskPage() {
                       <Check className="w-4 h-4 mr-1.5 stroke-[2.5]" />
                     )}
                     <span>
-                      {currentUser?.department === 'Network Operation' || currentUser?.role === 'ADMIN'
-                        ? (activeReport.status === 'PENDING_DEPT_APPROVAL' || activeReport.assignedDepartment === 'Internal NOC'
-                          ? 'Final Authorize'
-                          : 'Authorize Technical')
-                        : 'Final Authorize'} &amp; Next
+                      {activeReport.status === 'PENDING_DEPT_APPROVAL' || activeReport.assignedDepartment === 'Internal NOC' || activeReport.assignedDepartment === 'Network Operation'
+                        ? 'Final Authorize'
+                        : 'Authorize Technical'} &amp; Next
                     </span>
-                    <kbd className="ml-2 px-1.5 py-0.5 bg-emerald-700 border border-emerald-500 rounded text-xs font-mono font-bold text-white">
+                    <kbd className="ml-2 px-1.5 py-0.5 bg-emerald-700 border border-emerald-500 rounded text-xs font-sans font-bold text-white">
                       A
                     </kbd>
                   </Button>
@@ -729,8 +715,12 @@ export default function ApprovalDeskPage() {
             </p>
           </DialogHeader>
 
-          <div className="space-y-3.5 py-2">
-            <FormField label="Evaluation Notes / Required Adjustments" required>
+          <div className="space-y-3 py-2">
+            <div>
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <label className="text-xs font-medium text-slate-700">Evaluation Notes / Required Adjustments</label>
+                <InfoTooltip content="Notes are logged on the report audit trail and dispatched to the team's Telegram topic for staff correction." />
+              </div>
               <Textarea
                 rows={4}
                 value={rejectionNotes}
@@ -738,10 +728,7 @@ export default function ApprovalDeskPage() {
                 placeholder="Detail what needs to be changed (e.g. Reverse traffic direction, verify downtime duration, adjust target SLA)..."
                 required
               />
-            </FormField>
-            <p className="text-xs text-slate-500 leading-normal">
-              These evaluation notes will be logged on the report archive and automatically dispatched to the NOC Telegram topic for staff correction.
-            </p>
+            </div>
           </div>
 
           <DialogFooter className="pt-3 border-t border-slate-100">
@@ -761,6 +748,66 @@ export default function ApprovalDeskPage() {
             >
               <Send className="w-3.5 h-3.5 mr-1.5" />
               <span>Submit Revision Notes</span>
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal: Confirm Approval Safety Dialog */}
+      <Dialog open={approveConfirmModalOpen} onOpenChange={setApproveConfirmModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Confirm Document Authorization</DialogTitle>
+            <p className="text-xs text-slate-500">
+              {activeReport?.documentNumber} - {activeReport?.customerName}
+            </p>
+          </DialogHeader>
+
+          <div className="space-y-3 py-2 text-xs text-slate-600">
+            <div className="p-3 bg-slate-50 rounded-lg border border-slate-200/80 space-y-2">
+              <div className="flex justify-between">
+                <span className="text-slate-500">Report Type:</span>
+                <span className="font-semibold text-slate-800">{activeReport?.reportType} ({activeReport?.serviceName})</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Target Department:</span>
+                <span className="font-semibold text-slate-800">{activeReport?.assignedDepartment}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Approval Tier:</span>
+                <span className="font-semibold text-emerald-700">
+                  {activeReport?.status === 'PENDING_DEPT_APPROVAL' || activeReport?.assignedDepartment === 'Internal NOC'
+                    ? 'Tier 2 (Final Authorization & Publication)'
+                    : 'Tier 1 (Technical NOC Verification)'}
+                </span>
+              </div>
+            </div>
+            <p className="leading-relaxed">
+              {activeReport?.status === 'PENDING_DEPT_APPROVAL' || activeReport?.assignedDepartment === 'Internal NOC'
+                ? 'This document will be marked as officially APPROVED. Official download access will be unlocked and notifications dispatched.'
+                : `This document will be verified technically and forwarded to the Supervisor of ${activeReport?.assignedDepartment} for final sign-off.`}
+            </p>
+          </div>
+
+          <DialogFooter className="pt-3 border-t border-slate-100">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setApproveConfirmModalOpen(false)}
+              disabled={isApproving}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="primary"
+              onClick={handleApproveAndNext}
+              disabled={isApproving}
+              loading={isApproving}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
+            >
+              <Check className="w-3.5 h-3.5 mr-1.5 stroke-[2.5]" />
+              <span>Confirm &amp; Authorize</span>
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -158,7 +158,7 @@ export default function CustomerModal({
               <Input
                 value={search}
                 onChange={(e) => handleSearchChange(e.target.value)}
-                placeholder="Cari nama pelanggan, CID, atau service ID..."
+                placeholder="Search by customer name, CID, or service ID..."
                 className="pl-9 h-9"
               />
             </div>
@@ -180,14 +180,9 @@ export default function CustomerModal({
             <div className="flex items-center justify-between text-xs text-slate-500 pt-2 px-1">
               <span>
                 {search.trim()
-                  ? `Ditemukan ${filtered.length} pelanggan (menampilkan ${visibleCustomers.length} teratas)`
-                  : `Menampilkan ${visibleCustomers.length} dari ${customers.length} pelanggan`}
+                  ? `Found ${filtered.length} customers (showing top ${visibleCustomers.length})`
+                  : `Showing ${visibleCustomers.length} of ${customers.length} customers`}
               </span>
-              {filtered.length > displayLimit && (
-                <span className="text-xs text-slate-500">
-                  Ketik nama/ID untuk hasil lebih spesifik
-                </span>
-              )}
             </div>
           )}
 
@@ -289,7 +284,7 @@ export default function CustomerModal({
                       onClick={() => setDisplayLimit((prev) => prev + 25)}
                       className="text-xs"
                     >
-                      Muat Lebih Banyak (+25 Pelanggan)
+                      Load More (+25 Customers)
                     </Button>
                   </div>
                 )}

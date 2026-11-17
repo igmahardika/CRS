@@ -48,6 +48,45 @@
   --radius-dialog: 1rem;  /* 16px: dialogs, modals */
 }
 
+.dark {
+  --background: #09090b;       /* Zinc-950 deep canvas */
+  --foreground: #f4f4f5;       /* Zinc-100 high-contrast text */
+
+  /* Dark Card & Surfaces */
+  --card: #18181b;             /* Zinc-900 elevated card surface */
+  --card-foreground: #f4f4f5;
+  --popover: #18181b;
+  --popover-foreground: #f4f4f5;
+
+  /* Nexa Brand & Orange Accents (Dark Mode Adjusted) */
+  --primary-brand: #f97316;    /* Vibrant Orange 500 */
+  --primary: #ea580c;          /* Orange 600 */
+  --primary-foreground: #ffffff;
+  --primary-strong: #fb923c;   /* Orange 400 */
+  --primary-soft: rgba(234, 88, 12, 0.15);
+
+  /* Secondary & Muted */
+  --secondary: #27272a;        /* Zinc-800 */
+  --secondary-foreground: #f4f4f5;
+  --muted: #27272a;
+  --muted-foreground: #a1a1aa; /* Zinc-400 */
+
+  /* Status Colors (UI/UX Pro Max Emerald & Electric Blue) */
+  --destructive: #ef4444;      /* Red 500 */
+  --destructive-foreground: #ffffff;
+  --success: #10b981;          /* Emerald 500 */
+  --success-foreground: #ffffff;
+  --warning: #f59e0b;          /* Amber 500 */
+  --warning-foreground: #ffffff;
+  --info: #3b82f6;             /* Electric Blue 500 */
+  --info-foreground: #ffffff;
+
+  /* Borders, Inputs & Rings */
+  --border: #27272a;           /* Zinc-800 border */
+  --input: #27272a;
+  --ring: rgba(249, 115, 22, 0.4);
+}
+
 body {
   color: var(--foreground);
   background: var(--background);

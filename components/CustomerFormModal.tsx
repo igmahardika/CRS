@@ -18,6 +18,7 @@ import {
   SegmentedControl,
   Badge,
   Checkbox,
+  InfoTooltip,
 } from '@/components/ui';
 import { extractNodeFromServiceId, getSlaByServiceName } from '@/lib/customer-utils';
 
@@ -261,7 +262,11 @@ export default function CustomerFormModal({
                 </SelectContent>
               </Select>
             </FormField>
-            <FormField label="Traffic Direction">
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-1.5">
+                <label className="text-xs font-medium text-slate-700">Traffic Direction</label>
+                <InfoTooltip content="Normal sets In: DL, Out: UL. Reversed inverts port mapping to Out: DL, In: UL." />
+              </div>
               <Select
                 value={formData.trafficDirection || 'NORMAL'}
                 onValueChange={(val) =>
@@ -272,11 +277,11 @@ export default function CustomerFormModal({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="NORMAL">Normal (In: DL, Out: UL)</SelectItem>
-                  <SelectItem value="REVERSED">Reversed (Out: DL, In: UL)</SelectItem>
+                  <SelectItem value="NORMAL">Normal</SelectItem>
+                  <SelectItem value="REVERSED">Reversed</SelectItem>
                 </SelectContent>
               </Select>
-            </FormField>
+            </div>
           </div>
 
           <div className="p-3.5 bg-orange-50/50 rounded-xl border border-orange-200/60 space-y-3">

@@ -44,6 +44,7 @@ export function SegmentedControl<T extends string = string>({
             role="radio"
             aria-checked={isSelected}
             disabled={disabled}
+            suppressHydrationWarning
             onClick={() => onChange(option.value)}
             className={cn(
               'inline-flex items-center justify-center gap-1.5 rounded-md px-3 font-sans text-[13px] font-medium transition-all duration-150',

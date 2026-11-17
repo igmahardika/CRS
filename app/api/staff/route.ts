@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 import { requireAuth, requireSupervisorOrAdmin } from '@/lib/auth';
 import { DEPARTMENTS, isValidDepartment } from '@/lib/permissions';
 
@@ -16,7 +17,7 @@ export async function GET(req: NextRequest) {
     const activeOnly = searchParams.get('active') !== 'false';
     const search = searchParams.get('search');
 
-    const where: any = {};
+    const where: Prisma.StaffMemberWhereInput = {};
     if (activeOnly) {
       where.isActive = true;
     }
@@ -79,7 +80,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: `Staf "${created.name}" berhasil ditambahkan.`,
+      message: `Staff member "${created.name}" created successfully.`,
       staff: created,
     });
   } catch (err: unknown) {
@@ -100,7 +101,7 @@ export async function PUT(req: NextRequest) {
     const { id, name, email, phone, department, roleTitle, isActive } = body;
 
     if (!id) {
-      return NextResponse.json({ error: 'ID staf wajib disertakan.' }, { status: 400 });
+      return NextResponse.json({ error: 'Staff ID is required.' }, { status: 400 });
     }
 
     const updateData: any = {};
@@ -118,7 +119,7 @@ export async function PUT(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: `Data staf "${updated.name}" berhasil diperbarui.`,
+      message: `Staff member "${updated.name}" updated successfully.`,
       staff: updated,
     });
   } catch (err: unknown) {
@@ -139,7 +140,7 @@ export async function DELETE(req: NextRequest) {
     const id = searchParams.get('id');
 
     if (!id) {
-      return NextResponse.json({ error: 'ID staf wajib disertakan.' }, { status: 400 });
+      return NextResponse.json({ error: 'Staff ID is required.' }, { status: 400 });
     }
 
     await prisma.staffMember.delete({
@@ -148,7 +149,7 @@ export async function DELETE(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: 'Data staf berhasil dihapus.',
+      message: 'Staff member deleted successfully.',
     });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);

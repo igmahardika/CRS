@@ -50,6 +50,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         type={props.type || 'button'}
         aria-label={accessibleLabel}
         disabled={disabled || loading}
+        suppressHydrationWarning
         className={cn(baseClasses, variantClasses[variant], sizeClasses[size], className)}
         {...props}
       >

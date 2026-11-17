@@ -22,14 +22,87 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Laporan tidak ditemukan.' }, { status: 404 });
     }
 
-    const rejectionNotes = String(notes || '').trim() || 'Ditolak tanpa catatan spesifik.';
+    // 1. State Guard: Only pending approval reports can be rejected
+    if (
+      report.status !== 'PENDING_NOC_APPROVAL' &&
+      report.status !== 'PENDING_APPROVAL' &&
+      report.status !== 'PENDING_DEPT_APPROVAL'
+    ) {
+      return NextResponse.json({
+        error: `Aksi ditolak: Laporan dengan status "${report.status}" tidak dapat dikembalikan untuk revisi. Hanya laporan pending approval yang dapat direvisi.`,
+      }, { status: 400 });
+    }
 
-    const updated = await prisma.report.update({
-      where: { id },
-      data: {
-        status: 'REVISION_NEEDED',
-        rejectionNotes,
-      },
+    // 2. Department Authority Guard
+    const isNocUser = auth.session.department === 'Network Operation';
+    const isAdmin = auth.session.role === 'ADMIN';
+    const assignedDept = report.assignedDepartment || 'Internal NOC';
+
+    if (report.status === 'PENDING_DEPT_APPROVAL') {
+      const isAuthorizedDept = isAdmin || auth.session.department === assignedDept;
+      if (!isAuthorizedDept) {
+        return NextResponse.json({
+          error: `Akses ditolak: Hanya Supervisor departemen ${assignedDept} atau Administrator yang dapat meminta revisi pada tahap ini.`,
+        }, { status: 403 });
+      }
+    } else {
+      // Tier 1
+      if (!isNocUser && !isAdmin) {
+        return NextResponse.json({
+          error: 'Akses ditolak: Penolakan verifikasi teknis tahap 1 hanya dapat dilakukan oleh Supervisor NOC atau Administrator.',
+        }, { status: 403 });
+      }
+    }
+
+    // 3. Mandatory Rejection Notes Validation (minimum 5 characters)
+    const rejectionNotes = String(notes || '').trim();
+    if (!rejectionNotes || rejectionNotes.length < 5) {
+      return NextResponse.json({
+        error: 'Catatan alasan revisi wajib diisi secara jelas (minimal 5 karakter) untuk memandu perbaikan oleh staf.',
+      }, { status: 400 });
+    }
+
+    // 4. Atomic Transaction: Update Report, Log Audit Trail, and Sync Linked Request
+    const [updated] = await prisma.$transaction(async (tx) => {
+      const rep = await tx.report.update({
+        where: { id },
+        data: {
+          status: 'REVISION_NEEDED',
+          rejectionNotes,
+        },
+      });
+
+      await tx.reportAuditLog.create({
+        data: {
+          reportId: id,
+          action: 'REVISION_REQUESTED',
+          actorId: auth.session.id,
+          actorName: auth.session.name,
+          actorDept: auth.session.department || 'Network Operation',
+          actorRole: auth.session.role,
+          notes: rejectionNotes,
+        },
+      });
+
+      // Find linked request and keep/set its status to IN_PROGRESS so it stays active in queue
+      const linkedRequest = await tx.reportRequest.findFirst({
+        where: {
+          OR: [
+            { processedReportId: id },
+            { processedMrtgReportId: id },
+            { processedSlaReportId: id },
+          ],
+        },
+      });
+
+      if (linkedRequest && linkedRequest.status !== 'IN_PROGRESS') {
+        await tx.reportRequest.update({
+          where: { id: linkedRequest.id },
+          data: { status: 'IN_PROGRESS' },
+        });
+      }
+
+      return [rep];
     });
 
     const nowStr = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
@@ -48,7 +121,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: `Status laporan diubah menjadi Perlu Revisi.`,
+      message: 'Report status changed to Revision Needed.',
       report: updated,
     });
   } catch (err: unknown) {

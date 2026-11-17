@@ -55,6 +55,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
+  SegmentedControl,
 } from '@/components/ui';
 import NewRequestDrawer from '@/components/NewRequestDrawer';
 
@@ -149,7 +150,7 @@ export default function RequestsQueuePage() {
       .then((data) => {
         if (data?.user) setCurrentUser(data.user);
       })
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   const fetchRequests = async () => {
@@ -160,7 +161,7 @@ export default function RequestsQueuePage() {
       if (data.requests) setRequests(data.requests);
     } catch (err) {
       console.error(err);
-      toast.error('Gagal memuat antrean permintaan.');
+      toast.error('Failed to load request queue.');
     } finally {
       setLoading(false);
     }
@@ -180,7 +181,7 @@ export default function RequestsQueuePage() {
     const shareUrl = `${window.location.origin}/requests?new=1`;
     navigator.clipboard.writeText(shareUrl);
     setCopiedShareLink(true);
-    toast.success('Link form permintaan berhasil disalin!');
+    toast.success('Request form link copied.');
     setTimeout(() => setCopiedShareLink(false), 2000);
   };
 
@@ -193,15 +194,15 @@ export default function RequestsQueuePage() {
         body: JSON.stringify({ id, status: newStatus }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Gagal mengubah status');
-      toast.success(`Status tiket diubah menjadi ${newStatus}`);
+      if (!res.ok) throw new Error(data.error || 'Failed to update status');
+      toast.success(`Ticket status changed to ${newStatus}`);
       fetchRequests();
       if (selectedRequest?.id === id) {
         setSelectedRequest((prev) => (prev ? { ...prev, status: newStatus as any } : null));
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      toast.error(`Terjadi kesalahan: ${msg}`);
+      toast.error(`Error: ${msg}`);
     } finally {
       setUpdatingId(null);
     }
@@ -324,7 +325,7 @@ export default function RequestsQueuePage() {
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Cari tiket permintaan, pelanggan, atau pemohon..."
+            placeholder="Search tickets, customers, or requesters..."
             className="pl-9 pr-9 h-9 text-[13px]"
           />
           {search && (
@@ -357,56 +358,17 @@ export default function RequestsQueuePage() {
             </Button>
           )}
 
-          <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg border border-slate-200">
-            <Button
-              variant={statusFilter === 'ALL' ? 'secondary' : 'ghost'}
-              size="sm"
-              onClick={() => setStatusFilter('ALL')}
-              className={
-                statusFilter === 'ALL'
-                  ? 'bg-white text-slate-900 shadow-xs h-7 px-2.5 text-xs font-semibold'
-                  : 'text-slate-600 hover:text-slate-900 h-7 px-2.5 text-xs'
-              }
-            >
-              <span>All ({totalCount})</span>
-            </Button>
-            <Button
-              variant={statusFilter === 'PENDING' ? 'secondary' : 'ghost'}
-              size="sm"
-              onClick={() => setStatusFilter('PENDING')}
-              className={
-                statusFilter === 'PENDING'
-                  ? 'bg-amber-500 text-white shadow-xs h-7 px-2.5 text-xs font-semibold hover:bg-amber-600 hover:text-white'
-                  : 'text-amber-700 hover:bg-amber-50 h-7 px-2.5 text-xs font-medium'
-              }
-            >
-              <span>Pending ({pendingCount})</span>
-            </Button>
-            <Button
-              variant={statusFilter === 'IN_PROGRESS' ? 'secondary' : 'ghost'}
-              size="sm"
-              onClick={() => setStatusFilter('IN_PROGRESS')}
-              className={
-                statusFilter === 'IN_PROGRESS'
-                  ? 'bg-blue-600 text-white shadow-xs h-7 px-2.5 text-xs font-semibold hover:bg-blue-700 hover:text-white'
-                  : 'text-blue-700 hover:bg-blue-50 h-7 px-2.5 text-xs font-medium'
-              }
-            >
-              <span>In Progress ({inProgressCount})</span>
-            </Button>
-            <Button
-              variant={statusFilter === 'COMPLETED' ? 'secondary' : 'ghost'}
-              size="sm"
-              onClick={() => setStatusFilter('COMPLETED')}
-              className={
-                statusFilter === 'COMPLETED'
-                  ? 'bg-emerald-600 text-white shadow-xs h-7 px-2.5 text-xs font-semibold hover:bg-emerald-700 hover:text-white'
-                  : 'text-emerald-700 hover:bg-emerald-50 h-7 px-2.5 text-xs font-medium'
-              }
-            >
-              <span>Completed ({completedCount})</span>
-            </Button>
-          </div>
+          <SegmentedControl
+            size="sm"
+            value={statusFilter}
+            onChange={(val) => setStatusFilter(val as 'ALL' | 'PENDING' | 'IN_PROGRESS' | 'COMPLETED')}
+            options={[
+              { value: 'ALL', label: `All (${totalCount})` },
+              { value: 'PENDING', label: `Pending (${pendingCount})` },
+              { value: 'IN_PROGRESS', label: `In Progress (${inProgressCount})` },
+              { value: 'COMPLETED', label: `Completed (${completedCount})` },
+            ]}
+          />
         </div>
       </div>
 
@@ -476,7 +438,7 @@ export default function RequestsQueuePage() {
                       {/* Ticket Number */}
                       <TableCell className="font-semibold text-xs text-slate-900">
                         <div className="flex items-center gap-1.5">
-                          <code className="text-slate-800 bg-slate-100 px-1.5 py-0.5 rounded font-mono text-xs">
+                          <code className="text-slate-800 bg-slate-100 px-1.5 py-0.5 rounded font-sans text-xs">
                             {r.ticketNumber}
                           </code>
                           <Button
@@ -498,7 +460,7 @@ export default function RequestsQueuePage() {
                       {/* Urgency */}
                       <TableCell className="text-center">
                         {isUrgent ? (
-                          <Badge variant="destructive" dot className="animate-pulse">
+                          <Badge variant="destructive" dot>
                             Urgent
                           </Badge>
                         ) : (
@@ -511,7 +473,7 @@ export default function RequestsQueuePage() {
                         <div>{r.customerName}</div>
                         <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
                           {r.serviceId && (
-                            <span className="font-mono text-[11px] text-slate-500">
+                            <span className="font-sans text-[11px] text-slate-500 tabular-nums">
                               SID: {r.serviceId}
                             </span>
                           )}
@@ -536,18 +498,8 @@ export default function RequestsQueuePage() {
                       </TableCell>
 
                       {/* Period */}
-                      <TableCell className="text-xs text-slate-600 font-medium">
-                        {(() => {
-                          if (r.periodsJson) {
-                            try {
-                              const parsed = JSON.parse(r.periodsJson);
-                              if (Array.isArray(parsed) && parsed.length > 1) {
-                                return parsed.map((p: any) => monthNames[p.month - 1].slice(0, 3)).join(', ') + ` ${r.periodYear}`;
-                              }
-                            } catch {}
-                          }
-                          return `${monthName} ${r.periodYear}`;
-                        })()}
+                      <TableCell className="text-xs text-slate-700 font-sans tabular-nums font-semibold">
+                        {monthName} {r.periodYear}
                       </TableCell>
 
                       {/* Requester */}
@@ -568,7 +520,7 @@ export default function RequestsQueuePage() {
                           </Badge>
                         ) : r.status === 'SCHEDULED_ROUTINE' ? (
                           <Badge variant="soft" className="bg-purple-50 text-purple-700 border-purple-200" dot>
-                            Terjadwal Rutin
+                            Scheduled Routine
                           </Badge>
                         ) : r.status === 'CANCELLED' ? (
                           <Badge variant="neutral">Cancelled</Badge>
@@ -685,7 +637,7 @@ export default function RequestsQueuePage() {
                                                     className="flex items-center gap-2 cursor-pointer text-slate-700"
                                                   >
                                                     <Download className="w-3.5 h-3.5 text-emerald-600" />
-                                                    <span>Unduh SLA PDF</span>
+                                                    <span>Download SLA PDF</span>
                                                   </a>
                                                 </DropdownMenuItem>
                                               )}
@@ -696,7 +648,7 @@ export default function RequestsQueuePage() {
                                                     className="flex items-center gap-2 cursor-pointer text-slate-700"
                                                   >
                                                     <Download className="w-3.5 h-3.5 text-blue-600" />
-                                                    <span>Unduh MRTG PDF</span>
+                                                    <span>Download MRTG PDF</span>
                                                   </a>
                                                 </DropdownMenuItem>
                                               )}
@@ -774,71 +726,76 @@ export default function RequestsQueuePage() {
 
           {selectedRequest && (
             <div className="space-y-4 text-xs font-sans py-2">
-              <div className="grid grid-cols-2 gap-3 bg-slate-50 p-3 rounded-lg border border-slate-200">
+              {/* Primary Key-Value Grid */}
+              <div className="grid grid-cols-2 gap-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200/80">
                 <div>
-                  <span className="text-slate-500 text-xs block">Customer Name</span>
-                  <div className="font-semibold text-slate-900">{selectedRequest.customerName}</div>
+                  <span className="text-slate-500 text-[11px] font-medium block">Customer</span>
+                  <div className="font-semibold text-slate-900 text-xs mt-0.5">{selectedRequest.customerName}</div>
                 </div>
                 <div>
-                  <span className="text-slate-500 text-xs block">Service ID / Customer ID</span>
-                  <div className="text-slate-700">
+                  <span className="text-slate-500 text-[11px] font-medium block">Service ID / CID</span>
+                  <div className="font-sans text-slate-700 text-xs mt-0.5 tabular-nums">
                     {selectedRequest.serviceId || selectedRequest.customerId || '-'}
                   </div>
                 </div>
                 <div>
-                  <span className="text-slate-500 text-xs block">Requested Report Type</span>
-                  <div className="font-semibold text-orange-600">{selectedRequest.reportType} Report</div>
+                  <span className="text-slate-500 text-[11px] font-medium block">Report Type</span>
+                  <div className="font-semibold text-orange-600 text-xs mt-0.5">{selectedRequest.reportType} Report</div>
                 </div>
                 <div>
-                  <span className="text-slate-500 text-xs block">Period</span>
-                  <div className="font-medium text-slate-800">
+                  <span className="text-slate-500 text-[11px] font-medium block">Reporting Period</span>
+                  <div className="font-medium text-slate-800 text-xs mt-0.5">
                     {monthNames[selectedRequest.periodMonth - 1]} {selectedRequest.periodYear}
                   </div>
                 </div>
               </div>
 
-              {/* Requester Info */}
-              <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-1.5">
-                <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                  Requester Information
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Name:</span>
+              {/* Requester & Priority Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-3 bg-slate-50/60 rounded-lg border border-slate-200/60 text-xs">
+                <div>
+                  <span className="text-slate-500 text-[11px] block">Requester</span>
                   <span className="font-semibold text-slate-800">{selectedRequest.requesterName}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Department:</span>
+                <div>
+                  <span className="text-slate-500 text-[11px] block">Department</span>
                   <span className="font-medium text-slate-700">{selectedRequest.requesterDept}</span>
                 </div>
-                {selectedRequest.requesterEmail && (
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">Contact:</span>
-                    <span className="text-slate-700">{selectedRequest.requesterEmail}</span>
-                  </div>
-                )}
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Priority:</span>
-                  <Badge variant={selectedRequest.urgency === 'URGENT' ? 'destructive' : 'neutral'} dot>
+                <div>
+                  <span className="text-slate-500 text-[11px] block">Priority</span>
+                  <Badge variant={selectedRequest.urgency === 'URGENT' ? 'destructive' : 'neutral'} dot className="mt-0.5">
                     {selectedRequest.urgency === 'URGENT' ? 'Urgent' : 'Normal'}
+                  </Badge>
+                </div>
+                <div>
+                  <span className="text-slate-500 text-[11px] block">Status</span>
+                  <Badge
+                    variant={
+                      selectedRequest.status === 'COMPLETED'
+                        ? 'success'
+                        : selectedRequest.status === 'IN_PROGRESS'
+                        ? 'info'
+                        : selectedRequest.status === 'CANCELLED'
+                        ? 'destructive'
+                        : 'warning'
+                    }
+                    className="mt-0.5"
+                  >
+                    {selectedRequest.status}
                   </Badge>
                 </div>
               </div>
 
-              {/* Notes */}
+              {/* Notes (if any) */}
               {selectedRequest.notes && (
-                <div className="p-3 bg-amber-50/50 border border-amber-200 rounded-lg text-slate-800 space-y-1">
-                  <span className="text-xs font-semibold text-amber-800 block">
-                    Notes from Requester:
-                  </span>
-                  <p className="text-xs text-slate-700 italic">
-                    &quot;{selectedRequest.notes}&quot;
-                  </p>
+                <div className="p-3 bg-amber-50/60 border border-amber-200/80 rounded-lg text-xs space-y-1">
+                  <span className="font-semibold text-amber-900 block text-[11px]">Requester Notes</span>
+                  <p className="text-slate-700 italic leading-relaxed">&quot;{selectedRequest.notes}&quot;</p>
                 </div>
               )}
 
               {/* Status Updater for NOC/Admin */}
               {isNocOrAdmin && (
-                <div className="flex items-center justify-between pt-2">
+                <div className="flex items-center justify-between pt-2 border-t border-slate-100">
                   <span className="text-xs font-semibold text-slate-700">Update Status:</span>
                   <div className="flex items-center gap-1.5">
                     <Button
@@ -880,7 +837,7 @@ export default function RequestsQueuePage() {
               {/* Action for Non-NOC (Cancel if PENDING) */}
               {!isNocOrAdmin && selectedRequest.status === 'PENDING' && (
                 <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-                  <span className="text-xs text-slate-500">Ticket awaiting processing:</span>
+                  <span className="text-xs text-slate-500">Ticket awaiting processing</span>
                   <Button
                     variant="ghost"
                     size="sm"
@@ -895,73 +852,64 @@ export default function RequestsQueuePage() {
                 </div>
               )}
 
-              {/* Status report for completed ticket */}
-              {selectedRequest.status === 'COMPLETED' && (
-                <div className="p-3 bg-emerald-50/50 border border-emerald-200 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <div>
-                    <span className="text-xs font-semibold text-emerald-800 block">
-                      Official Compliance Report Ready
-                    </span>
-                    <span className="text-xs text-slate-600">
-                      {selectedRequest.isApproved
-                        ? 'Report has been authorized (Approved) and is ready for download.'
-                        : 'Report has been generated and is awaiting NOC supervisor authorization.'}
-                    </span>
-                  </div>
-                  {selectedRequest.isApproved && (
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      {selectedRequest.processedReportId && (
-                        <div className="flex items-center gap-1">
+              {/* Downloads for completed report */}
+              {selectedRequest.status === 'COMPLETED' && selectedRequest.isApproved && (
+                <div className="p-3 bg-emerald-50/60 border border-emerald-200/80 rounded-lg flex items-center justify-between gap-2">
+                  <span className="text-xs font-semibold text-emerald-900">
+                    Official Report Available
+                  </span>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {selectedRequest.processedReportId && (
+                      <>
+                        <a
+                          href={`/api/reports/download?id=${selectedRequest.processedReportId}&preview=1`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex"
+                        >
+                          <Button variant="secondary" size="sm" className="text-xs h-7">
+                            <Eye className="w-3.5 h-3.5 mr-1 text-orange-600" />
+                            <span>Preview</span>
+                          </Button>
+                        </a>
+                        <a
+                          href={`/api/reports/download?id=${selectedRequest.processedReportId}`}
+                          className="inline-flex"
+                        >
+                          <Button variant="primary" size="sm" className="text-xs h-7 bg-emerald-600 hover:bg-emerald-700">
+                            <Download className="w-3.5 h-3.5 mr-1" />
+                            <span>Download</span>
+                          </Button>
+                        </a>
+                      </>
+                    )}
+                    {selectedRequest.reportType === 'BOTH' && (
+                      <>
+                        {selectedRequest.processedSlaReportId && (
                           <a
-                            href={`/api/reports/download?id=${selectedRequest.processedReportId}&preview=1`}
-                            target="_blank"
-                            rel="noopener noreferrer"
+                            href={`/api/reports/download?id=${selectedRequest.processedSlaReportId}`}
                             className="inline-flex"
                           >
-                            <Button variant="secondary" size="sm" className="text-xs h-7">
-                              <Eye className="w-3.5 h-3.5 mr-1 text-orange-600" />
-                              <span>Preview</span>
-                            </Button>
-                          </a>
-                          <a
-                            href={`/api/reports/download?id=${selectedRequest.processedReportId}`}
-                            className="inline-flex"
-                          >
-                            <Button variant="primary" size="sm" className="text-xs h-7 bg-emerald-600 hover:bg-emerald-700">
+                            <Button variant="secondary" size="sm" className="text-xs h-7 text-emerald-700 font-medium">
                               <Download className="w-3.5 h-3.5 mr-1" />
-                              <span>Download</span>
+                              <span>SLA</span>
                             </Button>
                           </a>
-                        </div>
-                      )}
-                      {selectedRequest.reportType === 'BOTH' && (
-                        <>
-                          {selectedRequest.processedSlaReportId && (
-                            <a
-                              href={`/api/reports/download?id=${selectedRequest.processedSlaReportId}`}
-                              className="inline-flex"
-                            >
-                              <Button variant="secondary" size="sm" className="text-xs h-7 text-emerald-700 font-medium">
-                                <Download className="w-3.5 h-3.5 mr-1" />
-                                <span>Download SLA</span>
-                              </Button>
-                            </a>
-                          )}
-                          {selectedRequest.processedMrtgReportId && (
-                            <a
-                              href={`/api/reports/download?id=${selectedRequest.processedMrtgReportId}`}
-                              className="inline-flex"
-                            >
-                              <Button variant="secondary" size="sm" className="text-xs h-7 text-blue-700 font-medium">
-                                <Download className="w-3.5 h-3.5 mr-1" />
-                                <span>Download MRTG</span>
-                              </Button>
-                            </a>
-                          )}
-                        </>
-                      )}
-                    </div>
-                  )}
+                        )}
+                        {selectedRequest.processedMrtgReportId && (
+                          <a
+                            href={`/api/reports/download?id=${selectedRequest.processedMrtgReportId}`}
+                            className="inline-flex"
+                          >
+                            <Button variant="secondary" size="sm" className="text-xs h-7 text-blue-700 font-medium">
+                              <Download className="w-3.5 h-3.5 mr-1" />
+                              <span>MRTG</span>
+                            </Button>
+                          </a>
+                        )}
+                      </>
+                    )}
+                  </div>
                 </div>
               )}
 
@@ -992,9 +940,9 @@ export default function RequestsQueuePage() {
       <ConfirmDialog
         open={Boolean(cancellingRequestId)}
         onOpenChange={(open) => !open && setCancellingRequestId(null)}
-        title="Batalkan Permintaan Laporan"
-        description="Apakah Anda yakin ingin membatalkan tiket permintaan laporan ini? Tiket yang dibatalkan tidak akan diproses oleh tim NOC."
-        confirmText="Ya, Batalkan Tiket"
+        title="Cancel Report Request"
+        description="Are you sure you want to cancel this report request? Cancelled requests will not be processed by NOC."
+        confirmText="Cancel Request"
         variant="destructive"
         onConfirm={async () => {
           if (cancellingRequestId) {

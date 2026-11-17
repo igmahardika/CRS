@@ -42,6 +42,7 @@ import {
   TableHead,
   TableCell,
   StatCard,
+  SegmentedControl,
   Dialog,
   DialogContent,
   DialogHeader,
@@ -54,6 +55,7 @@ import {
   SelectContent,
   SelectItem,
   Checkbox,
+  InfoTooltip,
 } from '@/components/ui';
 import { toast } from 'sonner';
 import { DEPARTMENTS as SYSTEM_DEPARTMENTS } from '@/lib/permissions';
@@ -211,7 +213,7 @@ export default function SchedulePage() {
   // Add customer(s) to routine list (Single or Batch)
   const handleAddCustomersToRoutine = async () => {
     if (selectedCustomerIdsToAdd.length === 0) {
-      toast.error('Pilih minimal satu customer untuk didaftarkan.');
+      toast.error('Select at least one customer to enroll.');
       return;
     }
 
@@ -231,18 +233,18 @@ export default function SchedulePage() {
       });
       const data = await res.json();
       if (res.ok) {
-        toast.success(data.message || `${selectedCustomerIdsToAdd.length} customer berhasil ditambahkan ke ${modalActiveDept}.`);
+        toast.success(data.message || `Added ${selectedCustomerIdsToAdd.length} customer(s) to ${modalActiveDept}.`);
         setIsAddPickerOpen(false);
         setSelectedCustomerIdsToAdd([]);
         setPickerSearchQuery('');
         fetchTasks();
         fetchMasterCustomers();
       } else {
-        toast.error(data.error || 'Gagal menambahkan customer ke antrean rutin.');
+        toast.error(data.error || 'Failed to add customer(s) to routine queue.');
       }
     } catch (err) {
       console.error(err);
-      toast.error('Terjadi kesalahan saat menambahkan customer.');
+      toast.error('An error occurred while adding customers.');
     } finally {
       setIsSavingRoutineAction(false);
     }
@@ -510,7 +512,7 @@ export default function SchedulePage() {
     <div className="space-y-6">
       <PageHeader
         title="Monthly Schedule"
-        description="Antrean pelaporan rutin bulanan dan pemantauan SLA 24 jam departemen. Otomatis ter-kickoff setiap tanggal 1 pukul 08:00 WIB."
+        description="Monthly routine reporting queue and SLA tracking. Automated kickoff occurs on the 1st of each month."
         breadcrumb={
           <Link href="/" className="hover:text-slate-800 flex items-center gap-1 font-medium text-slate-500">
             <ArrowLeft className="w-3.5 h-3.5" />
@@ -520,8 +522,8 @@ export default function SchedulePage() {
         actions={
           <div className="flex items-center gap-2 flex-wrap">
             <div className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-50 text-emerald-800 border border-emerald-200">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span>Auto-Trigger: Tanggal 1, 08:00 WIB</span>
+              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+              <span>Auto-Trigger: 1st of month, 08:00 WIB</span>
             </div>
             <Button
               variant="primary"
@@ -645,7 +647,7 @@ export default function SchedulePage() {
             <Input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Cari nama pelanggan atau Service ID..."
+              placeholder="Search by customer name or Service ID..."
               className="pl-9 text-xs"
             />
           </div>
@@ -700,95 +702,31 @@ export default function SchedulePage() {
 
         {/* Level 2: Sub-category Tabs (MRTG vs SLA) + Status Filters */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
-          {/* Sub-Category Pill Switcher */}
-          <div className="inline-flex items-center p-1 bg-slate-100 rounded-lg text-xs">
-            <button
-              type="button"
-              onClick={() => setSelectedCategory('ALL')}
-              className={`px-3 py-1.5 rounded-md font-semibold transition-all flex items-center gap-1.5 ${
-                selectedCategory === 'ALL'
-                  ? 'bg-white text-slate-900 shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              <span>All Reports</span>
-              <span className="text-xs opacity-75">({categoryCounts.ALL})</span>
-            </button>
+          {/* Sub-Category Segmented Control */}
+          <SegmentedControl
+            size="sm"
+            value={selectedCategory}
+            onChange={(val) => setSelectedCategory(val as 'ALL' | 'MRTG' | 'SLA')}
+            options={[
+              { value: 'ALL', label: `All Reports (${categoryCounts.ALL})` },
+              { value: 'MRTG', label: `MRTG (${categoryCounts.MRTG})` },
+              { value: 'SLA', label: `SLA (${categoryCounts.SLA})` },
+            ]}
+          />
 
-            <button
-              type="button"
-              onClick={() => setSelectedCategory('MRTG')}
-              className={`px-3 py-1.5 rounded-md font-semibold transition-all flex items-center gap-1.5 ${
-                selectedCategory === 'MRTG'
-                  ? 'bg-white text-indigo-700 shadow-xs'
-                  : 'text-slate-600 hover:text-indigo-700'
-              }`}
-            >
-              <Activity className="w-3 h-3 text-indigo-600" />
-              <span>MRTG (Auto 02:00-05:00)</span>
-              <span className="text-xs opacity-75">({categoryCounts.MRTG})</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setSelectedCategory('SLA')}
-              className={`px-3 py-1.5 rounded-md font-semibold transition-all flex items-center gap-1.5 ${
-                selectedCategory === 'SLA'
-                  ? 'bg-white text-amber-700 shadow-xs'
-                  : 'text-slate-600 hover:text-amber-700'
-              }`}
-            >
-              <ShieldCheck className="w-3 h-3 text-amber-600" />
-              <span>SLA (Manual NOC)</span>
-              <span className="text-xs opacity-75">({categoryCounts.SLA})</span>
-            </button>
-          </div>
-
-          {/* Status filter pills */}
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <Button
-              variant={statusFilter === 'ALL' ? 'secondary' : 'ghost'}
-              size="sm"
-              onClick={() => setStatusFilter('ALL')}
-              className={statusFilter === 'ALL' ? 'bg-slate-900 text-white hover:bg-slate-800 hover:text-white h-7 px-2.5 text-xs' : 'text-slate-600 h-7 px-2.5 text-xs'}
-            >
-              All
-            </Button>
-            <Button
-              variant={statusFilter === 'PENDING' ? 'secondary' : 'ghost'}
-              size="sm"
-              onClick={() => setStatusFilter('PENDING')}
-              className={statusFilter === 'PENDING' ? 'bg-amber-600 text-white hover:bg-amber-700 hover:text-white h-7 px-2.5 text-xs' : 'text-slate-600 h-7 px-2.5 text-xs'}
-            >
-              Pending ({stats.pending})
-            </Button>
-            <Button
-              variant={statusFilter === 'COMPLETED' ? 'secondary' : 'ghost'}
-              size="sm"
-              onClick={() => setStatusFilter('COMPLETED')}
-              className={statusFilter === 'COMPLETED' ? 'bg-emerald-600 text-white hover:bg-emerald-700 hover:text-white h-7 px-2.5 text-xs' : 'text-slate-600 h-7 px-2.5 text-xs'}
-            >
-              Completed ({stats.completed})
-            </Button>
-            {stats.failed > 0 && (
-              <Button
-                variant={statusFilter === 'FAILED' ? 'secondary' : 'ghost'}
-                size="sm"
-                onClick={() => setStatusFilter('FAILED')}
-                className={statusFilter === 'FAILED' ? 'bg-rose-600 text-white hover:bg-rose-700 hover:text-white h-7 px-2.5 text-xs' : 'text-rose-600 h-7 px-2.5 text-xs'}
-              >
-                Failed ({stats.failed})
-              </Button>
-            )}
-            <Button
-              variant={statusFilter === 'BREACHED' ? 'secondary' : 'ghost'}
-              size="sm"
-              onClick={() => setStatusFilter('BREACHED')}
-              className={statusFilter === 'BREACHED' ? 'bg-rose-600 text-white hover:bg-rose-700 hover:text-white h-7 px-2.5 text-xs' : 'text-slate-600 h-7 px-2.5 text-xs'}
-            >
-              Breached ({stats.breached})
-            </Button>
-          </div>
+          {/* Status Filter Segmented Control */}
+          <SegmentedControl
+            size="sm"
+            value={statusFilter}
+            onChange={(val) => setStatusFilter(val as 'ALL' | 'PENDING' | 'COMPLETED' | 'FAILED' | 'BREACHED')}
+            options={[
+              { value: 'ALL', label: 'All Status' },
+              { value: 'PENDING', label: `Pending (${stats.pending})` },
+              { value: 'COMPLETED', label: `Completed (${stats.completed})` },
+              ...(stats.failed > 0 ? [{ value: 'FAILED', label: `Failed (${stats.failed})` }] : []),
+              ...(stats.breached > 0 ? [{ value: 'BREACHED', label: `Breached (${stats.breached})` }] : []),
+            ]}
+          />
         </div>
       </div>
 
@@ -852,13 +790,13 @@ export default function SchedulePage() {
                       {/* Customer & Department Group */}
                       <TableCell>
                         <div className="font-semibold text-slate-900 text-xs">{t.customerName}</div>
-                        <div className="text-xs text-slate-500 font-mono mb-1">{t.customerId}</div>
+                        <div className="text-xs text-slate-500 font-sans tabular-nums mb-1">{t.customerId}</div>
                         <div>{getDepartmentBadge(t.assignedDepartment || 'Customer Experience')}</div>
                       </TableCell>
 
                       {/* Service ID & Plan */}
                       <TableCell>
-                        <div className="text-xs font-mono font-medium text-slate-800">{t.serviceId}</div>
+                        <div className="text-xs font-sans font-medium text-slate-800 tabular-nums">{t.serviceId}</div>
                         <div className="text-xs text-slate-500">{t.serviceName}</div>
                       </TableCell>
 
@@ -906,36 +844,37 @@ export default function SchedulePage() {
                       {/* Status */}
                       <TableCell className="text-center">
                         {t.status === 'COMPLETED' ? (
-                          <div className="inline-flex flex-col items-center">
-                            <Badge variant="success" dot>Completed</Badge>
-                            {t.processedByName && (
-                              <span className="text-xs text-slate-500 mt-0.5">
-                                by {t.processedByName}
-                              </span>
-                            )}
-                          </div>
+                          <Badge
+                            variant="success"
+                            dot
+                            title={t.processedByName ? `Processed by ${t.processedByName}` : 'Completed'}
+                          >
+                            Completed
+                          </Badge>
                         ) : t.status === 'FAILED_MANUAL_REQUIRED' ? (
-                          <div className="inline-flex flex-col items-center">
-                            <Badge variant="destructive" dot>Failed (Manual)</Badge>
-                            {t.errorMessage && (
-                              <span
-                                className="text-xs text-rose-600 mt-0.5 max-w-[150px] truncate"
-                                title={t.errorMessage}
-                              >
-                                {t.errorMessage}
-                              </span>
-                            )}
-                          </div>
+                          <Badge
+                            variant="destructive"
+                            dot
+                            title={t.errorMessage || 'Manual processing required'}
+                          >
+                            Failed (Manual)
+                          </Badge>
                         ) : t.status === 'BREACHED' ? (
-                          <div className="inline-flex flex-col items-center">
-                            <Badge variant="destructive" dot>SLA Breached</Badge>
-                            <span className="text-xs text-rose-600 mt-0.5">Pending</span>
-                          </div>
+                          <Badge
+                            variant="destructive"
+                            dot
+                            title="SLA Breached - Pending manual intervention"
+                          >
+                            SLA Breached
+                          </Badge>
                         ) : (
-                          <div className="inline-flex flex-col items-center">
-                            <Badge variant="warning" dot>Pending</Badge>
-                            <span className="text-xs text-amber-700 mt-0.5">Within 24h</span>
-                          </div>
+                          <Badge
+                            variant="warning"
+                            dot
+                            title="Pending generation (Scheduled within 24h cycle)"
+                          >
+                            Pending
+                          </Badge>
                         )}
                       </TableCell>
 
@@ -992,7 +931,8 @@ export default function SchedulePage() {
             <DialogTitle className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Users className="w-5 h-5 text-orange-600" />
-                <span>Manage Routine Monthly Subscriptions &amp; Grouping</span>
+                <span>Manage Routine Monthly Subscriptions</span>
+                <InfoTooltip content="Customers enrolled in routine schedules persist automatically each month until removed." />
               </div>
               <Badge variant="neutral" className="text-xs">
                 {routineCustomers.length} Total Enrolled
@@ -1001,10 +941,6 @@ export default function SchedulePage() {
           </DialogHeader>
 
           <div className="space-y-4 py-2 flex-1 overflow-hidden flex flex-col">
-            <p className="text-xs text-slate-600">
-              Only the NOC team has authority to enroll or remove customers from the permanent routine list and assign them to recipient department groups.
-            </p>
-
             {/* Department Selector Tabs inside Modal */}
             <div className="flex items-center justify-between border-b border-slate-200 pb-2 flex-wrap gap-2">
               <div className="flex items-center gap-1.5">
@@ -1191,9 +1127,9 @@ export default function SchedulePage() {
                               <div className="min-w-0">
                                 <div className="font-semibold text-slate-900 truncate">{c.customerName}</div>
                                 <div className="text-xs text-slate-500 flex items-center gap-2 truncate">
-                                  <span>ID: <code className="font-mono">{c.customerId}</code></span>
+                                  <span>ID: <code className="font-sans tabular-nums">{c.customerId}</code></span>
                                   <span>•</span>
-                                  <span>Service: <code className="font-mono">{c.serviceId}</code></span>
+                                  <span>Service: <code className="font-sans tabular-nums">{c.serviceId}</code></span>
                                   {c.serviceName && (
                                     <>
                                       <span>•</span>
@@ -1284,11 +1220,11 @@ export default function SchedulePage() {
 
                         <TableCell>
                           <div className="font-semibold text-slate-900">{cust.customerName}</div>
-                          <div className="text-xs text-slate-500 font-mono">{cust.customerId}</div>
+                          <div className="text-xs text-slate-500 font-sans tabular-nums">{cust.customerId}</div>
                         </TableCell>
 
                         <TableCell>
-                          <div className="font-mono text-slate-800">{cust.serviceId}</div>
+                          <div className="font-sans text-slate-800 tabular-nums">{cust.serviceId}</div>
                           <div className="text-xs text-slate-500">{cust.serviceName}</div>
                         </TableCell>
 
@@ -1327,10 +1263,7 @@ export default function SchedulePage() {
             </div>
           </div>
 
-          <DialogFooter className="pt-3 border-t border-slate-100 flex items-center justify-between">
-            <span className="text-xs text-slate-500">
-              Customers enrolled here persist each month automatically until removed.
-            </span>
+          <DialogFooter className="pt-3 border-t border-slate-100 flex items-center justify-end">
             <Button variant="secondary" onClick={() => setIsCustomerModalOpen(false)}>
               Done
             </Button>

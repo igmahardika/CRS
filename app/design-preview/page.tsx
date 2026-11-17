@@ -87,7 +87,7 @@ export default function DesignPreviewPage() {
   };
 
   return (
-    <div className="max-w-[1440px] mx-auto px-6 py-8 space-y-10">
+    <div className="space-y-10">
       {/* 1. Page Header */}
       <PageHeader
         title="Design System & Component Showcase"
