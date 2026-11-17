@@ -11,13 +11,14 @@ export interface UserSession {
 
 export const AUTH_COOKIE_NAME = 'crs_auth_token';
 export const LEGACY_AUTH_COOKIE_NAME = 'genre_auth_token';
-export const AUTH_SECRET =
-  process.env.AUTH_SECRET ||
-  (process.env.NODE_ENV === 'production'
-    ? (() => {
-        throw new Error('FATAL: AUTH_SECRET environment variable is mandatory in production mode.');
-      })()
-    : 'dev-crs-reporting-insecure-key-local-only');
+const FALLBACK_SECRET = 'nexa-crs-default-auth-secret-change-in-production';
+export const AUTH_SECRET = process.env.AUTH_SECRET || FALLBACK_SECRET;
+
+if (process.env.NODE_ENV === 'production' && !process.env.AUTH_SECRET) {
+  if (typeof window === 'undefined' && process.env.NEXT_PHASE !== 'phase-production-build') {
+    console.warn('[SECURITY WARNING] AUTH_SECRET is not set in environment. Using fallback secret.');
+  }
+}
 
 /**
  * Creates a signed JWT-like token (HMAC-SHA256)

@@ -84,6 +84,18 @@ async function runSmokeTest() {
       throw new Error(`Expected 401 on /api/customers, got ${apiRes.statusCode}`);
     }
 
+    // 4. Test unauthenticated /api/health returns 200 with healthy status
+    const healthRes = await request('/api/health');
+    console.log(`[Smoke Test] GET /api/health -> status ${healthRes.statusCode}`);
+    if (healthRes.statusCode !== 200) {
+      throw new Error(`Expected 200 on /api/health, got ${healthRes.statusCode}`);
+    }
+    const healthJson = JSON.parse(healthRes.body);
+    if (healthJson.status !== 'healthy' || healthJson.checks?.database?.status !== 'healthy') {
+      throw new Error(`Health check indicated unhealthy state: ${healthRes.body}`);
+    }
+    console.log('[Smoke Test] Health check confirmed DB connectivity and server health.');
+
     console.log('[Smoke Test] PASSED: All smoke test checks succeeded.');
   } finally {
     console.log('[Smoke Test] Stopping server...');
