@@ -32,13 +32,14 @@ export async function POST(req: NextRequest) {
       where: { id: 'default' },
     })) as any;
 
+    // Use trusted system configuration from database only to prevent SSRF
     const prtgConfig: PrtgAuthConfig = {
-      baseUrl: configOverride?.prtgBaseUrl || dbConfig?.prtgBaseUrl || 'https://nms.nexa.net.id',
-      username: configOverride?.prtgUsername !== undefined ? configOverride.prtgUsername : dbConfig?.prtgUsername,
-      password: configOverride?.prtgPassword !== undefined ? configOverride.prtgPassword : dbConfig?.prtgPassword,
-      authType: (configOverride?.prtgAuthType || dbConfig?.prtgAuthType || 'PASSHASH') as 'PASSWORD' | 'PASSHASH',
-      basicAuthUsername: configOverride?.prtgBasicUsername || dbConfig?.prtgBasicUsername || dbConfig?.mrtgUsername || 'appsmg01',
-      basicAuthPassword: configOverride?.prtgBasicPassword || dbConfig?.prtgBasicPassword || dbConfig?.mrtgPassword || 'appsmg01',
+      baseUrl: dbConfig?.prtgBaseUrl || 'https://nms.nexa.net.id',
+      username: dbConfig?.prtgUsername || undefined,
+      password: dbConfig?.prtgPassword || undefined,
+      authType: (dbConfig?.prtgAuthType || 'PASSHASH') as 'PASSWORD' | 'PASSHASH',
+      basicAuthUsername: dbConfig?.prtgBasicUsername || dbConfig?.mrtgUsername || 'appsmg01',
+      basicAuthPassword: dbConfig?.prtgBasicPassword || dbConfig?.mrtgPassword || 'appsmg01',
     };
 
     // Parallel fetch for PRTG graph image and traffic metrics

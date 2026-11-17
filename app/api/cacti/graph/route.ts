@@ -32,11 +32,12 @@ export async function POST(req: NextRequest) {
       where: { id: 'default' },
     });
 
+    // Use trusted system configuration from database only to prevent SSRF
     const mrtgConfig: MrtgAuthConfig = {
-      baseUrl: configOverride?.mrtgBaseUrl || dbConfig?.mrtgBaseUrl || 'http://cacti.internal.net',
-      authType: configOverride?.mrtgAuthType || (dbConfig?.mrtgAuthType as 'BASIC' | 'COOKIE' | 'NONE') || 'BASIC',
-      username: configOverride?.mrtgUsername !== undefined ? configOverride.mrtgUsername : dbConfig?.mrtgUsername,
-      password: configOverride?.mrtgPassword !== undefined ? configOverride.mrtgPassword : dbConfig?.mrtgPassword,
+      baseUrl: dbConfig?.mrtgBaseUrl || 'http://cacti.internal.net',
+      authType: (dbConfig?.mrtgAuthType as 'BASIC' | 'COOKIE' | 'NONE') || 'BASIC',
+      username: dbConfig?.mrtgUsername || undefined,
+      password: dbConfig?.mrtgPassword || undefined,
     };
 
     // Parallel fetch for image and metrics
