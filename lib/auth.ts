@@ -85,7 +85,7 @@ export async function setSessionCookie(session: UserSession) {
   const cookieStore = await cookies();
   cookieStore.set(AUTH_COOKIE_NAME, token, {
     httpOnly: true,
-    secure: process.env.SECURE_COOKIES === 'true',
+    secure: process.env.SECURE_COOKIES === 'true' || process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     path: '/',
     maxAge: 7 * 24 * 60 * 60, // 7 days
@@ -96,14 +96,14 @@ export async function clearSessionCookie() {
   const cookieStore = await cookies();
   cookieStore.set(AUTH_COOKIE_NAME, '', {
     httpOnly: true,
-    secure: process.env.SECURE_COOKIES === 'true',
+    secure: process.env.SECURE_COOKIES === 'true' || process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     path: '/',
     maxAge: 0,
   });
   cookieStore.set(LEGACY_AUTH_COOKIE_NAME, '', {
     httpOnly: true,
-    secure: process.env.SECURE_COOKIES === 'true',
+    secure: process.env.SECURE_COOKIES === 'true' || process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     path: '/',
     maxAge: 0,
@@ -285,7 +285,8 @@ export async function canUserAccessReport(
 export async function ensureDefaultAdmin() {
   const admin = await prisma.user.findUnique({ where: { username: 'admin' } });
   if (!admin) {
-    const { hash, salt } = hashPassword('admin123');
+    const defaultPassword = process.env.DEFAULT_ADMIN_PASSWORD || 'admin123';
+    const { hash, salt } = hashPassword(defaultPassword);
     await prisma.user.create({
       data: {
         username: 'admin',
