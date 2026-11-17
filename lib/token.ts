@@ -9,8 +9,9 @@ export interface UserSession {
   department: string;
 }
 
-export const AUTH_COOKIE_NAME = 'genre_auth_token';
-export const AUTH_SECRET = process.env.AUTH_SECRET || 'nexa-genre-reporting-secure-key-2026-auth-prod';
+export const AUTH_COOKIE_NAME = 'crs_auth_token';
+export const LEGACY_AUTH_COOKIE_NAME = 'genre_auth_token';
+export const AUTH_SECRET = process.env.AUTH_SECRET || 'nexa-crs-reporting-secure-key-2026-auth-prod';
 
 /**
  * Creates a signed JWT-like token (HMAC-SHA256)

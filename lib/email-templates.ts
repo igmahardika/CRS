@@ -1,5 +1,5 @@
 /**
- * Clean, corporate, responsive HTML email templates for NEXA GENRE REPORTING
+ * Clean, corporate, responsive HTML email templates for Customer Reporting System (Nexa)
  */
 
 interface RequestEmailProps {
@@ -71,13 +71,13 @@ export function renderRequestReceivedHtml(p: RequestEmailProps): string {
   return `
     <div style="${baseStyles} max-width: 640px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
       <div style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); padding: 24px 32px; color: #ffffff;">
-        <p style="margin: 0; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; color: #bae6fd;">NEXA GENRE &bull; Generator & Reporting</p>
+        <p style="margin: 0; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; color: #bae6fd;">NEXA &bull; Customer Reporting System</p>
         <h1 style="margin: 8px 0 0; font-size: 20px; font-weight: 700; color: #ffffff;">Permintaan Laporan Jaringan Diterima</h1>
       </div>
 
       <div style="padding: 32px;">
         <p style="margin-top: 0; font-size: 15px;">Halo Rekan Tim <strong>${p.requesterDept}</strong> &amp; <strong>Helpdesk NOC</strong>,</p>
-        <p style="font-size: 14px; color: #475569;">Permintaan laporan performa jaringan telah berhasil tercatat dalam antrean sistem GENRE dengan rincian sebagai berikut:</p>
+        <p style="font-size: 14px; color: #475569;">Permintaan laporan performa jaringan telah berhasil tercatat dalam antrean sistem Customer Reporting System dengan rincian sebagai berikut:</p>
 
         <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin: 20px 0;">
           <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
@@ -134,7 +134,7 @@ export function renderRequestReceivedHtml(p: RequestEmailProps): string {
 
         <div style="text-align: center; margin: 28px 0;">
           <a href="${p.appUrl}" style="background: #0284c7; color: #ffffff; text-decoration: none; padding: 12px 28px; border-radius: 8px; font-weight: 600; font-size: 14px; display: inline-block;">
-            Buka Antrean di Sistem GENRE &rarr;
+            Buka Antrean di Customer Reporting System &rarr;
           </a>
         </div>
 
@@ -144,7 +144,7 @@ export function renderRequestReceivedHtml(p: RequestEmailProps): string {
       </div>
 
       <div style="background: #f1f5f9; padding: 16px 32px; border-top: 1px solid #e2e8f0; font-size: 12px; color: #64748b;">
-        <p style="margin: 0;">NEXA GENRE System &bull; Helpdesk NOC: helpdesk@nexa.net.id</p>
+        <p style="margin: 0;">Customer Reporting System &bull; PT Internet Mulia Untuk Negeri (Nexa)</p>
       </div>
     </div>
   `;
@@ -157,7 +157,7 @@ export function renderApprovalNeededHtml(p: ApprovalNeededProps): string {
   return `
     <div style="${baseStyles} max-width: 640px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
       <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 24px 32px; color: #ffffff;">
-        <p style="margin: 0; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; color: #fef3c7;">NEXA GENRE &bull; PERSETUJUAN DOKUMEN</p>
+        <p style="margin: 0; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; color: #fef3c7;">NEXA &bull; PERSETUJUAN DOKUMEN</p>
         <h1 style="margin: 8px 0 0; font-size: 20px; font-weight: 700; color: #ffffff;">Menunggu Persetujuan Supervisor ${p.deptName}</h1>
       </div>
 
@@ -213,7 +213,7 @@ export function renderApprovalNeededHtml(p: ApprovalNeededProps): string {
       </div>
 
       <div style="background: #f1f5f9; padding: 16px 32px; border-top: 1px solid #e2e8f0; font-size: 12px; color: #64748b;">
-        <p style="margin: 0;">NEXA GENRE System &bull; Menjaga Kualitas &amp; Akurasi Layanan Pelanggan</p>
+        <p style="margin: 0;">Customer Reporting System &bull; PT Internet Mulia Untuk Negeri (Nexa)</p>
       </div>
     </div>
   `;
@@ -226,7 +226,7 @@ export function renderReportApprovedHtml(p: ReportApprovedProps): string {
   return `
     <div style="${baseStyles} max-width: 640px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
       <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 24px 32px; color: #ffffff;">
-        <p style="margin: 0; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; color: #d1fae5;">NEXA GENRE &bull; LAPORAN RESMI DISAHKAN</p>
+        <p style="margin: 0; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; color: #d1fae5;">NEXA &bull; LAPORAN RESMI DISAHKAN</p>
         <h1 style="margin: 8px 0 0; font-size: 20px; font-weight: 700; color: #ffffff;">Laporan Selesai &amp; Siap Diunduh</h1>
       </div>
 
@@ -273,12 +273,12 @@ export function renderReportApprovedHtml(p: ReportApprovedProps): string {
         </div>
 
         <p style="font-size: 13px; color: #64748b; margin-bottom: 0;">
-          Tiket permohonan ini telah resmi ditutup dengan status <strong>COMPLETED</strong>. Anda dapat melihat riwayat dokumen kapan saja di menu Riwayat Laporan GENRE.
+          Tiket permohonan ini telah resmi ditutup dengan status <strong>COMPLETED</strong>. Anda dapat melihat riwayat dokumen kapan saja di menu Riwayat Laporan.
         </p>
       </div>
 
       <div style="background: #f1f5f9; padding: 16px 32px; border-top: 1px solid #e2e8f0; font-size: 12px; color: #64748b;">
-        <p style="margin: 0;">NEXA GENRE System &bull; Dokumen resmi ketersediaan &amp; trafik jaringan</p>
+        <p style="margin: 0;">Customer Reporting System &bull; PT Internet Mulia Untuk Negeri (Nexa)</p>
       </div>
     </div>
   `;
@@ -300,7 +300,7 @@ export function renderKickoffDigestHtml(p: KickoffDigestProps): string {
   return `
     <div style="${baseStyles} max-width: 680px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
       <div style="background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%); padding: 24px 32px; color: #ffffff;">
-        <p style="margin: 0; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; color: #c7d2fe;">NEXA GENRE &bull; JADWAL BULANAN SLA 24 JAM</p>
+        <p style="margin: 0; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; color: #c7d2fe;">NEXA &bull; JADWAL BULANAN SLA 24 JAM</p>
         <h1 style="margin: 8px 0 0; font-size: 20px; font-weight: 700; color: #ffffff;">Kickoff Laporan Rutin Bulanan: Tim ${p.deptName}</h1>
       </div>
 
@@ -342,13 +342,13 @@ export function renderKickoffDigestHtml(p: KickoffDigestProps): string {
 
         <div style="text-align: center; margin: 28px 0;">
           <a href="${p.scheduleUrl}" style="background: #4f46e5; color: #ffffff; text-decoration: none; padding: 12px 28px; border-radius: 8px; font-weight: 600; font-size: 14px; display: inline-block;">
-            Pantau Progress di Dashboard GENRE &rarr;
+            Pantau Progress di Dashboard Jadwal &rarr;
           </a>
         </div>
       </div>
 
       <div style="background: #f1f5f9; padding: 16px 32px; border-top: 1px solid #e2e8f0; font-size: 12px; color: #64748b;">
-        <p style="margin: 0;">NEXA GENRE System &bull; Menjamin Pemenuhan Standar Layanan (SLA 24 Jam)</p>
+        <p style="margin: 0;">Customer Reporting System &bull; PT Internet Mulia Untuk Negeri (Nexa)</p>
       </div>
     </div>
   `;

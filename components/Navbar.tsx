@@ -201,16 +201,18 @@ export default function Navbar() {
         <div className="flex justify-between h-14 items-center">
           {/* Left: Brand Logo */}
           <div className="flex items-center space-x-6">
-            <Link href={homeHref} className="flex items-center space-x-2.5 shrink-0 group">
-              <div className="w-8 h-8 rounded-lg bg-orange-600 text-white flex items-center justify-center shadow-xs transition-transform group-hover:scale-105">
-                <BarChart3 className="w-4 h-4 stroke-[2]" />
-              </div>
-              <div className="flex flex-col">
-                <span className="font-heading text-base font-bold text-slate-900 tracking-tight leading-none">
-                  GENRE
+            <Link href={homeHref} className="flex items-center space-x-3 shrink-0 group">
+              <img
+                src="/assets/nexa-logo.png"
+                alt="Nexa Logo"
+                className="h-8 w-auto object-contain transition-transform group-hover:scale-105"
+              />
+              <div className="hidden sm:flex flex-col border-l border-slate-200 pl-3">
+                <span className="font-heading text-xs font-bold text-slate-900 tracking-tight leading-tight">
+                  Customer Reporting System
                 </span>
-                <span className="text-xs text-slate-500 font-semibold tracking-wider uppercase mt-0.5 leading-none">
-                  Reporting System
+                <span className="text-[10px] text-slate-500 font-medium leading-tight">
+                  PT Internet Mulia Untuk Negeri
                 </span>
               </div>
             </Link>

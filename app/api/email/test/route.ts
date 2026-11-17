@@ -25,8 +25,8 @@ export async function POST(req: NextRequest) {
       secure: Boolean(secure),
       user: user ? String(user).trim() : undefined,
       pass: pass ? String(pass) : undefined,
-      fromEmail: fromEmail ? String(fromEmail).trim() : 'noreply-genre@nexa.net.id',
-      fromName: fromName ? String(fromName).trim() : 'NEXA GENRE Reporting',
+      fromEmail: fromEmail ? String(fromEmail).trim() : 'noreply-reports@nexa.net.id',
+      fromName: fromName ? String(fromName).trim() : 'Nexa Customer Reporting System',
       toEmail: String(toEmail).trim(),
     });
 

@@ -1,5 +1,5 @@
 // ============================================================
-// GENRE REPORTING - Role & Department RBAC Matrix
+// Customer Reporting System - Role & Department RBAC Matrix
 // Edge-compatible: NO Node.js / Prisma imports allowed here
 // ============================================================
 

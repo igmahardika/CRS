@@ -103,8 +103,8 @@ export default function SettingsPage() {
     smtpSecure: false,
     smtpUser: '',
     smtpPassword: '',
-    smtpFromEmail: 'noreply-genre@nexa.net.id',
-    smtpFromName: 'NEXA GENRE Reporting',
+    smtpFromEmail: 'noreply-reports@nexa.net.id',
+    smtpFromName: 'Nexa Customer Reporting System',
     emailDeptSales: 'sls@nexa.net.id',
     emailDeptCe: 'cxe@nexa.net.id',
     emailDeptFinance: 'finc@nexa.net.id',
@@ -165,8 +165,8 @@ export default function SettingsPage() {
             prtgBaseUrl: data.config.prtgBaseUrl || 'http://prtg.internal.net',
             prtgAuthType: data.config.prtgAuthType || 'PASSWORD',
             smtpPort: data.config.smtpPort || 587,
-            smtpFromEmail: data.config.smtpFromEmail || 'noreply-genre@nexa.net.id',
-            smtpFromName: data.config.smtpFromName || 'NEXA GENRE Reporting',
+            smtpFromEmail: data.config.smtpFromEmail || 'noreply-reports@nexa.net.id',
+            smtpFromName: data.config.smtpFromName || 'Nexa Customer Reporting System',
             emailDeptSales: data.config.emailDeptSales || 'sls@nexa.net.id',
             emailDeptCe: data.config.emailDeptCe || 'cxe@nexa.net.id',
             emailDeptFinance: data.config.emailDeptFinance || 'finc@nexa.net.id',
@@ -833,7 +833,7 @@ export default function SettingsPage() {
                     <div>
                       <label className="font-medium text-slate-700 block mb-1">From Email Address</label>
                       <Input
-                        placeholder="noreply-genre@nexa.net.id"
+                        placeholder="noreply-reports@nexa.net.id"
                         value={config.smtpFromEmail}
                         onChange={(e) => setConfig({ ...config, smtpFromEmail: e.target.value })}
                         className="text-xs"
@@ -842,7 +842,7 @@ export default function SettingsPage() {
                     <div>
                       <label className="font-medium text-slate-700 block mb-1">Sender Display Name</label>
                       <Input
-                        placeholder="NEXA GENRE Reporting"
+                        placeholder="Nexa Customer Reporting System"
                         value={config.smtpFromName}
                         onChange={(e) => setConfig({ ...config, smtpFromName: e.target.value })}
                         className="text-xs"

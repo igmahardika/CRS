@@ -56,14 +56,16 @@ function LoginForm() {
       <div className="w-full max-w-sm bg-white rounded-xl border border-slate-200 shadow-sm p-6 sm:p-8 space-y-6">
         {/* Brand Header */}
         <div className="text-center">
-          <div className="w-10 h-10 rounded-lg bg-orange-600 text-white flex items-center justify-center mx-auto mb-3 shadow-xs">
-            <BarChart3 className="w-6 h-6 stroke-[2]" />
-          </div>
-          <h1 className="font-heading text-lg sm:text-xl font-semibold text-slate-900 tracking-tight">
-            GENRE
+          <img
+            src="/assets/nexa-logo.png"
+            alt="Nexa"
+            className="h-10 w-auto mx-auto mb-3 object-contain"
+          />
+          <h1 className="font-heading text-lg sm:text-xl font-bold text-slate-900 tracking-tight">
+            Customer Reporting System
           </h1>
-          <p className="text-xs text-slate-500 font-sans font-normal mt-0.5 leading-normal">
-            Sign in to access network telemetry and SLA reporting.
+          <p className="text-xs text-slate-500 font-sans font-normal mt-1 leading-normal">
+            PT Internet Mulia Untuk Negeri &bull; 2026
           </p>
         </div>
 
@@ -140,8 +142,8 @@ function LoginForm() {
 
         {/* Footer */}
         <div className="pt-2 text-center border-t border-slate-100">
-          <p className="text-xs text-slate-500 font-sans">
-            Nexa Telemetry & SLA Reporting
+          <p className="text-[11px] text-slate-400 font-sans">
+            &copy; 2026 PT Internet Mulia Untuk Negeri (Nexa). All rights reserved.
           </p>
         </div>
       </div>

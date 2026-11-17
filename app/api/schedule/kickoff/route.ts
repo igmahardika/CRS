@@ -13,7 +13,7 @@ const monthNames = [
 export async function POST(req: NextRequest) {
   // Support both interactive NOC admin auth and automated background cron
   const cronSecret = req.headers.get('x-cron-secret') || req.headers.get('authorization')?.replace('Bearer ', '');
-  const isAuthorizedCron = cronSecret && (cronSecret === process.env.CRON_SECRET || cronSecret === 'genre_cron_internal_2026');
+  const isAuthorizedCron = cronSecret && (cronSecret === process.env.CRON_SECRET || cronSecret === 'crs_cron_internal_2026' || cronSecret === 'genre_cron_internal_2026');
 
   if (!isAuthorizedCron) {
     const auth = await requirePermission('schedule:manage');
@@ -164,7 +164,7 @@ export async function POST(req: NextRequest) {
           await sendEmail({
             to: targetDeptEmail,
             cc: helpdeskEmail && helpdeskEmail !== targetDeptEmail ? helpdeskEmail : undefined,
-            subject: `[GENRE - KICKOFF SLA 24 JAM] Jadwal Rutin Laporan Bulanan ${monthName} ${periodYear} - Tim ${dept} (${custs.length} Pelanggan)`,
+            subject: `[CRS - 24H SLA KICKOFF] Monthly Routine Schedule ${monthName} ${periodYear} - ${dept} Team (${custs.length} Customers)`,
             html: emailHtml,
           });
         }

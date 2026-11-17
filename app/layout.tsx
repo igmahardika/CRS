@@ -3,10 +3,15 @@ import './globals.css';
 import LayoutContent from '@/components/LayoutContent';
 
 export const metadata: Metadata = {
-  title: 'GENRE REPORTING | Enterprise MRTG & SLA Portal',
-  description: 'Automated A4 PDF reporting system for MRTG, PRTG, and network SLA analytics.',
+  title: 'Customer Reporting System | PT Internet Mulia Untuk Negeri (Nexa)',
+  description: 'Customer Reporting System (CRS) - Automated SLA and MRTG reporting portal for PT Internet Mulia Untuk Negeri (Nexa).',
   icons: {
-    icon: '/favicon.ico',
+    icon: [
+      { url: '/favicon.ico' },
+      { url: '/favicon.png', type: 'image/png' },
+    ],
+    shortcut: '/favicon.ico',
+    apple: '/favicon.png',
   },
 };
 

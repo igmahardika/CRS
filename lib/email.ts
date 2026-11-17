@@ -110,8 +110,8 @@ export async function sendEmail(opts: EmailOptions): Promise<EmailResult> {
       connectionTimeout: 10000,
     });
 
-    const fromAddress = config.smtpFromEmail?.trim() || 'noreply-genre@nexa.net.id';
-    const fromName = config.smtpFromName?.trim() || 'NEXA GENRE Reporting';
+    const fromAddress = config.smtpFromEmail?.trim() || 'noreply-reports@nexa.net.id';
+    const fromName = config.smtpFromName?.trim() || 'Nexa Customer Reporting System';
 
     // Threading headers
     let messageId = opts.messageId;
@@ -121,7 +121,7 @@ export async function sendEmail(opts: EmailOptions): Promise<EmailResult> {
 
     if (opts.ticketNumber) {
       const cleanTicket = opts.ticketNumber.trim().replace(/[^a-zA-Z0-9_-]/g, '');
-      const rootThreadId = `<${cleanTicket}@genre.nexa.net.id>`;
+      const rootThreadId = `<${cleanTicket}@crs.nexa.net.id>`;
 
       if (opts.isFollowUp || inReplyTo) {
         inReplyTo = inReplyTo || rootThreadId;
@@ -145,7 +145,7 @@ export async function sendEmail(opts: EmailOptions): Promise<EmailResult> {
         ...(messageId ? { 'Message-ID': messageId } : {}),
         ...(inReplyTo ? { 'In-Reply-To': inReplyTo } : {}),
         ...(references ? { References: references } : {}),
-        'X-Entity-Ref-ID': opts.ticketNumber || 'genre-report',
+        'X-Entity-Ref-ID': opts.ticketNumber || 'crs-report',
       },
       attachments: opts.attachments,
     };
@@ -195,24 +195,24 @@ export async function testSmtpConnection(params: {
     // 2. Send test email
     const nowStr = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
     const info = await transporter.sendMail({
-      from: `"${params.fromName || 'NEXA GENRE Reporting'}" <${params.fromEmail || 'noreply-genre@nexa.net.id'}>`,
+      from: `"${params.fromName || 'Nexa Customer Reporting System'}" <${params.fromEmail || 'noreply-reports@nexa.net.id'}>`,
       to: params.toEmail,
-      subject: `[TEST EMAIL] Konfigurasi SMTP GENRE Reporting Berhasil (${nowStr} WIB)`,
+      subject: `[TEST EMAIL] SMTP Connection Test Successful (${nowStr} WIB)`,
       html: `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 8px;">
-          <h2 style="color: #0284c7; margin-top: 0;">Pengujian Koneksi SMTP Sukses</h2>
-          <p>Halo,</p>
-          <p>Email ini dikirim secara otomatis oleh sistem <strong>NEXA GENRE Reporting</strong> untuk menguji konfigurasi server SMTP Anda.</p>
+          <h2 style="color: #0284c7; margin-top: 0;">SMTP Connection Test Successful</h2>
+          <p>Hello,</p>
+          <p>This automated email was sent by <strong>Customer Reporting System (Nexa)</strong> to verify your SMTP server configuration.</p>
           <table style="width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px;">
-            <tr><td style="padding: 6px 0; color: #64748b;">Host SMTP:</td><td style="font-weight: 600;">${params.host}</td></tr>
+            <tr><td style="padding: 6px 0; color: #64748b;">SMTP Host:</td><td style="font-weight: 600;">${params.host}</td></tr>
             <tr><td style="padding: 6px 0; color: #64748b;">Port:</td><td style="font-weight: 600;">${params.port} (${params.secure ? 'SSL/TLS' : 'STARTTLS/Plain'})</td></tr>
-            <tr><td style="padding: 6px 0; color: #64748b;">User SMTP:</td><td style="font-weight: 600;">${params.user || '(Tanpa Autentikasi)'}</td></tr>
-            <tr><td style="padding: 6px 0; color: #64748b;">Pengirim:</td><td style="font-weight: 600;">${params.fromName} &lt;${params.fromEmail}&gt;</td></tr>
-            <tr><td style="padding: 6px 0; color: #64748b;">Waktu Pengujian:</td><td style="font-weight: 600;">${nowStr} WIB</td></tr>
+            <tr><td style="padding: 6px 0; color: #64748b;">User:</td><td style="font-weight: 600;">${params.user || '(None)'}</td></tr>
+            <tr><td style="padding: 6px 0; color: #64748b;">Sender:</td><td style="font-weight: 600;">${params.fromName} &lt;${params.fromEmail}&gt;</td></tr>
+            <tr><td style="padding: 6px 0; color: #64748b;">Timestamp:</td><td style="font-weight: 600;">${nowStr} WIB</td></tr>
           </table>
-          <p style="color: #10b981; font-weight: 600;">Seluruh sistem siap digunakan untuk mengirimkan notifikasi permohonan laporan dan persetujuan.</p>
+          <p style="color: #10b981; font-weight: 600;">The email dispatch system is operational and ready for report notifications.</p>
           <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
-          <p style="font-size: 12px; color: #94a3b8; margin: 0;">NEXA GENRE (Generator & Reporting) System &copy; ${new Date().getFullYear()}</p>
+          <p style="font-size: 12px; color: #94a3b8; margin: 0;">Customer Reporting System &copy; 2026 PT Internet Mulia Untuk Negeri (Nexa)</p>
         </div>
       `,
     });

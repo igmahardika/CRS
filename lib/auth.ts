@@ -4,6 +4,7 @@ import { prisma } from './prisma';
 import {
   UserSession,
   AUTH_COOKIE_NAME,
+  LEGACY_AUTH_COOKIE_NAME,
   AUTH_SECRET,
   createToken,
   verifyToken,
@@ -11,7 +12,7 @@ import {
 import { hasPermission, PermissionKey, isNocDepartment } from './permissions';
 
 export type { UserSession };
-export { AUTH_COOKIE_NAME, AUTH_SECRET, createToken, verifyToken };
+export { AUTH_COOKIE_NAME, LEGACY_AUTH_COOKIE_NAME, AUTH_SECRET, createToken, verifyToken };
 
 // ============================================================
 // Password Hashing (PBKDF2 / scrypt)
@@ -42,7 +43,7 @@ export function verifyPassword(password: string, hash: string, salt: string): bo
 export async function getSession(): Promise<UserSession | null> {
   try {
     const cookieStore = await cookies();
-    const token = cookieStore.get(AUTH_COOKIE_NAME)?.value;
+    const token = cookieStore.get(AUTH_COOKIE_NAME)?.value || cookieStore.get(LEGACY_AUTH_COOKIE_NAME)?.value;
     if (!token) return null;
 
     const payload = verifyToken(token);
@@ -94,6 +95,13 @@ export async function setSessionCookie(session: UserSession) {
 export async function clearSessionCookie() {
   const cookieStore = await cookies();
   cookieStore.set(AUTH_COOKIE_NAME, '', {
+    httpOnly: true,
+    secure: process.env.SECURE_COOKIES === 'true',
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 0,
+  });
+  cookieStore.set(LEGACY_AUTH_COOKIE_NAME, '', {
     httpOnly: true,
     secure: process.env.SECURE_COOKIES === 'true',
     sameSite: 'lax',

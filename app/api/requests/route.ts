@@ -233,7 +233,7 @@ export async function POST(req: NextRequest) {
             const targetPeriod = periodsToCreate[i];
             const nextSeq = String(maxSeq + 1 + i + attempts).padStart(4, '0');
             const ticketNumber = `${prefix}${nextSeq}`;
-            const emailThreadMessageId = `<${ticketNumber}@genre.nexa.net.id>`;
+            const emailThreadMessageId = `<${ticketNumber}@crs.nexa.net.id>`;
 
             const reqRecord = await tx.reportRequest.create({
               data: {
@@ -352,7 +352,7 @@ export async function POST(req: NextRequest) {
         await sendEmail({
           to: deptEmail,
           cc: Array.from(ccSet),
-          subject: `[GENRE - Tiket ${firstReq.ticketNumber}] Permintaan Laporan ${firstReq.reportType} - ${firstReq.customerName} (${periodLabel})`,
+          subject: `[CRS - Ticket ${firstReq.ticketNumber}] Report Request ${firstReq.reportType} - ${firstReq.customerName} (${periodLabel})`,
           html: emailHtml,
           ticketNumber: firstReq.ticketNumber,
           messageId: firstReq.emailThreadMessageId || undefined,

@@ -23,10 +23,10 @@ export async function POST(req: NextRequest) {
     });
 
     const testText =
-      `<b>🤖 Uji Coba Integrasi Genre Reporting Bot</b>\n\n` +
-      `✅ <b>Koneksi Berhasil!</b>\n` +
-      `Pesan ini berhasil diterima di topik grup Telegram pada <code>${nowStr} WIB</code>.\n\n` +
-      `<i>Sistem pelaporan Genre Reporting siap mempublikasikan notifikasi antrean, jadwal SLA 24 jam, dan approval supervisor ke topik ini.</i>`;
+      `<b>🤖 Customer Reporting System Bot Test</b>\n\n` +
+      `✅ <b>Connection Successful!</b>\n` +
+      `This message was received in the Telegram group topic at <code>${nowStr} WIB</code>.\n\n` +
+      `<i>Customer Reporting System is configured and ready to publish queue alerts, 24H SLA schedules, and supervisor approvals.</i>`;
 
     const result = await sendTelegramNotification({
       botToken,

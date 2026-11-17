@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { AUTH_COOKIE_NAME, verifyTokenEdge } from '@/lib/token-edge';
+import { AUTH_COOKIE_NAME, LEGACY_AUTH_COOKIE_NAME, verifyTokenEdge } from '@/lib/token-edge';
 import { canAccessPage, getDefaultLandingRoute } from '@/lib/permissions';
 
 export async function middleware(req: NextRequest) {
@@ -11,6 +11,7 @@ export async function middleware(req: NextRequest) {
     pathname.startsWith('/_next') ||
     pathname.startsWith('/assets') ||
     pathname.startsWith('/favicon.ico') ||
+    pathname.startsWith('/favicon.png') ||
     pathname.startsWith('/api/auth/login') ||
     pathname.startsWith('/api/auth/logout') ||
     pathname.startsWith('/design-preview')
@@ -18,7 +19,7 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  const token = req.cookies.get(AUTH_COOKIE_NAME)?.value;
+  const token = req.cookies.get(AUTH_COOKIE_NAME)?.value || req.cookies.get(LEGACY_AUTH_COOKIE_NAME)?.value;
   // Cryptographically verify signature and expiry using Edge-compatible Web Crypto
   const user = token ? await verifyTokenEdge(token) : null;
 

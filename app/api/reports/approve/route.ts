@@ -232,8 +232,8 @@ export async function POST(req: NextRequest) {
           await sendEmail({
             to: deptEmail,
             subject: ticketNumber
-              ? `Re: [GENRE - Tiket ${ticketNumber}] Permintaan Laporan ${updated.reportType} - ${updated.customerName} (${updated.reportPeriod})`
-              : `[GENRE - PERLU APPROVAL] Laporan ${updated.reportType} - ${updated.customerName} (${updated.documentNumber})`,
+              ? `Re: [CRS - Ticket ${ticketNumber}] Report Request ${updated.reportType} - ${updated.customerName} (${updated.reportPeriod})`
+              : `[CRS - APPROVAL REQUIRED] Report ${updated.reportType} - ${updated.customerName} (${updated.documentNumber})`,
             html: emailHtml,
             ticketNumber: ticketNumber || undefined,
             isFollowUp: Boolean(ticketNumber),
@@ -284,8 +284,8 @@ export async function POST(req: NextRequest) {
             to: deptEmail,
             cc: Array.from(ccList),
             subject: ticketNumber
-              ? `Re: [GENRE - Tiket ${ticketNumber}] Permintaan Laporan ${updated.reportType} - ${updated.customerName} (${updated.reportPeriod})`
-              : `[GENRE - LAPORAN RESMI DISAHKAN] Laporan ${updated.reportType} - ${updated.customerName} (${updated.documentNumber})`,
+              ? `Re: [CRS - Ticket ${ticketNumber}] Report Request ${updated.reportType} - ${updated.customerName} (${updated.reportPeriod})`
+              : `[CRS - OFFICIAL REPORT APPROVED] Report ${updated.reportType} - ${updated.customerName} (${updated.documentNumber})`,
             html: emailHtml,
             ticketNumber: ticketNumber || undefined,
             isFollowUp: Boolean(ticketNumber),
