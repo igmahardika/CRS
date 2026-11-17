@@ -20,12 +20,28 @@ if (process.env.NODE_ENV === 'production' && !process.env.AUTH_SECRET) {
   }
 }
 
+export const ROLE_SESSION_MAX_AGE_SECONDS: Record<string, number> = {
+  ADMIN: 4 * 60 * 60,        // 4 Hours (High Privilege security boundary)
+  SUPERVISOR: 8 * 60 * 60,   // 8 Hours (Standard supervisory work day)
+  OPERATOR: 12 * 60 * 60,    // 12 Hours (NOC duty shift)
+  STAFF: 12 * 60 * 60,       // 12 Hours (Departmental duty shift)
+  VIEWER: 24 * 60 * 60,      // 24 Hours (Read-only observer session)
+};
+
+export function getSessionDurationSeconds(role?: string): number {
+  if (role && role in ROLE_SESSION_MAX_AGE_SECONDS) {
+    return ROLE_SESSION_MAX_AGE_SECONDS[role];
+  }
+  return 8 * 60 * 60; // default 8 hours
+}
+
 /**
  * Creates a signed JWT-like token (HMAC-SHA256)
  */
-export function createToken(payload: UserSession, expiresInDays = 7): string {
+export function createToken(payload: UserSession, expiresInSeconds?: number): string {
+  const duration = expiresInSeconds || getSessionDurationSeconds(payload.role);
   const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
-  const exp = Math.floor(Date.now() / 1000) + expiresInDays * 24 * 60 * 60;
+  const exp = Math.floor(Date.now() / 1000) + duration;
   const body = Buffer.from(JSON.stringify({ ...payload, exp })).toString('base64url');
   const signature = crypto
     .createHmac('sha256', AUTH_SECRET)

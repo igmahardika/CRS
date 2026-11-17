@@ -119,6 +119,8 @@ export default function RequestsQueuePage() {
 
   const isNocOrAdmin =
     currentUser?.role === 'ADMIN' || currentUser?.department === 'Network Operation';
+  const isSupervisorOrAdmin =
+    currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPERVISOR';
 
   // Open drawer if ?new=1 or ?action=new is in the URL
   useEffect(() => {
@@ -557,7 +559,31 @@ export default function RequestsQueuePage() {
                           {/* NOC / Admin Actions */}
                           {isNocOrAdmin && (
                             <>
-                              {r.status !== 'COMPLETED' && (
+                              {r.status === 'COMPLETED' && (
+                                <Badge variant="success" className="text-xs">
+                                  Done
+                                </Badge>
+                              )}
+
+                              {r.status === 'CANCELLED' && (
+                                isSupervisorOrAdmin ? (
+                                  <Button
+                                    variant="secondary"
+                                    size="sm"
+                                    onClick={() => handleUpdateStatus(r.id, 'IN_PROGRESS')}
+                                    disabled={updatingId === r.id}
+                                    className="text-xs h-7 px-2 border-orange-200 text-orange-700 hover:bg-orange-50 hover:text-orange-800"
+                                    title="Supervisor: Reopen and change status to In Progress"
+                                  >
+                                    <RotateCcw className="w-3 h-3 mr-1" />
+                                    <span>Reopen</span>
+                                  </Button>
+                                ) : (
+                                  <span className="text-2xs text-slate-400 italic">Cancelled</span>
+                                )
+                              )}
+
+                              {r.status !== 'COMPLETED' && r.status !== 'CANCELLED' && (
                                 <Button
                                   variant="primary"
                                   size="sm"
@@ -568,11 +594,6 @@ export default function RequestsQueuePage() {
                                   <Play className="w-3 h-3 mr-1 fill-white" />
                                   <span>Process</span>
                                 </Button>
-                              )}
-                              {r.status === 'COMPLETED' && (
-                                <Badge variant="success" className="text-xs">
-                                  Done
-                                </Badge>
                               )}
                             </>
                           )}
@@ -917,7 +938,7 @@ export default function RequestsQueuePage() {
                 <Button variant="secondary" onClick={() => setSelectedRequest(null)}>
                   Close
                 </Button>
-                {isNocOrAdmin && selectedRequest.status !== 'COMPLETED' && (
+                {isNocOrAdmin && selectedRequest.status !== 'COMPLETED' && selectedRequest.status !== 'CANCELLED' && (
                   <Button
                     variant="primary"
                     onClick={() => {
@@ -928,6 +949,19 @@ export default function RequestsQueuePage() {
                   >
                     <Play className="w-3.5 h-3.5 mr-1 fill-white" />
                     <span>Process in Generator</span>
+                  </Button>
+                )}
+                {isSupervisorOrAdmin && selectedRequest.status === 'CANCELLED' && (
+                  <Button
+                    variant="primary"
+                    onClick={() => {
+                      handleUpdateStatus(selectedRequest.id, 'IN_PROGRESS');
+                    }}
+                    disabled={updatingId === selectedRequest.id}
+                    className="bg-orange-600 hover:bg-orange-700 text-white"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5 mr-1" />
+                    <span>Reopen to In Progress</span>
                   </Button>
                 )}
               </DialogFooter>

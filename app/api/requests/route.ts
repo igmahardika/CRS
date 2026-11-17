@@ -408,6 +408,16 @@ export async function PATCH(req: NextRequest) {
     const canProcess = hasPermission(auth.session, 'request:process');
     const canCancelOwn = hasPermission(auth.session, 'request:cancel_own');
 
+    // Rule: if ticket is already CANCELLED, only SUPERVISOR or ADMIN can reactivate it
+    if (existingRequest.status === 'CANCELLED' && status !== 'CANCELLED') {
+      const isSupervisorOrAdmin = auth.session.role === 'ADMIN' || auth.session.role === 'SUPERVISOR';
+      if (!isSupervisorOrAdmin) {
+        return NextResponse.json({
+          error: 'Akses ditolak: Hanya Supervisor atau Administrator yang dapat membuka kembali tiket yang telah dibatalkan.',
+        }, { status: 403 });
+      }
+    }
+
     // If user is not NOC/Admin, they can ONLY cancel a PENDING request belonging to their department
     if (!canProcess) {
       if (

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth';
 import { sendTelegramNotification } from '@/lib/telegram';
+import { prisma } from '@/lib/prisma';
 
 export async function POST(req: NextRequest) {
   const auth = await requireAdmin();
@@ -10,11 +11,16 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json().catch(() => ({}));
-    const { botToken, chatId, threadId } = body as {
+    let { botToken, chatId, threadId } = body as {
       botToken?: string;
       chatId?: string;
       threadId?: string;
     };
+
+    if (!botToken || botToken === '••••••••') {
+      const config = await prisma.appConfig.findUnique({ where: { id: 'default' } });
+      botToken = config?.telegramBotToken || '';
+    }
 
     const nowStr = new Date().toLocaleString('id-ID', {
       timeZone: 'Asia/Jakarta',

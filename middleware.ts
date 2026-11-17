@@ -15,7 +15,7 @@ export async function middleware(req: NextRequest) {
     pathname.startsWith('/api/auth/login') ||
     pathname.startsWith('/api/auth/logout') ||
     pathname.startsWith('/api/health') ||
-    pathname.startsWith('/design-preview')
+    (process.env.NODE_ENV !== 'production' && pathname.startsWith('/design-preview'))
   ) {
     return NextResponse.next();
   }

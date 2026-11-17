@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma';
 import { requireAdmin } from '@/lib/auth';
 import { invalidateCactiSessionCache } from '@/lib/mrtg-service';
 
+const PASSWORD_MASK = '••••••••';
+
 export async function GET() {
   const auth = await requireAdmin();
   if (!auth.authorized) {
@@ -35,7 +37,17 @@ export async function GET() {
       });
     }
 
-    return NextResponse.json({ config });
+    // Mask sensitive credentials so they are never leaked in plaintext
+    const safeConfig = {
+      ...config,
+      mrtgPassword: config.mrtgPassword ? PASSWORD_MASK : '',
+      prtgPassword: config.prtgPassword ? PASSWORD_MASK : '',
+      prtgBasicPassword: config.prtgBasicPassword ? PASSWORD_MASK : '',
+      smtpPassword: config.smtpPassword ? PASSWORD_MASK : '',
+      telegramBotToken: config.telegramBotToken ? PASSWORD_MASK : '',
+    };
+
+    return NextResponse.json({ config: safeConfig });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
     return NextResponse.json({ error: msg }, { status: 500 });
@@ -50,25 +62,35 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
+
+    // Fetch existing config to preserve passwords if masked or omitted
+    const current = await prisma.appConfig.findUnique({ where: { id: 'default' } });
+
+    const resolveSecret = (incoming: unknown, existing: string | null | undefined): string => {
+      if (typeof incoming !== 'string') return existing || '';
+      if (!incoming || incoming === PASSWORD_MASK) return existing || '';
+      return incoming;
+    };
+
     const updated = await prisma.appConfig.upsert({
       where: { id: 'default' },
       update: {
         mrtgBaseUrl: body.mrtgBaseUrl,
         mrtgUsername: body.mrtgUsername,
-        mrtgPassword: body.mrtgPassword,
+        mrtgPassword: resolveSecret(body.mrtgPassword, current?.mrtgPassword),
         mrtgAuthType: body.mrtgAuthType || 'BASIC',
         prtgBaseUrl: body.prtgBaseUrl || 'http://prtg.internal.net',
         prtgUsername: body.prtgUsername || '',
-        prtgPassword: body.prtgPassword || '',
+        prtgPassword: resolveSecret(body.prtgPassword, current?.prtgPassword),
         prtgAuthType: body.prtgAuthType || 'PASSWORD',
         prtgBasicUsername: body.prtgBasicUsername !== undefined ? body.prtgBasicUsername : 'appsmg01',
-        prtgBasicPassword: body.prtgBasicPassword !== undefined ? body.prtgBasicPassword : 'appsmg01',
+        prtgBasicPassword: resolveSecret(body.prtgBasicPassword, current?.prtgBasicPassword),
         coverMrtgPath: body.coverMrtgPath,
         coverSlaPath: body.coverSlaPath,
         pageBgPath: body.pageBgPath,
         defaultTargetSla: parseFloat(body.defaultTargetSla) || 99.5,
         documentNumberPrefix: body.documentNumberPrefix || 'IMUN.01',
-        telegramBotToken: body.telegramBotToken !== undefined ? body.telegramBotToken : '',
+        telegramBotToken: resolveSecret(body.telegramBotToken, current?.telegramBotToken),
         telegramChatId: body.telegramChatId !== undefined ? body.telegramChatId : '',
         telegramThreadId: body.telegramThreadId !== undefined ? body.telegramThreadId : '',
         telegramNotificationsEnabled: Boolean(body.telegramNotificationsEnabled),
@@ -77,7 +99,7 @@ export async function POST(req: NextRequest) {
         smtpPort: parseInt(body.smtpPort, 10) || 587,
         smtpSecure: Boolean(body.smtpSecure),
         smtpUser: body.smtpUser !== undefined ? body.smtpUser : '',
-        smtpPassword: body.smtpPassword !== undefined ? body.smtpPassword : '',
+        smtpPassword: resolveSecret(body.smtpPassword, current?.smtpPassword),
         smtpFromEmail: body.smtpFromEmail !== undefined ? body.smtpFromEmail : 'noreply-reports@nexa.net.id',
         smtpFromName: body.smtpFromName !== undefined ? body.smtpFromName : 'Nexa Customer Reporting System',
         emailDeptSales: body.emailDeptSales !== undefined ? body.emailDeptSales : 'sls@nexa.net.id',

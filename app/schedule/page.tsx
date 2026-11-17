@@ -521,10 +521,6 @@ export default function SchedulePage() {
         }
         actions={
           <div className="flex items-center gap-2 flex-wrap">
-            <div className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-50 text-emerald-800 border border-emerald-200">
-              <span className="w-2 h-2 rounded-full bg-emerald-500" />
-              <span>Auto-Trigger: 1st of month, 08:00 WIB</span>
-            </div>
             <Button
               variant="primary"
               size="sm"
@@ -770,7 +766,7 @@ export default function SchedulePage() {
                   <TableHead className="w-12 text-center">No</TableHead>
                   <TableHead>Customer &amp; Department</TableHead>
                   <TableHead>Service ID &amp; Plan</TableHead>
-                  <TableHead>Report Type &amp; Engine</TableHead>
+                  <TableHead>Report Type</TableHead>
                   <TableHead>Kickoff &amp; SLA Deadline</TableHead>
                   <TableHead className="text-center">Status</TableHead>
                   <TableHead className="text-right">Action</TableHead>
@@ -802,28 +798,12 @@ export default function SchedulePage() {
 
                       {/* Report Type & Execution Engine */}
                       <TableCell>
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-1.5">
-                            <Badge
-                              variant={t.reportType === 'SLA' ? 'info' : t.reportType === 'MRTG' ? 'warning' : 'neutral'}
-                            >
-                              {t.reportType}
-                            </Badge>
-                          </div>
-                          <div>
-                            {t.reportType === 'MRTG' ? (
-                              <span className="inline-flex items-center gap-1 text-xs text-indigo-700 font-semibold bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-200">
-                                <Activity className="w-2.5 h-2.5" />
-                                <span>Auto-Scheduled (02:00)</span>
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 text-xs text-amber-800 font-semibold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
-                                <ShieldCheck className="w-2.5 h-2.5" />
-                                <span>Manual NOC Action</span>
-                              </span>
-                            )}
-                          </div>
-                        </div>
+                        <Badge
+                          variant={t.reportType === 'SLA' ? 'info' : t.reportType === 'MRTG' ? 'warning' : 'neutral'}
+                          className="font-semibold text-xs"
+                        >
+                          {t.reportType}
+                        </Badge>
                       </TableCell>
 
                       {/* Kickoff & SLA */}

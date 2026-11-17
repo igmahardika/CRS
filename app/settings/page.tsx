@@ -120,13 +120,6 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<{ [key: string]: string }>({});
 
-  // Password visibility toggles
-  const [showMrtgPassword, setShowMrtgPassword] = useState(false);
-  const [showPrtgPassword, setShowPrtgPassword] = useState(false);
-  const [showPrtgBasicPassword, setShowPrtgBasicPassword] = useState(false);
-  const [showTelegramToken, setShowTelegramToken] = useState(false);
-  const [showSmtpPassword, setShowSmtpPassword] = useState(false);
-
   // File input refs
   const mrtgFileRef = useRef<HTMLInputElement>(null);
   const slaFileRef = useRef<HTMLInputElement>(null);
@@ -537,23 +530,14 @@ export default function SettingsPage() {
                     </div>
                     <div>
                       <label className="font-medium text-slate-700 block mb-1">Cacti Password</label>
-                      <div className="relative">
-                        <Input
-                          type={showMrtgPassword ? 'text' : 'password'}
-                          value={config.mrtgPassword || ''}
-                          onChange={(e) => setConfig({ ...config, mrtgPassword: e.target.value })}
-                          className="text-xs pr-8"
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon-sm"
-                          onClick={() => setShowMrtgPassword(!showMrtgPassword)}
-                          className="absolute right-0.5 top-0.5 h-7 w-7 text-slate-500 hover:text-slate-800"
-                        >
-                          {showMrtgPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                        </Button>
-                      </div>
+                      <Input
+                        type="password"
+                        value={config.mrtgPassword || ''}
+                        onChange={(e) => setConfig({ ...config, mrtgPassword: e.target.value })}
+                        placeholder="••••••••"
+                        className="text-xs font-mono"
+                        autoComplete="new-password"
+                      />
                     </div>
                   </div>
 
@@ -636,23 +620,14 @@ export default function SettingsPage() {
                     </div>
                     <div>
                       <label className="font-medium text-slate-700 block mb-1">PRTG Password / Passhash</label>
-                      <div className="relative">
-                        <Input
-                          type={showPrtgPassword ? 'text' : 'password'}
-                          value={config.prtgPassword || ''}
-                          onChange={(e) => setConfig({ ...config, prtgPassword: e.target.value })}
-                          className="text-xs pr-8"
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon-sm"
-                          onClick={() => setShowPrtgPassword(!showPrtgPassword)}
-                          className="absolute right-0.5 top-0.5 h-7 w-7 text-slate-500 hover:text-slate-800"
-                        >
-                          {showPrtgPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                        </Button>
-                      </div>
+                      <Input
+                        type="password"
+                        value={config.prtgPassword || ''}
+                        onChange={(e) => setConfig({ ...config, prtgPassword: e.target.value })}
+                        placeholder="••••••••"
+                        className="text-xs font-mono"
+                        autoComplete="new-password"
+                      />
                     </div>
                   </div>
 
@@ -673,23 +648,14 @@ export default function SettingsPage() {
                       </div>
                       <div>
                         <label className="font-medium text-slate-700 block mb-1">Proxy Password</label>
-                        <div className="relative">
-                          <Input
-                            type={showPrtgBasicPassword ? 'text' : 'password'}
-                            value={config.prtgBasicPassword || ''}
-                            onChange={(e) => setConfig({ ...config, prtgBasicPassword: e.target.value })}
-                            className="text-xs pr-8"
-                          />
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon-sm"
-                            onClick={() => setShowPrtgBasicPassword(!showPrtgBasicPassword)}
-                            className="absolute right-0.5 top-0.5 h-7 w-7 text-slate-500 hover:text-slate-800"
-                          >
-                            {showPrtgBasicPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                          </Button>
-                        </div>
+                        <Input
+                          type="password"
+                          value={config.prtgBasicPassword || ''}
+                          onChange={(e) => setConfig({ ...config, prtgBasicPassword: e.target.value })}
+                          placeholder="••••••••"
+                          className="text-xs font-mono"
+                          autoComplete="new-password"
+                        />
                       </div>
                     </div>
                   </div>
@@ -808,24 +774,14 @@ export default function SettingsPage() {
                     </div>
                     <div>
                       <label className="font-medium text-slate-700 block mb-1">SMTP Password</label>
-                      <div className="relative">
-                        <Input
-                          type={showSmtpPassword ? 'text' : 'password'}
-                          placeholder="SMTP password..."
-                          value={config.smtpPassword || ''}
-                          onChange={(e) => setConfig({ ...config, smtpPassword: e.target.value })}
-                          className="text-xs pr-8"
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon-sm"
-                          onClick={() => setShowSmtpPassword(!showSmtpPassword)}
-                          className="absolute right-0.5 top-0.5 h-7 w-7 text-slate-500 hover:text-slate-800"
-                        >
-                          {showSmtpPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                        </Button>
-                      </div>
+                      <Input
+                        type="password"
+                        placeholder="••••••••"
+                        value={config.smtpPassword || ''}
+                        onChange={(e) => setConfig({ ...config, smtpPassword: e.target.value })}
+                        className="text-xs font-mono"
+                        autoComplete="new-password"
+                      />
                     </div>
                   </div>
 
@@ -987,23 +943,14 @@ export default function SettingsPage() {
                     <label className="font-medium text-slate-700 block mb-1">
                       Telegram Bot Token <span className="text-rose-500">*</span>
                     </label>
-                    <div className="relative">
-                      <Input
-                        type={showTelegramToken ? 'text' : 'password'}
-                        value={config.telegramBotToken}
-                        onChange={(e) => setConfig({ ...config, telegramBotToken: e.target.value })}
-                        className="text-xs pr-8 font-sans"
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon-sm"
-                        onClick={() => setShowTelegramToken(!showTelegramToken)}
-                        className="absolute right-0.5 top-0.5 h-7 w-7 text-slate-500 hover:text-slate-800"
-                      >
-                        {showTelegramToken ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                      </Button>
-                    </div>
+                    <Input
+                      type="password"
+                      value={config.telegramBotToken}
+                      onChange={(e) => setConfig({ ...config, telegramBotToken: e.target.value })}
+                      placeholder="••••••••"
+                      className="text-xs font-mono"
+                      autoComplete="new-password"
+                    />
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

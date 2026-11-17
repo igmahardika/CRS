@@ -8,11 +8,21 @@ import {
   AUTH_SECRET,
   createToken,
   verifyToken,
+  getSessionDurationSeconds,
+  ROLE_SESSION_MAX_AGE_SECONDS,
 } from './token';
 import { hasPermission, PermissionKey, isNocDepartment } from './permissions';
 
 export type { UserSession };
-export { AUTH_COOKIE_NAME, LEGACY_AUTH_COOKIE_NAME, AUTH_SECRET, createToken, verifyToken };
+export {
+  AUTH_COOKIE_NAME,
+  LEGACY_AUTH_COOKIE_NAME,
+  AUTH_SECRET,
+  createToken,
+  verifyToken,
+  getSessionDurationSeconds,
+  ROLE_SESSION_MAX_AGE_SECONDS,
+};
 
 // ============================================================
 // Password Hashing (PBKDF2 / scrypt)
@@ -81,14 +91,15 @@ export async function getSession(): Promise<UserSession | null> {
 }
 
 export async function setSessionCookie(session: UserSession) {
-  const token = createToken(session);
+  const duration = getSessionDurationSeconds(session.role);
+  const token = createToken(session, duration);
   const cookieStore = await cookies();
   cookieStore.set(AUTH_COOKIE_NAME, token, {
     httpOnly: true,
     secure: process.env.SECURE_COOKIES === 'true' || process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     path: '/',
-    maxAge: 7 * 24 * 60 * 60, // 7 days
+    maxAge: duration,
   });
 }
 

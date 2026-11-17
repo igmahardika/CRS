@@ -290,7 +290,7 @@ export default function Navbar() {
                   </DropdownMenu>
                 )}
 
-                {/* 2. Menu: Queue & Schedule */}
+                {/* 2. Menu: Operations (Requests & Schedules) */}
                 {(canViewQueue || canCreateRequest || canViewSchedule) && (
                   canViewSchedule ? (
                     <DropdownMenu>
@@ -303,7 +303,7 @@ export default function Navbar() {
                             }`}
                         >
                           <Clock className={`w-4 h-4 stroke-[1.75] ${isQueueActive ? 'text-orange-700' : 'text-slate-500'}`} />
-                          <span>Queue &amp; Schedule</span>
+                          <span>Operations</span>
                           <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
                         </button>
                       </DropdownMenuTrigger>
@@ -596,11 +596,11 @@ export default function Navbar() {
             </div>
           )}
 
-          {/* Section 2: Queue & Schedule */}
+          {/* Section 2: Operations */}
           {(canViewQueue || canCreateRequest || canViewSchedule) && (
             <div className="space-y-1 pt-2 border-t border-slate-100">
               <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-2">
-                Queue &amp; Schedule
+                Operations
               </div>
               {canViewQueue && (
                 <Link

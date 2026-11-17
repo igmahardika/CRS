@@ -209,10 +209,15 @@ export function canAccessPage(
     return hasPermission(user, 'discovery:view');
   }
 
+  if (pathname.startsWith('/staff')) {
+    // Only NOC operators, supervisors, and admins can manage/view Master Staff Directory
+    return user.role === 'ADMIN' || user.role === 'SUPERVISOR' || hasPermission(user, 'customer:read');
+  }
+
   if (pathname.startsWith('/users') || pathname.startsWith('/settings')) {
     return hasPermission(user, 'system:admin');
   }
 
-  return true;
+  return false;
 }
 

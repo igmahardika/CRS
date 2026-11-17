@@ -314,7 +314,6 @@ export default function DiscoveryPage() {
       {/* Standard Page Header */}
       <PageHeader
         title="Network Discovery"
-        description="Discover telemetry devices, interfaces, and sensor IDs directly from MRTG (Cacti) and PRTG servers."
         breadcrumb={
           <Link href="/" className="hover:text-slate-800 flex items-center gap-1 font-medium text-slate-500">
             <ArrowLeft className="w-3.5 h-3.5" />
@@ -664,23 +663,23 @@ export default function DiscoveryPage() {
 
       {/* Mapping Dialog Modal */}
       <Dialog open={Boolean(mapping)} onOpenChange={(open) => !open && setMapping(null)}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg w-[calc(100vw-2rem)] sm:w-full overflow-hidden">
           <DialogHeader>
             <DialogTitle>Map to Customer Service (SID)</DialogTitle>
           </DialogHeader>
 
           {mapping && (
-            <div className="space-y-4 text-xs font-sans py-2">
+            <div className="space-y-4 text-xs font-sans py-2 min-w-0">
               <p className="text-slate-500">
                 Associate {mapping.engine} monitoring ID ({mapping.targetId}) with a customer service record in directory.
               </p>
 
-              <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-2">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium text-slate-500">Interface:</span>
-                  <span className="font-semibold text-slate-900 truncate">{mapping.fullTitle}</span>
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-2 min-w-0 overflow-hidden">
+                <div className="flex items-start gap-2 min-w-0">
+                  <span className="font-medium text-slate-500 shrink-0">Interface:</span>
+                  <span className="font-semibold text-slate-900 break-words min-w-0">{mapping.fullTitle}</span>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <Badge variant="soft" className="text-xs">
                     {mapping.engine} ID: {mapping.targetId}
                   </Badge>
@@ -698,15 +697,15 @@ export default function DiscoveryPage() {
                   <span>Searching customer directory for Service ID...</span>
                 </div>
               ) : mapping.matched ? (
-                <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg space-y-1">
+                <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg space-y-1 min-w-0 overflow-hidden">
                   <div className="flex items-center gap-1.5 font-semibold text-emerald-800">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                    Customer Service Matched
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    <span>Customer Service Matched</span>
                   </div>
-                  <div className="text-emerald-700">
+                  <div className="text-emerald-700 break-words min-w-0">
                     <strong>{mapping.matched.customerName}</strong>
                     <div className="text-xs text-emerald-600 mt-0.5">
-                      SID: <span className="font-semibold">{mapping.matched.serviceId}</span> | CID: {mapping.matched.customerId}
+                      SID: <span className="font-semibold font-mono">{mapping.matched.serviceId}</span> | CID: <span className="font-mono">{mapping.matched.customerId}</span>
                     </div>
                   </div>
                 </div>
