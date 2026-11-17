@@ -150,6 +150,7 @@ export function renderRequestReceivedHtml(p: RequestEmailProps): string {
   `;
 }
 
+
 /**
  * 2. Email Action Required: Menunggu Persetujuan SPV Departemen (Milestone 2)
  */
@@ -219,6 +220,7 @@ export function renderApprovalNeededHtml(p: ApprovalNeededProps): string {
   `;
 }
 
+
 /**
  * 3. Email Laporan Selesai & Approved (Milestone 3)
  */
@@ -283,6 +285,7 @@ export function renderReportApprovedHtml(p: ReportApprovedProps): string {
     </div>
   `;
 }
+
 
 /**
  * 4. Email Batch Digest Kickoff 24 Jam untuk Supervisor
@@ -353,4 +356,5 @@ export function renderKickoffDigestHtml(p: KickoffDigestProps): string {
     </div>
   `;
 }
+
 
