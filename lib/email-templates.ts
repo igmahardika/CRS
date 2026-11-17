@@ -1,3 +1,5 @@
+import { escapeHtml } from './utils';
+
 /**
  * Clean, corporate, responsive HTML email templates for Customer Reporting System (Nexa)
  * Typography: Strictly font-sans (-apple-system / Inter), tabular-nums for IDs. Zero monospace fonts.
@@ -61,7 +63,21 @@ const fontStack = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helve
 /**
  * 1. Email: Permintaan Laporan Baru Diterima (Request Queued)
  */
-export function renderRequestReceivedHtml(p: RequestEmailProps): string {
+export function renderRequestReceivedHtml(rawP: RequestEmailProps): string {
+  const p: RequestEmailProps = {
+    ...rawP,
+    ticketNumber: escapeHtml(rawP.ticketNumber),
+    customerName: escapeHtml(rawP.customerName),
+    serviceId: rawP.serviceId ? escapeHtml(rawP.serviceId) : null,
+    reportType: escapeHtml(rawP.reportType),
+    period: escapeHtml(rawP.period),
+    requesterName: escapeHtml(rawP.requesterName),
+    requesterDept: escapeHtml(rawP.requesterDept),
+    salesPicName: rawP.salesPicName ? escapeHtml(rawP.salesPicName) : null,
+    cePicName: rawP.cePicName ? escapeHtml(rawP.cePicName) : null,
+    notes: rawP.notes ? escapeHtml(rawP.notes) : null,
+    appUrl: escapeHtml(rawP.appUrl),
+  };
   const isUrgent = p.urgency === 'URGENT';
   const urgencyLabel = isUrgent ? 'URGENT' : 'NORMAL';
   const urgencyBg = isUrgent ? '#ef4444' : '#10b981';
@@ -171,7 +187,19 @@ export function renderRequestReceivedHtml(p: RequestEmailProps): string {
 /**
  * 2. Email: Menunggu Persetujuan Supervisor (Approval Required)
  */
-export function renderApprovalNeededHtml(p: ApprovalNeededProps): string {
+export function renderApprovalNeededHtml(rawP: ApprovalNeededProps): string {
+  const p: ApprovalNeededProps = {
+    ...rawP,
+    ticketNumber: rawP.ticketNumber ? escapeHtml(rawP.ticketNumber) : null,
+    customerName: escapeHtml(rawP.customerName),
+    serviceId: rawP.serviceId ? escapeHtml(rawP.serviceId) : null,
+    reportType: escapeHtml(rawP.reportType),
+    period: escapeHtml(rawP.period),
+    documentNumber: escapeHtml(rawP.documentNumber),
+    deptName: escapeHtml(rawP.deptName),
+    verifiedByNocName: rawP.verifiedByNocName ? escapeHtml(rawP.verifiedByNocName) : null,
+    reviewUrl: escapeHtml(rawP.reviewUrl),
+  };
   return `
     <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f1f5f9; padding: 24px 0; font-family: ${fontStack};">
       <tr>
@@ -265,7 +293,20 @@ export function renderApprovalNeededHtml(p: ApprovalNeededProps): string {
 /**
  * 3. Email: Laporan Selesai & Approved (Official Report Published)
  */
-export function renderReportApprovedHtml(p: ReportApprovedProps): string {
+export function renderReportApprovedHtml(rawP: ReportApprovedProps): string {
+  const p: ReportApprovedProps = {
+    ...rawP,
+    ticketNumber: rawP.ticketNumber ? escapeHtml(rawP.ticketNumber) : null,
+    customerName: escapeHtml(rawP.customerName),
+    serviceId: rawP.serviceId ? escapeHtml(rawP.serviceId) : null,
+    reportType: escapeHtml(rawP.reportType),
+    period: escapeHtml(rawP.period),
+    documentNumber: escapeHtml(rawP.documentNumber),
+    approvedByName: escapeHtml(rawP.approvedByName),
+    approvedDeptName: escapeHtml(rawP.approvedDeptName),
+    downloadUrl: escapeHtml(rawP.downloadUrl),
+    appUrl: escapeHtml(rawP.appUrl),
+  };
   return `
     <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f1f5f9; padding: 24px 0; font-family: ${fontStack};">
       <tr>
@@ -355,7 +396,19 @@ export function renderReportApprovedHtml(p: ReportApprovedProps): string {
 /**
  * 4. Email: Batch Digest Kickoff 24 Jam untuk Supervisor (Routine Schedule Kickoff)
  */
-export function renderKickoffDigestHtml(p: KickoffDigestProps): string {
+export function renderKickoffDigestHtml(rawP: KickoffDigestProps): string {
+  const p: KickoffDigestProps = {
+    ...rawP,
+    period: escapeHtml(rawP.period),
+    deptName: escapeHtml(rawP.deptName),
+    deadlineStr: escapeHtml(rawP.deadlineStr),
+    scheduleUrl: escapeHtml(rawP.scheduleUrl),
+    customers: rawP.customers.map((c) => ({
+      customerName: escapeHtml(c.customerName),
+      serviceId: c.serviceId ? escapeHtml(c.serviceId) : null,
+      reportType: escapeHtml(c.reportType),
+    })),
+  };
   const customerRows = p.customers.map((c, i) => `
     <tr style="border-bottom: 1px solid #f1f5f9;">
       <td style="padding: 9px 12px; color: #64748b; font-variant-numeric: tabular-nums; font-size: 12px;">${i + 1}</td>

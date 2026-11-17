@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { TicketItem, CaseItem, calculateSla, formatPeriodDisplay } from './sla-calculator';
+import { escapeHtml } from './utils';
 
 export interface ReportData {
   reportType: 'MRTG' | 'SLA';
@@ -44,7 +45,35 @@ function getAssetAsBase64(relativeAssetPath: string): string {
   return '';
 }
 
-export function generateReportHtml(data: ReportData): string {
+export function generateReportHtml(rawData: ReportData): string {
+  const data: ReportData = {
+    ...rawData,
+    customerName: escapeHtml(rawData.customerName),
+    customerId: escapeHtml(rawData.customerId),
+    serviceId: escapeHtml(rawData.serviceId),
+    serviceName: escapeHtml(rawData.serviceName),
+    documentNumber: escapeHtml(rawData.documentNumber),
+    reportPeriod: escapeHtml(rawData.reportPeriod),
+    tickets: (rawData.tickets || []).map((t) => ({
+      ...t,
+      noTicket: escapeHtml(t.noTicket),
+      date: escapeHtml(t.date),
+      startDate: t.startDate ? escapeHtml(t.startDate) : undefined,
+      endDate: t.endDate ? escapeHtml(t.endDate) : undefined,
+      description: escapeHtml(t.description),
+      action: escapeHtml(t.action),
+      status: escapeHtml(t.status),
+    })),
+    cases: (rawData.cases || []).map((c) => ({
+      ...c,
+      noCase: escapeHtml(c.noCase),
+      date: escapeHtml(c.date),
+      startDate: c.startDate ? escapeHtml(c.startDate) : undefined,
+      endDate: c.endDate ? escapeHtml(c.endDate) : undefined,
+      description: escapeHtml(c.description),
+      action: escapeHtml(c.action),
+    })),
+  };
   const isSla = data.reportType === 'SLA';
   const engineName = data.graphType === 'PRTG' ? 'PRTG Network Monitor' : 'Multi Router Traffic Grapher (MRTG)';
   const engineShort = data.graphType === 'PRTG' ? 'PRTG Network Monitor' : 'Multi Router Traffic Grapher';
