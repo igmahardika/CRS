@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Download, ZoomIn, ZoomOut, Layers, RefreshCw } from 'lucide-react';
+import { ZoomIn, ZoomOut, Layers, RefreshCw } from 'lucide-react';
 import { ReportData } from '@/lib/pdf-template';
 import { calculateSla, formatPeriodDisplay } from '@/lib/sla-calculator';
 import { Button, Badge } from '@/components/ui';
@@ -9,7 +9,6 @@ import { Button, Badge } from '@/components/ui';
 interface LivePreviewProps {
   data: ReportData;
   isGeneratingPdf?: boolean;
-  onDownloadPdf?: () => void;
   pageBgUrl?: string;
   coverMrtgUrl?: string;
   coverSlaUrl?: string;
@@ -18,7 +17,6 @@ interface LivePreviewProps {
 export default function LivePreview({
   data,
   isGeneratingPdf = false,
-  onDownloadPdf,
   pageBgUrl = '/assets/templates/page_bg.png',
   coverMrtgUrl = '/assets/templates/cover_mrtg.png',
   coverSlaUrl = '/assets/templates/cover_sla.png',
@@ -206,30 +204,6 @@ export default function LivePreview({
               </Button>
             </div>
           </div>
-
-          {/* Download PDF Button */}
-          {onDownloadPdf && (
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              onClick={onDownloadPdf}
-              disabled={isGeneratingPdf}
-              className="text-orange-700 border-orange-200 hover:bg-orange-50 font-medium"
-            >
-              {isGeneratingPdf ? (
-                <>
-                  <RefreshCw className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-                  <span>Generating PDF...</span>
-                </>
-              ) : (
-                <>
-                  <Download className="w-3.5 h-3.5 mr-1.5 text-orange-600" />
-                  <span>Download PDF</span>
-                </>
-              )}
-            </Button>
-          )}
         </div>
       </div>
 

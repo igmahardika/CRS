@@ -1410,61 +1410,59 @@ function GeneratorPageContent() {
               </div>
 
               {/* Target Department & Approval Tier */}
-              <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/70 p-3 rounded-lg border border-slate-100">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-md bg-white border border-slate-200 flex items-center justify-center shrink-0 text-slate-600 shadow-2xs">
-                    <Building2 className="w-4 h-4 text-slate-500" />
-                  </div>
-                  <div>
+              <div className="pt-3 border-t border-slate-100">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-3.5 py-2.5 bg-slate-50/80 rounded-lg border border-slate-200/80">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-7 h-7 rounded-md bg-white border border-slate-200/90 flex items-center justify-center shrink-0 text-slate-500 shadow-3xs">
+                      <Building2 className="w-3.5 h-3.5 text-slate-600" />
+                    </div>
                     <div className="flex items-center gap-1.5">
-                      <label className="text-xs font-semibold text-slate-800 block">
-                        Target Department
-                      </label>
+                      <span className="text-xs font-semibold text-slate-800">Target Department</span>
                       <InfoTooltip
                         content={
                           targetDepartment === 'Internal NOC'
-                            ? 'Internal NOC document (completed after NOC supervisor review).'
-                            : `Forwarded to ${targetDepartment} supervisor after NOC review.`
+                            ? '1-Tier Workflow: Document is finalized directly upon NOC Supervisor approval.'
+                            : `2-Tier Workflow: Requires NOC Supervisor review, followed by ${targetDepartment} Supervisor sign-off.`
                         }
                       />
                     </div>
                   </div>
-                </div>
-                <div className="flex items-center gap-2 sm:max-w-xs w-full sm:w-auto shrink-0">
-                  <Select
-                    value={targetDepartment}
-                    onValueChange={(val) => setTargetDepartment(val)}
-                  >
-                    <SelectTrigger className="h-9 text-xs w-full sm:w-56 bg-white border-slate-200 shadow-2xs">
-                      <SelectValue placeholder="Select Target Department" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {TARGET_DEPARTMENTS.map((dept) => (
-                        <SelectItem key={dept} value={dept}>
-                          {dept} {dept === 'Internal NOC' ? '(1-Tier)' : '(2-Tier)'}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {targetDepartment === 'Internal NOC' ? (
-                    <Badge
-                      variant="outline"
-                      className="border-emerald-200 text-emerald-700 bg-emerald-50 text-xs whitespace-nowrap shrink-0 py-1 font-medium inline-flex items-center gap-1"
-                      title="1-Tier: Direct NOC Supervisor review"
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Select
+                      value={targetDepartment}
+                      onValueChange={(val) => setTargetDepartment(val)}
                     >
-                      <CheckCircle2 className="w-3 h-3 text-emerald-600 shrink-0" />
-                      <span>1-Tier (Internal)</span>
-                    </Badge>
-                  ) : (
-                    <Badge
-                      variant="outline"
-                      className="border-amber-200 text-amber-700 bg-amber-50 text-xs whitespace-nowrap shrink-0 py-1 font-medium inline-flex items-center gap-1"
-                      title={`2-Tier: Routed to ${targetDepartment} supervisor`}
-                    >
-                      <RefreshCw className="w-3 h-3 text-amber-600 shrink-0" />
-                      <span>2-Tier (Dept)</span>
-                    </Badge>
-                  )}
+                      <SelectTrigger className="h-8 text-xs w-full sm:w-52 bg-white border-slate-200/90 shadow-3xs font-medium">
+                        <SelectValue placeholder="Select Target Department" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {TARGET_DEPARTMENTS.map((dept) => (
+                          <SelectItem key={dept} value={dept}>
+                            {dept}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {targetDepartment === 'Internal NOC' ? (
+                      <Badge
+                        variant="outline"
+                        className="h-8 px-2.5 border-emerald-200 text-emerald-700 bg-emerald-50 text-xs whitespace-nowrap shrink-0 font-medium inline-flex items-center gap-1.5 shadow-3xs"
+                        title="1-Tier Workflow: NOC Supervisor Approval Only"
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                        <span>1-Tier (Internal)</span>
+                      </Badge>
+                    ) : (
+                      <Badge
+                        variant="outline"
+                        className="h-8 px-2.5 border-amber-200 text-amber-700 bg-amber-50 text-xs whitespace-nowrap shrink-0 font-medium inline-flex items-center gap-1.5 shadow-3xs"
+                        title={`2-Tier Workflow: NOC Review + ${targetDepartment} Supervisor Approval`}
+                      >
+                        <RefreshCw className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                        <span>2-Tier ({targetDepartment === 'Customer Experience' ? 'CE' : 'AE'})</span>
+                      </Badge>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -1856,7 +1854,6 @@ function GeneratorPageContent() {
           <LivePreview
             data={currentReportData}
             isGeneratingPdf={isSavingReport || isDownloadingDraft}
-            onDownloadPdf={handleDownloadDraftPdf}
           />
         </div>
       </div>
@@ -1865,33 +1862,40 @@ function GeneratorPageContent() {
       <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 py-3 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
         <div className="max-w-[1760px] 2xl:max-w-[1880px] w-full mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 flex flex-col sm:flex-row items-center justify-between gap-3">
           {/* Left: Metadata & Live Telemetry Compliance Summary */}
-          <div className="flex items-center gap-3 w-full sm:w-auto overflow-x-auto">
-            <div className="text-left shrink-0">
-              <div className="text-xs font-semibold text-slate-900 flex items-center gap-1.5 truncate max-w-[200px] sm:max-w-[280px]">
-                <span className={`w-2 h-2 rounded-full shrink-0 ${customerName ? 'bg-orange-600' : 'bg-slate-300'}`} />
-                <span className={`truncate ${!customerName ? 'text-slate-500 italic' : ''}`}>
-                  {customerName || 'Select Customer (Ctrl+Shift+K)'}
-                </span>
+          <div className="flex items-center gap-2.5 w-full sm:w-auto overflow-x-auto py-0.5">
+            {/* Customer & Document Pill */}
+            <button
+              type="button"
+              onClick={() => setIsCustomerModalOpen(true)}
+              className="group flex items-center gap-2.5 px-3 py-1.5 rounded-lg border border-slate-200/80 bg-slate-50/80 hover:bg-slate-100 hover:border-slate-300 transition text-left shrink-0 cursor-pointer shadow-3xs"
+              title="Click to search or switch customer (Ctrl+Shift+K)"
+            >
+              <span className={`w-2 h-2 rounded-full shrink-0 ${customerName ? 'bg-orange-600 ring-2 ring-orange-100' : 'bg-slate-300'}`} />
+              <div className="min-w-0 max-w-[170px] sm:max-w-[240px]">
+                <div className="text-xs font-semibold text-slate-800 truncate group-hover:text-orange-600 transition">
+                  {customerName || 'Select Customer'}
+                </div>
+                <div className="text-2xs font-sans tabular-nums text-slate-500 truncate">
+                  {documentNumber || 'No Document Number'}
+                </div>
               </div>
-              <div className="text-xs font-sans text-slate-500 truncate">
-                {documentNumber || 'Document Number'}
-              </div>
-            </div>
+              <span className="text-2xs font-semibold px-1.5 py-0.5 rounded bg-white border border-slate-200 text-slate-500 hidden sm:inline-block shadow-3xs">
+                Ctrl+K
+              </span>
+            </button>
 
-            <div className="h-6 w-px bg-slate-200 hidden sm:block shrink-0" />
-
-            {/* Quick Metrics Badge */}
+            {/* Quick Metrics & Compliance Badge */}
             {reportType === 'SLA' ? (
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200/80 bg-slate-50/80 shrink-0 shadow-3xs">
                 <Badge
                   variant="outline"
-                  className={`text-xs font-bold px-2 py-0.5 inline-flex items-center gap-1.5 ${
+                  className={`text-xs font-bold px-2 py-0.5 inline-flex items-center gap-1.5 border shadow-3xs ${
                     slaCalc.availabilityPercent >= targetSla
                       ? 'border-emerald-300 text-emerald-800 bg-emerald-50'
                       : 'border-rose-300 text-rose-800 bg-rose-50'
                   }`}
                 >
-                  <span>SLA: {slaCalc.availabilityPercent}%</span>
+                  <span className="tabular-nums">SLA: {slaCalc.availabilityPercent}%</span>
                   {slaCalc.availabilityPercent >= targetSla ? (
                     <span className="inline-flex items-center gap-1 text-emerald-700">
                       <CheckCircle2 className="w-3.5 h-3.5" />
@@ -1904,17 +1908,20 @@ function GeneratorPageContent() {
                     </span>
                   )}
                 </Badge>
-                <span className="text-xs text-slate-500 hidden md:inline">
-                  Downtime: {slaCalc.downtimeDurationStr}
-                </span>
+                <div className="text-2xs text-slate-500 hidden md:flex items-center gap-1">
+                  <span>Downtime:</span>
+                  <span className="font-semibold text-slate-700 tabular-nums">
+                    {slaCalc.downtimeDurationStr || '0m'}
+                  </span>
+                </div>
               </div>
             ) : (
-              <div className="flex items-center gap-2 shrink-0">
-                <Badge variant="outline" className="text-xs font-medium border-slate-300 text-slate-700 bg-slate-50">
-                  Avg: DL {dlAvg} {dlUnit} / UL {ulAvg} {ulUnit}
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200/80 bg-slate-50/80 shrink-0 text-xs shadow-3xs">
+                <Badge variant="outline" className="text-xs font-medium border-slate-200 text-slate-700 bg-white">
+                  Avg: DL <span className="font-semibold tabular-nums ml-0.5">{dlAvg}</span> {dlUnit} / UL <span className="font-semibold tabular-nums ml-0.5">{ulAvg}</span> {ulUnit}
                 </Badge>
-                <Badge variant="outline" className="text-xs font-medium border-slate-300 text-slate-700 bg-slate-50 hidden md:inline">
-                  Max: DL {dlMax} {dlUnit} / UL {ulMax} {ulUnit}
+                <Badge variant="outline" className="text-xs font-medium border-slate-200 text-slate-700 bg-white hidden md:inline-flex">
+                  Max: DL <span className="font-semibold tabular-nums ml-0.5">{dlMax}</span> {dlUnit} / UL <span className="font-semibold tabular-nums ml-0.5">{ulMax}</span> {ulUnit}
                 </Badge>
               </div>
             )}
