@@ -1,6 +1,7 @@
 /**
  * Clean, corporate, responsive HTML email templates for Customer Reporting System (Nexa)
  * Typography: Strictly font-sans (-apple-system / Inter), tabular-nums for IDs. Zero monospace fonts.
+ * Email Client Compatibility: Fully table-based layout, inline styles, zero JSX comment artifacts.
  */
 
 interface RequestEmailProps {
@@ -55,14 +56,10 @@ interface KickoffDigestProps {
   scheduleUrl: string;
 }
 
-const baseStyles = `
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  color: #1e293b;
-  line-height: 1.6;
-`;
+const fontStack = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif";
 
 /**
- * 1. Email Konfirmasi Permintaan Laporan Baru Diterima
+ * 1. Email: Permintaan Laporan Baru Diterima (Request Queued)
  */
 export function renderRequestReceivedHtml(p: RequestEmailProps): string {
   const isUrgent = p.urgency === 'URGENT';
@@ -70,317 +67,377 @@ export function renderRequestReceivedHtml(p: RequestEmailProps): string {
   const urgencyBg = isUrgent ? '#ef4444' : '#10b981';
 
   return `
-    <div style="${baseStyles} max-width: 640px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);">
-      {/* Header Banner */}
-      <div style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); padding: 24px 32px; color: #ffffff;">
-        <p style="margin: 0; font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700; color: #bae6fd;">NEXA &bull; CUSTOMER REPORTING SYSTEM</p>
-        <h1 style="margin: 8px 0 0; font-size: 20px; font-weight: 700; color: #ffffff; letter-spacing: -0.3px;">Network Report Request Queued</h1>
-      </div>
-
-      <div style="padding: 32px;">
-        <p style="margin-top: 0; font-size: 15px; color: #0f172a;">Hello Team <strong>${p.requesterDept}</strong> &amp; <strong>NOC Helpdesk</strong>,</p>
-        <p style="font-size: 14px; color: #475569; margin-bottom: 20px;">A new network performance report request has been registered in the Customer Reporting System and placed in the processing queue with the following details:</p>
-
-        {/* Structured Details Card */}
-        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin: 20px 0;">
-          <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+    <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f1f5f9; padding: 24px 0; font-family: ${fontStack};">
+      <tr>
+        <td align="center">
+          <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);">
+            <!-- Header Banner -->
             <tr>
-              <td style="padding: 7px 0; color: #64748b; width: 140px; font-size: 13px;">Ticket No:</td>
-              <td style="padding: 7px 0; font-weight: 700; color: #0284c7; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-variant-numeric: tabular-nums; font-size: 15px;">${p.ticketNumber}</td>
-            </tr>
-            <tr>
-              <td style="padding: 7px 0; color: #64748b; font-size: 13px;">Customer:</td>
-              <td style="padding: 7px 0; font-weight: 700; color: #0f172a;">${p.customerName}</td>
-            </tr>
-            ${p.serviceId ? `
-            <tr>
-              <td style="padding: 7px 0; color: #64748b; font-size: 13px;">Service ID:</td>
-              <td style="padding: 7px 0; color: #334155; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-variant-numeric: tabular-nums; font-weight: 600;">${p.serviceId}</td>
-            </tr>` : ''}
-            <tr>
-              <td style="padding: 7px 0; color: #64748b; font-size: 13px;">Report Type:</td>
-              <td style="padding: 7px 0; font-weight: 600; color: #0f172a;">${p.reportType} Report</td>
-            </tr>
-            <tr>
-              <td style="padding: 7px 0; color: #64748b; font-size: 13px;">Period:</td>
-              <td style="padding: 7px 0; font-weight: 600; color: #334155; font-variant-numeric: tabular-nums;">${p.period}</td>
-            </tr>
-            <tr>
-              <td style="padding: 7px 0; color: #64748b; font-size: 13px;">Priority:</td>
-              <td style="padding: 7px 0;">
-                <span style="background: ${urgencyBg}; color: #ffffff; padding: 2px 9px; border-radius: 9999px; font-size: 11px; font-weight: 700; display: inline-block; letter-spacing: 0.5px;">
-                  ${urgencyLabel}
-                </span>
+              <td style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); padding: 26px 32px; color: #ffffff;">
+                <div style="font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: #bae6fd; margin-bottom: 6px;">NEXA &bull; CUSTOMER REPORTING SYSTEM</div>
+                <h1 style="margin: 0; font-size: 20px; font-weight: 700; color: #ffffff; line-height: 1.3;">Network Report Request Queued</h1>
               </td>
             </tr>
+
+            <!-- Content Body -->
             <tr>
-              <td style="padding: 7px 0; color: #64748b; font-size: 13px;">Requester:</td>
-              <td style="padding: 7px 0; color: #334155;">${p.requesterName} <span style="color: #64748b;">(${p.requesterDept})</span></td>
+              <td style="padding: 28px 32px;">
+                <p style="margin: 0 0 12px 0; font-size: 15px; color: #0f172a; line-height: 1.5;">Hello Team <strong>${p.requesterDept}</strong> &amp; <strong>NOC Helpdesk</strong>,</p>
+                <p style="margin: 0 0 20px 0; font-size: 14px; color: #475569; line-height: 1.6;">A new network performance report request has been registered in the Customer Reporting System and placed in the processing queue with the following details:</p>
+
+                <!-- Structured Details Card -->
+                <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 24px;">
+                  <tr>
+                    <td style="padding: 10px 16px; font-size: 13px; color: #64748b; font-weight: 500; width: 140px; border-bottom: 1px solid #f1f5f9;">Ticket No:</td>
+                    <td style="padding: 10px 16px; font-size: 14px; font-weight: 700; color: #0284c7; font-variant-numeric: tabular-nums; border-bottom: 1px solid #f1f5f9;">${p.ticketNumber}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 10px 16px; font-size: 13px; color: #64748b; font-weight: 500; border-bottom: 1px solid #f1f5f9;">Customer:</td>
+                    <td style="padding: 10px 16px; font-size: 13px; font-weight: 700; color: #0f172a; border-bottom: 1px solid #f1f5f9;">${p.customerName}</td>
+                  </tr>
+                  ${p.serviceId ? `
+                  <tr>
+                    <td style="padding: 10px 16px; font-size: 13px; color: #64748b; font-weight: 500; border-bottom: 1px solid #f1f5f9;">Service ID:</td>
+                    <td style="padding: 10px 16px; font-size: 13px; font-weight: 600; color: #334155; font-variant-numeric: tabular-nums; border-bottom: 1px solid #f1f5f9;">${p.serviceId}</td>
+                  </tr>` : ''}
+                  <tr>
+                    <td style="padding: 10px 16px; font-size: 13px; color: #64748b; font-weight: 500; border-bottom: 1px solid #f1f5f9;">Report Type:</td>
+                    <td style="padding: 10px 16px; font-size: 13px; font-weight: 600; color: #0f172a; border-bottom: 1px solid #f1f5f9;">${p.reportType} Report</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 10px 16px; font-size: 13px; color: #64748b; font-weight: 500; border-bottom: 1px solid #f1f5f9;">Period:</td>
+                    <td style="padding: 10px 16px; font-size: 13px; font-weight: 600; color: #334155; font-variant-numeric: tabular-nums; border-bottom: 1px solid #f1f5f9;">${p.period}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 10px 16px; font-size: 13px; color: #64748b; font-weight: 500; border-bottom: 1px solid #f1f5f9;">Priority:</td>
+                    <td style="padding: 10px 16px; border-bottom: 1px solid #f1f5f9;">
+                      <span style="background-color: ${urgencyBg}; color: #ffffff; padding: 2px 10px; border-radius: 9999px; font-size: 11px; font-weight: 700; display: inline-block; letter-spacing: 0.5px;">
+                        ${urgencyLabel}
+                      </span>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 10px 16px; font-size: 13px; color: #64748b; font-weight: 500; border-bottom: 1px solid #f1f5f9;">Requester:</td>
+                    <td style="padding: 10px 16px; font-size: 13px; color: #334155; border-bottom: 1px solid #f1f5f9;">${p.requesterName} <span style="color: #64748b;">(${p.requesterDept})</span></td>
+                  </tr>
+                  ${p.salesPicName ? `
+                  <tr>
+                    <td style="padding: 10px 16px; font-size: 13px; color: #64748b; font-weight: 500; border-bottom: 1px solid #f1f5f9;">PIC Sales / AE:</td>
+                    <td style="padding: 10px 16px; font-size: 13px; font-weight: 600; color: #334155; border-bottom: 1px solid #f1f5f9;">${p.salesPicName}</td>
+                  </tr>` : ''}
+                  ${p.cePicName ? `
+                  <tr>
+                    <td style="padding: 10px 16px; font-size: 13px; color: #64748b; font-weight: 500; border-bottom: 1px solid #f1f5f9;">PIC CX / CE:</td>
+                    <td style="padding: 10px 16px; font-size: 13px; font-weight: 600; color: #334155; border-bottom: 1px solid #f1f5f9;">${p.cePicName}</td>
+                  </tr>` : ''}
+                  ${p.notes ? `
+                  <tr>
+                    <td style="padding: 10px 16px; font-size: 13px; color: #64748b; font-weight: 500; vertical-align: top;">Notes:</td>
+                    <td style="padding: 10px 16px; font-size: 13px; font-style: italic; color: #475569;">"${p.notes}"</td>
+                  </tr>` : ''}
+                </table>
+
+                <!-- CTA Button -->
+                <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin: 28px 0 20px 0;">
+                  <tr>
+                    <td align="center">
+                      <a href="${p.appUrl}" target="_blank" style="display: inline-block; padding: 12px 32px; font-size: 14px; font-weight: 600; color: #ffffff; background-color: #0284c7; text-decoration: none; border-radius: 8px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);">
+                        Open Request Queue &rarr;
+                      </a>
+                    </td>
+                  </tr>
+                </table>
+
+                <p style="margin: 0; font-size: 13px; color: #64748b; line-height: 1.5; text-align: center;">
+                  Helpdesk NOC will verify network telemetry and calculate SLA metrics. You will receive thread updates once the report is ready for supervisor approval.
+                </p>
+              </td>
             </tr>
-            ${p.salesPicName ? `
+
+            <!-- Footer -->
             <tr>
-              <td style="padding: 7px 0; color: #64748b; font-size: 13px;">PIC Sales / AE:</td>
-              <td style="padding: 7px 0; font-weight: 600; color: #334155;">${p.salesPicName}</td>
-            </tr>` : ''}
-            ${p.cePicName ? `
-            <tr>
-              <td style="padding: 7px 0; color: #64748b; font-size: 13px;">PIC CX / CE:</td>
-              <td style="padding: 7px 0; font-weight: 600; color: #334155;">${p.cePicName}</td>
-            </tr>` : ''}
-            ${p.notes ? `
-            <tr>
-              <td style="padding: 7px 0; color: #64748b; vertical-align: top; font-size: 13px;">Notes:</td>
-              <td style="padding: 7px 0; font-style: italic; color: #475569;">"${p.notes}"</td>
-            </tr>` : ''}
+              <td style="background-color: #f8fafc; border-top: 1px solid #e2e8f0; padding: 18px 32px; text-align: center;">
+                <p style="margin: 0; font-size: 12px; font-weight: 600; color: #475569;">Customer Reporting System &bull; PT Internet Mulia Untuk Negeri (Nexa)</p>
+                <p style="margin: 4px 0 0 0; font-size: 11px; color: #94a3b8;">Automated notification &bull; Helpdesk NOC: <a href="mailto:helpdesk@nexa.net.id" style="color: #64748b; text-decoration: none;">helpdesk@nexa.net.id</a> &bull; 2026</p>
+              </td>
+            </tr>
           </table>
-        </div>
-
-        {/* CTA Button */}
-        <div style="text-align: center; margin: 28px 0;">
-          <a href="${p.appUrl}" style="background: #0284c7; color: #ffffff; text-decoration: none; padding: 12px 28px; border-radius: 8px; font-weight: 600; font-size: 14px; display: inline-block; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);">
-            Open Request Queue &rarr;
-          </a>
-        </div>
-
-        <p style="font-size: 13px; color: #64748b; margin-bottom: 0; line-height: 1.5;">
-          Helpdesk NOC will verify network telemetry and calculate SLA metrics. You will receive thread updates once the report is ready for supervisor approval.
-        </p>
-      </div>
-
-      {/* Footer */}
-      <div style="background: #f1f5f9; padding: 16px 32px; border-top: 1px solid #e2e8f0; font-size: 12px; color: #64748b; text-align: center;">
-        <p style="margin: 0; font-weight: 500;">Customer Reporting System &bull; PT Internet Mulia Untuk Negeri (Nexa)</p>
-        <p style="margin: 4px 0 0; font-size: 11px; color: #94a3b8;">Automated system notification &bull; Helpdesk NOC: helpdesk@nexa.net.id</p>
-      </div>
-    </div>
+        </td>
+      </tr>
+    </table>
   `;
 }
 
 /**
- * 2. Email Action Required: Menunggu Persetujuan Supervisor
+ * 2. Email: Menunggu Persetujuan Supervisor (Approval Required)
  */
 export function renderApprovalNeededHtml(p: ApprovalNeededProps): string {
   return `
-    <div style="${baseStyles} max-width: 640px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);">
-      {/* Header Banner */}
-      <div style="background: linear-gradient(135deg, #d97706 0%, #b45309 100%); padding: 24px 32px; color: #ffffff;">
-        <p style="margin: 0; font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700; color: #fef3c7;">NEXA &bull; DOCUMENT APPROVAL REQUIRED</p>
-        <h1 style="margin: 8px 0 0; font-size: 20px; font-weight: 700; color: #ffffff; letter-spacing: -0.3px;">Supervisor Approval Required &bull; ${p.deptName}</h1>
-      </div>
+    <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f1f5f9; padding: 24px 0; font-family: ${fontStack};">
+      <tr>
+        <td align="center">
+          <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);">
+            <!-- Header Banner -->
+            <tr>
+              <td style="background: linear-gradient(135deg, #d97706 0%, #b45309 100%); padding: 26px 32px; color: #ffffff;">
+                <div style="font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: #fef3c7; margin-bottom: 6px;">NEXA &bull; DOCUMENT APPROVAL REQUIRED</div>
+                <h1 style="margin: 0; font-size: 20px; font-weight: 700; color: #ffffff; line-height: 1.3;">Supervisor Approval Required &bull; ${p.deptName}</h1>
+              </td>
+            </tr>
 
-      <div style="padding: 32px;">
-        <p style="margin-top: 0; font-size: 15px; color: #0f172a;">Dear <strong>${p.deptName} Supervisor</strong>,</p>
-        <p style="font-size: 14px; color: #475569; margin-bottom: 20px;">
-          The network performance report for <strong>${p.customerName}</strong> has passed technical verification by the NOC team${p.verifiedByNocName ? ` (${p.verifiedByNocName})` : ''} and is now awaiting your formal approval before release to the customer:
-        </p>
+            <!-- Content Body -->
+            <tr>
+              <td style="padding: 28px 32px;">
+                <p style="margin: 0 0 12px 0; font-size: 15px; color: #0f172a; line-height: 1.5;">Dear <strong>${p.deptName} Supervisor</strong>,</p>
+                <p style="margin: 0 0 20px 0; font-size: 14px; color: #475569; line-height: 1.6;">
+                  The network performance report for <strong>${p.customerName}</strong> has passed technical verification by the NOC team${p.verifiedByNocName ? ` (${p.verifiedByNocName})` : ''} and is now awaiting your formal approval before release to the customer:
+                </p>
 
-        {/* Structured Details Card */}
-        <div style="background: #fffbeb; border: 1px solid #fef3c7; border-radius: 8px; padding: 20px; margin: 20px 0;">
-          <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
-            ${p.ticketNumber ? `
-            <tr>
-              <td style="padding: 7px 0; color: #92400e; width: 140px; font-size: 13px;">Ticket No:</td>
-              <td style="padding: 7px 0; font-weight: 700; color: #0284c7; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-variant-numeric: tabular-nums;">${p.ticketNumber}</td>
-            </tr>` : ''}
-            <tr>
-              <td style="padding: 7px 0; color: #92400e; width: 140px; font-size: 13px;">Document No:</td>
-              <td style="padding: 7px 0; font-weight: 700; color: #b45309; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-variant-numeric: tabular-nums;">${p.documentNumber}</td>
+                <!-- Structured Details Card -->
+                <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #fffbeb; border: 1px solid #fef3c7; border-radius: 8px; margin-bottom: 24px;">
+                  ${p.ticketNumber ? `
+                  <tr>
+                    <td style="padding: 10px 16px; font-size: 13px; color: #92400e; font-weight: 500; width: 140px; border-bottom: 1px solid #fef3c7;">Ticket No:</td>
+                    <td style="padding: 10px 16px; font-size: 14px; font-weight: 700; color: #0284c7; font-variant-numeric: tabular-nums; border-bottom: 1px solid #fef3c7;">${p.ticketNumber}</td>
+                  </tr>` : ''}
+                  <tr>
+                    <td style="padding: 10px 16px; font-size: 13px; color: #92400e; font-weight: 500; width: 140px; border-bottom: 1px solid #fef3c7;">Document No:</td>
+                    <td style="padding: 10px 16px; font-size: 14px; font-weight: 700; color: #b45309; font-variant-numeric: tabular-nums; border-bottom: 1px solid #fef3c7;">${p.documentNumber}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 10px 16px; font-size: 13px; color: #92400e; font-weight: 500; border-bottom: 1px solid #fef3c7;">Customer:</td>
+                    <td style="padding: 10px 16px; font-size: 13px; font-weight: 700; color: #1e293b; border-bottom: 1px solid #fef3c7;">${p.customerName}</td>
+                  </tr>
+                  ${p.serviceId ? `
+                  <tr>
+                    <td style="padding: 10px 16px; font-size: 13px; color: #92400e; font-weight: 500; border-bottom: 1px solid #fef3c7;">Service ID:</td>
+                    <td style="padding: 10px 16px; font-size: 13px; font-weight: 600; color: #334155; font-variant-numeric: tabular-nums; border-bottom: 1px solid #fef3c7;">${p.serviceId}</td>
+                  </tr>` : ''}
+                  <tr>
+                    <td style="padding: 10px 16px; font-size: 13px; color: #92400e; font-weight: 500; border-bottom: 1px solid #fef3c7;">Report Type:</td>
+                    <td style="padding: 10px 16px; font-size: 13px; font-weight: 600; color: #1e293b; border-bottom: 1px solid #fef3c7;">${p.reportType} Report</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 10px 16px; font-size: 13px; color: #92400e; font-weight: 500; border-bottom: 1px solid #fef3c7;">Period:</td>
+                    <td style="padding: 10px 16px; font-size: 13px; font-weight: 600; color: #1e293b; font-variant-numeric: tabular-nums; border-bottom: 1px solid #fef3c7;">${p.period}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 10px 16px; font-size: 13px; color: #92400e; font-weight: 500;">Document Status:</td>
+                    <td style="padding: 10px 16px;">
+                      <span style="background-color: #f59e0b; color: #ffffff; padding: 2px 10px; border-radius: 9999px; font-size: 11px; font-weight: 700; display: inline-block; letter-spacing: 0.5px;">
+                        PENDING SUPERVISOR APPROVAL
+                      </span>
+                    </td>
+                  </tr>
+                </table>
+
+                <!-- CTA Button -->
+                <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin: 28px 0 20px 0;">
+                  <tr>
+                    <td align="center">
+                      <a href="${p.reviewUrl}" target="_blank" style="display: inline-block; padding: 12px 32px; font-size: 14px; font-weight: 600; color: #ffffff; background-color: #d97706; text-decoration: none; border-radius: 8px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);">
+                        Review &amp; Approve Report &rarr;
+                      </a>
+                    </td>
+                  </tr>
+                </table>
+
+                <p style="margin: 0; font-size: 13px; color: #64748b; line-height: 1.5; text-align: center;">
+                  Upon your approval, the official PDF report will be signed and published immediately for customer dispatch.
+                </p>
+              </td>
             </tr>
+
+            <!-- Footer -->
             <tr>
-              <td style="padding: 7px 0; color: #92400e; font-size: 13px;">Customer:</td>
-              <td style="padding: 7px 0; font-weight: 700; color: #1e293b;">${p.customerName}</td>
-            </tr>
-            ${p.serviceId ? `
-            <tr>
-              <td style="padding: 7px 0; color: #92400e; font-size: 13px;">Service ID:</td>
-              <td style="padding: 7px 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-variant-numeric: tabular-nums; font-weight: 600; color: #334155;">${p.serviceId}</td>
-            </tr>` : ''}
-            <tr>
-              <td style="padding: 7px 0; color: #92400e; font-size: 13px;">Report Type:</td>
-              <td style="padding: 7px 0; font-weight: 600; color: #1e293b;">${p.reportType} Report</td>
-            </tr>
-            <tr>
-              <td style="padding: 7px 0; color: #92400e; font-size: 13px;">Period:</td>
-              <td style="padding: 7px 0; font-weight: 600; color: #1e293b; font-variant-numeric: tabular-nums;">${p.period}</td>
-            </tr>
-            <tr>
-              <td style="padding: 7px 0; color: #92400e; font-size: 13px;">Document Status:</td>
-              <td style="padding: 7px 0;">
-                <span style="background: #f59e0b; color: #ffffff; padding: 2px 10px; border-radius: 9999px; font-size: 11px; font-weight: 700; display: inline-block; letter-spacing: 0.5px;">
-                  PENDING SUPERVISOR APPROVAL
-                </span>
+              <td style="background-color: #f8fafc; border-top: 1px solid #e2e8f0; padding: 18px 32px; text-align: center;">
+                <p style="margin: 0; font-size: 12px; font-weight: 600; color: #475569;">Customer Reporting System &bull; PT Internet Mulia Untuk Negeri (Nexa)</p>
+                <p style="margin: 4px 0 0 0; font-size: 11px; color: #94a3b8;">Automated notification &bull; Helpdesk NOC: <a href="mailto:helpdesk@nexa.net.id" style="color: #64748b; text-decoration: none;">helpdesk@nexa.net.id</a> &bull; 2026</p>
               </td>
             </tr>
           </table>
-        </div>
-
-        {/* CTA Button */}
-        <div style="text-align: center; margin: 28px 0;">
-          <a href="${p.reviewUrl}" style="background: #d97706; color: #ffffff; text-decoration: none; padding: 12px 28px; border-radius: 8px; font-weight: 600; font-size: 14px; display: inline-block; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);">
-            Review &amp; Approve Report &rarr;
-          </a>
-        </div>
-
-        <p style="font-size: 13px; color: #64748b; margin-bottom: 0; line-height: 1.5;">
-          Upon your approval, the official PDF report will be signed and published immediately for customer dispatch.
-        </p>
-      </div>
-
-      {/* Footer */}
-      <div style="background: #f1f5f9; padding: 16px 32px; border-top: 1px solid #e2e8f0; font-size: 12px; color: #64748b; text-align: center;">
-        <p style="margin: 0; font-weight: 500;">Customer Reporting System &bull; PT Internet Mulia Untuk Negeri (Nexa)</p>
-        <p style="margin: 4px 0 0; font-size: 11px; color: #94a3b8;">Automated system notification &bull; Helpdesk NOC: helpdesk@nexa.net.id</p>
-      </div>
-    </div>
+        </td>
+      </tr>
+    </table>
   `;
 }
 
 /**
- * 3. Email Laporan Selesai & Approved
+ * 3. Email: Laporan Selesai & Approved (Official Report Published)
  */
 export function renderReportApprovedHtml(p: ReportApprovedProps): string {
   return `
-    <div style="${baseStyles} max-width: 640px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);">
-      {/* Header Banner */}
-      <div style="background: linear-gradient(135deg, #059669 0%, #047857 100%); padding: 24px 32px; color: #ffffff;">
-        <p style="margin: 0; font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700; color: #d1fae5;">NEXA &bull; OFFICIAL REPORT PUBLISHED</p>
-        <h1 style="margin: 8px 0 0; font-size: 20px; font-weight: 700; color: #ffffff; letter-spacing: -0.3px;">Official Report Approved &amp; Published</h1>
-      </div>
+    <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f1f5f9; padding: 24px 0; font-family: ${fontStack};">
+      <tr>
+        <td align="center">
+          <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);">
+            <!-- Header Banner -->
+            <tr>
+              <td style="background: linear-gradient(135deg, #059669 0%, #047857 100%); padding: 26px 32px; color: #ffffff;">
+                <div style="font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: #d1fae5; margin-bottom: 6px;">NEXA &bull; OFFICIAL REPORT PUBLISHED</div>
+                <h1 style="margin: 0; font-size: 20px; font-weight: 700; color: #ffffff; line-height: 1.3;">Official Report Approved &amp; Published</h1>
+              </td>
+            </tr>
 
-      <div style="padding: 32px;">
-        <p style="margin-top: 0; font-size: 15px; color: #0f172a;">Hello Team <strong>${p.approvedDeptName}</strong> &amp; <strong>NOC Helpdesk</strong>,</p>
-        <p style="font-size: 14px; color: #475569; margin-bottom: 20px;">
-          The official network performance report for <strong>${p.customerName}</strong> has been fully approved by ${p.approvedByName} and the signed PDF document has been published:
-        </p>
+            <!-- Content Body -->
+            <tr>
+              <td style="padding: 28px 32px;">
+                <p style="margin: 0 0 12px 0; font-size: 15px; color: #0f172a; line-height: 1.5;">Hello Team <strong>${p.approvedDeptName}</strong> &amp; <strong>NOC Helpdesk</strong>,</p>
+                <p style="margin: 0 0 20px 0; font-size: 14px; color: #475569; line-height: 1.6;">
+                  The official network performance report for <strong>${p.customerName}</strong> has been fully approved by <strong>${p.approvedByName}</strong> and the signed PDF document has been published:
+                </p>
 
-        {/* Structured Details Card */}
-        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 20px; margin: 20px 0;">
-          <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
-            ${p.ticketNumber ? `
-            <tr>
-              <td style="padding: 7px 0; color: #166534; width: 140px; font-size: 13px;">Ticket No:</td>
-              <td style="padding: 7px 0; font-weight: 700; color: #0284c7; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-variant-numeric: tabular-nums;">${p.ticketNumber}</td>
-            </tr>` : ''}
-            <tr>
-              <td style="padding: 7px 0; color: #166534; width: 140px; font-size: 13px;">Document No:</td>
-              <td style="padding: 7px 0; font-weight: 700; color: #15803d; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-variant-numeric: tabular-nums; font-size: 15px;">${p.documentNumber}</td>
+                <!-- Structured Details Card -->
+                <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; margin-bottom: 24px;">
+                  ${p.ticketNumber ? `
+                  <tr>
+                    <td style="padding: 10px 16px; font-size: 13px; color: #166534; font-weight: 500; width: 140px; border-bottom: 1px solid #dcfce7;">Ticket No:</td>
+                    <td style="padding: 10px 16px; font-size: 14px; font-weight: 700; color: #0284c7; font-variant-numeric: tabular-nums; border-bottom: 1px solid #dcfce7;">${p.ticketNumber}</td>
+                  </tr>` : ''}
+                  <tr>
+                    <td style="padding: 10px 16px; font-size: 13px; color: #166534; font-weight: 500; width: 140px; border-bottom: 1px solid #dcfce7;">Document No:</td>
+                    <td style="padding: 10px 16px; font-size: 14px; font-weight: 700; color: #15803d; font-variant-numeric: tabular-nums; border-bottom: 1px solid #dcfce7;">${p.documentNumber}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 10px 16px; font-size: 13px; color: #166534; font-weight: 500; border-bottom: 1px solid #dcfce7;">Customer:</td>
+                    <td style="padding: 10px 16px; font-size: 13px; font-weight: 700; color: #1e293b; border-bottom: 1px solid #dcfce7;">${p.customerName}</td>
+                  </tr>
+                  ${p.serviceId ? `
+                  <tr>
+                    <td style="padding: 10px 16px; font-size: 13px; color: #166534; font-weight: 500; border-bottom: 1px solid #dcfce7;">Service ID:</td>
+                    <td style="padding: 10px 16px; font-size: 13px; font-weight: 600; color: #334155; font-variant-numeric: tabular-nums; border-bottom: 1px solid #dcfce7;">${p.serviceId}</td>
+                  </tr>` : ''}
+                  <tr>
+                    <td style="padding: 10px 16px; font-size: 13px; color: #166534; font-weight: 500; border-bottom: 1px solid #dcfce7;">Report Type:</td>
+                    <td style="padding: 10px 16px; font-size: 13px; font-weight: 600; color: #1e293b; border-bottom: 1px solid #dcfce7;">${p.reportType} Report</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 10px 16px; font-size: 13px; color: #166534; font-weight: 500; border-bottom: 1px solid #dcfce7;">Period:</td>
+                    <td style="padding: 10px 16px; font-size: 13px; font-weight: 600; color: #1e293b; font-variant-numeric: tabular-nums; border-bottom: 1px solid #dcfce7;">${p.period}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 10px 16px; font-size: 13px; color: #166534; font-weight: 500;">Approved By:</td>
+                    <td style="padding: 10px 16px; font-size: 13px; font-weight: 600; color: #1e293b;">${p.approvedByName} <span style="color: #475569; font-weight: normal;">(${p.approvedDeptName})</span></td>
+                  </tr>
+                </table>
+
+                <!-- CTA Button -->
+                <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin: 28px 0 20px 0;">
+                  <tr>
+                    <td align="center">
+                      <a href="${p.downloadUrl}" target="_blank" style="display: inline-block; padding: 12px 32px; font-size: 14px; font-weight: 700; color: #ffffff; background-color: #059669; text-decoration: none; border-radius: 8px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);">
+                        Download Official PDF Report &darr;
+                      </a>
+                    </td>
+                  </tr>
+                </table>
+
+                <p style="margin: 0; font-size: 13px; color: #64748b; line-height: 1.5; text-align: center;">
+                  The request ticket has been officially closed with status <strong>COMPLETED</strong>. You can review the document history anytime in the Report History menu.
+                </p>
+              </td>
             </tr>
+
+            <!-- Footer -->
             <tr>
-              <td style="padding: 7px 0; color: #166534; font-size: 13px;">Customer:</td>
-              <td style="padding: 7px 0; font-weight: 700; color: #1e293b;">${p.customerName}</td>
-            </tr>
-            ${p.serviceId ? `
-            <tr>
-              <td style="padding: 7px 0; color: #166534; font-size: 13px;">Service ID:</td>
-              <td style="padding: 7px 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-variant-numeric: tabular-nums; font-weight: 600; color: #334155;">${p.serviceId}</td>
-            </tr>` : ''}
-            <tr>
-              <td style="padding: 7px 0; color: #166534; font-size: 13px;">Report Type:</td>
-              <td style="padding: 7px 0; font-weight: 600; color: #1e293b;">${p.reportType} Report</td>
-            </tr>
-            <tr>
-              <td style="padding: 7px 0; color: #166534; font-size: 13px;">Period:</td>
-              <td style="padding: 7px 0; font-weight: 600; color: #1e293b; font-variant-numeric: tabular-nums;">${p.period}</td>
-            </tr>
-            <tr>
-              <td style="padding: 7px 0; color: #166534; font-size: 13px;">Approved By:</td>
-              <td style="padding: 7px 0; font-weight: 600; color: #1e293b;">${p.approvedByName} <span style="color: #475569;">(${p.approvedDeptName})</span></td>
+              <td style="background-color: #f8fafc; border-top: 1px solid #e2e8f0; padding: 18px 32px; text-align: center;">
+                <p style="margin: 0; font-size: 12px; font-weight: 600; color: #475569;">Customer Reporting System &bull; PT Internet Mulia Untuk Negeri (Nexa)</p>
+                <p style="margin: 4px 0 0 0; font-size: 11px; color: #94a3b8;">Automated notification &bull; Helpdesk NOC: <a href="mailto:helpdesk@nexa.net.id" style="color: #64748b; text-decoration: none;">helpdesk@nexa.net.id</a> &bull; 2026</p>
+              </td>
             </tr>
           </table>
-        </div>
-
-        {/* CTA Button */}
-        <div style="text-align: center; margin: 28px 0;">
-          <a href="${p.downloadUrl}" style="background: #059669; color: #ffffff; text-decoration: none; padding: 12px 28px; border-radius: 8px; font-weight: 700; font-size: 14px; display: inline-block; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);">
-            &darr; Download Official PDF Report
-          </a>
-        </div>
-
-        <p style="font-size: 13px; color: #64748b; margin-bottom: 0; line-height: 1.5;">
-          The request ticket has been officially closed with status <strong>COMPLETED</strong>. You can review the document history anytime in the Report History menu.
-        </p>
-      </div>
-
-      {/* Footer */}
-      <div style="background: #f1f5f9; padding: 16px 32px; border-top: 1px solid #e2e8f0; font-size: 12px; color: #64748b; text-align: center;">
-        <p style="margin: 0; font-weight: 500;">Customer Reporting System &bull; PT Internet Mulia Untuk Negeri (Nexa)</p>
-        <p style="margin: 4px 0 0; font-size: 11px; color: #94a3b8;">Automated system notification &bull; Helpdesk NOC: helpdesk@nexa.net.id</p>
-      </div>
-    </div>
+        </td>
+      </tr>
+    </table>
   `;
 }
 
 /**
- * 4. Email Batch Digest Kickoff 24 Jam untuk Supervisor
+ * 4. Email: Batch Digest Kickoff 24 Jam untuk Supervisor (Routine Schedule Kickoff)
  */
 export function renderKickoffDigestHtml(p: KickoffDigestProps): string {
   const customerRows = p.customers.map((c, i) => `
     <tr style="border-bottom: 1px solid #f1f5f9;">
-      <td style="padding: 8px 12px; color: #64748b; font-variant-numeric: tabular-nums;">${i + 1}</td>
-      <td style="padding: 8px 12px; font-weight: 600; color: #1e293b;">${c.customerName}</td>
-      <td style="padding: 8px 12px; font-variant-numeric: tabular-nums; font-size: 12px; color: #475569;">${c.serviceId || '-'}</td>
-      <td style="padding: 8px 12px;"><span style="background: #e0f2fe; color: #0369a1; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700;">${c.reportType}</span></td>
+      <td style="padding: 9px 12px; color: #64748b; font-variant-numeric: tabular-nums; font-size: 12px;">${i + 1}</td>
+      <td style="padding: 9px 12px; font-weight: 600; color: #1e293b; font-size: 13px;">${c.customerName}</td>
+      <td style="padding: 9px 12px; font-variant-numeric: tabular-nums; font-size: 12px; color: #475569;">${c.serviceId || '-'}</td>
+      <td style="padding: 9px 12px;"><span style="background-color: #e0f2fe; color: #0369a1; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700;">${c.reportType}</span></td>
     </tr>
   `).join('');
 
   return `
-    <div style="${baseStyles} max-width: 680px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);">
-      {/* Header Banner */}
-      <div style="background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%); padding: 24px 32px; color: #ffffff;">
-        <p style="margin: 0; font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700; color: #c7d2fe;">NEXA &bull; 24-HOUR SLA ROUTINE SCHEDULE</p>
-        <h1 style="margin: 8px 0 0; font-size: 20px; font-weight: 700; color: #ffffff; letter-spacing: -0.3px;">Monthly Routine Kickoff &bull; ${p.deptName} Team</h1>
-      </div>
-
-      <div style="padding: 32px;">
-        <p style="margin-top: 0; font-size: 15px; color: #0f172a;">Dear <strong>Supervisor &amp; Team ${p.deptName}</strong>,</p>
-        <p style="font-size: 14px; color: #475569; margin-bottom: 20px;">
-          The monthly routine reporting cycle for period <strong>${p.period}</strong> has been initiated by the NOC Helpdesk under the <strong>24-Hour SLA</strong> turnaround commitment:
-        </p>
-
-        {/* Metrics Summary Box */}
-        <div style="background: #eef2ff; border: 1px solid #e0e7ff; border-radius: 8px; padding: 16px; margin: 16px 0;">
-          <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+    <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f1f5f9; padding: 24px 0; font-family: ${fontStack};">
+      <tr>
+        <td align="center">
+          <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="max-width: 640px; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);">
+            <!-- Header Banner -->
             <tr>
-              <td style="padding: 5px 0; color: #4338ca; width: 170px; font-size: 13px;">Total Routine Customers:</td>
-              <td style="padding: 5px 0; font-weight: 700; color: #312e81; font-variant-numeric: tabular-nums;">${p.customers.length} Customers</td>
+              <td style="background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%); padding: 26px 32px; color: #ffffff;">
+                <div style="font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: #c7d2fe; margin-bottom: 6px;">NEXA &bull; 24-HOUR SLA ROUTINE SCHEDULE</div>
+                <h1 style="margin: 0; font-size: 20px; font-weight: 700; color: #ffffff; line-height: 1.3;">Monthly Routine Kickoff &bull; ${p.deptName} Team</h1>
+              </td>
             </tr>
+
+            <!-- Content Body -->
             <tr>
-              <td style="padding: 5px 0; color: #4338ca; font-size: 13px;">Target SLA Deadline:</td>
-              <td style="padding: 5px 0; font-weight: 700; color: #b91c1c; font-variant-numeric: tabular-nums;">${p.deadlineStr} WIB (Strict 24-Hour SLA)</td>
+              <td style="padding: 28px 32px;">
+                <p style="margin: 0 0 12px 0; font-size: 15px; color: #0f172a; line-height: 1.5;">Dear <strong>Supervisor &amp; Team ${p.deptName}</strong>,</p>
+                <p style="margin: 0 0 20px 0; font-size: 14px; color: #475569; line-height: 1.6;">
+                  The monthly routine reporting cycle for period <strong>${p.period}</strong> has been initiated by the NOC Helpdesk under the <strong>24-Hour SLA</strong> turnaround commitment:
+                </p>
+
+                <!-- Metrics Summary Box -->
+                <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #eef2ff; border: 1px solid #e0e7ff; border-radius: 8px; margin-bottom: 20px;">
+                  <tr>
+                    <td style="padding: 10px 16px; font-size: 13px; color: #4338ca; font-weight: 500; width: 170px; border-bottom: 1px solid #e0e7ff;">Total Routine Customers:</td>
+                    <td style="padding: 10px 16px; font-size: 13px; font-weight: 700; color: #312e81; font-variant-numeric: tabular-nums; border-bottom: 1px solid #e0e7ff;">${p.customers.length} Customers</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 10px 16px; font-size: 13px; color: #4338ca; font-weight: 500;">Target SLA Deadline:</td>
+                    <td style="padding: 10px 16px; font-size: 13px; font-weight: 700; color: #b91c1c; font-variant-numeric: tabular-nums;">${p.deadlineStr} WIB (Strict 24-Hour SLA)</td>
+                  </tr>
+                </table>
+
+                <h3 style="font-size: 14px; margin: 20px 0 10px 0; color: #334155; font-weight: 600;">Customer Roster (${p.deptName}):</h3>
+                <div style="border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; max-height: 320px; overflow-y: auto;">
+                  <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse; text-align: left;">
+                    <thead style="background-color: #f8fafc; border-bottom: 1px solid #e2e8f0; font-weight: 600; color: #475569; font-size: 12px;">
+                      <tr>
+                        <th style="padding: 9px 12px; width: 30px;">#</th>
+                        <th style="padding: 9px 12px;">Customer</th>
+                        <th style="padding: 9px 12px;">Service ID</th>
+                        <th style="padding: 9px 12px;">Report Type</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${customerRows}
+                    </tbody>
+                  </table>
+                </div>
+
+                <!-- CTA Button -->
+                <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin: 28px 0 20px 0;">
+                  <tr>
+                    <td align="center">
+                      <a href="${p.scheduleUrl}" target="_blank" style="display: inline-block; padding: 12px 32px; font-size: 14px; font-weight: 600; color: #ffffff; background-color: #4f46e5; text-decoration: none; border-radius: 8px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);">
+                        Monitor Progress in Routine Schedule &rarr;
+                      </a>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <!-- Footer -->
+            <tr>
+              <td style="background-color: #f8fafc; border-top: 1px solid #e2e8f0; padding: 18px 32px; text-align: center;">
+                <p style="margin: 0; font-size: 12px; font-weight: 600; color: #475569;">Customer Reporting System &bull; PT Internet Mulia Untuk Negeri (Nexa)</p>
+                <p style="margin: 4px 0 0 0; font-size: 11px; color: #94a3b8;">Automated notification &bull; Helpdesk NOC: <a href="mailto:helpdesk@nexa.net.id" style="color: #64748b; text-decoration: none;">helpdesk@nexa.net.id</a> &bull; 2026</p>
+              </td>
             </tr>
           </table>
-        </div>
-
-        <h3 style="font-size: 14px; margin: 22px 0 10px; color: #334155; font-weight: 600;">Customer Roster (${p.deptName}):</h3>
-        <div style="border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; max-height: 320px; overflow-y: auto;">
-          <table style="width: 100%; border-collapse: collapse; font-size: 13px; text-align: left;">
-            <thead style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; font-weight: 600; color: #475569;">
-              <tr>
-                <th style="padding: 8px 12px; width: 30px;">#</th>
-                <th style="padding: 8px 12px;">Customer</th>
-                <th style="padding: 8px 12px;">Service ID</th>
-                <th style="padding: 8px 12px;">Report Type</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${customerRows}
-            </tbody>
-          </table>
-        </div>
-
-        {/* CTA Button */}
-        <div style="text-align: center; margin: 28px 0;">
-          <a href="${p.scheduleUrl}" style="background: #4f46e5; color: #ffffff; text-decoration: none; padding: 12px 28px; border-radius: 8px; font-weight: 600; font-size: 14px; display: inline-block; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);">
-            Monitor Progress in Routine Schedule &rarr;
-          </a>
-        </div>
-      </div>
-
-      {/* Footer */}
-      <div style="background: #f1f5f9; padding: 16px 32px; border-top: 1px solid #e2e8f0; font-size: 12px; color: #64748b; text-align: center;">
-        <p style="margin: 0; font-weight: 500;">Customer Reporting System &bull; PT Internet Mulia Untuk Negeri (Nexa)</p>
-        <p style="margin: 4px 0 0; font-size: 11px; color: #94a3b8;">Automated system notification &bull; Helpdesk NOC: helpdesk@nexa.net.id</p>
-      </div>
-    </div>
+        </td>
+      </tr>
+    </table>
   `;
 }
