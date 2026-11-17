@@ -1867,60 +1867,57 @@ function GeneratorPageContent() {
             <button
               type="button"
               onClick={() => setIsCustomerModalOpen(true)}
-              className="group flex items-center gap-2.5 px-3 py-1.5 rounded-lg border border-slate-200/80 bg-slate-50/80 hover:bg-slate-100 hover:border-slate-300 transition text-left shrink-0 cursor-pointer shadow-3xs"
+              className="group flex items-center gap-2.5 h-10 px-3 rounded-lg border border-slate-200 bg-white hover:border-orange-400 hover:bg-orange-50/20 transition text-left shrink-0 cursor-pointer shadow-3xs"
               title="Click to search or switch customer (Ctrl+Shift+K)"
             >
               <span className={`w-2 h-2 rounded-full shrink-0 ${customerName ? 'bg-orange-600 ring-2 ring-orange-100' : 'bg-slate-300'}`} />
               <div className="min-w-0 max-w-[170px] sm:max-w-[240px]">
-                <div className="text-xs font-semibold text-slate-800 truncate group-hover:text-orange-600 transition">
+                <div className="text-xs font-semibold text-slate-800 truncate group-hover:text-orange-600 transition leading-tight">
                   {customerName || 'Select Customer'}
                 </div>
-                <div className="text-2xs font-sans tabular-nums text-slate-500 truncate">
+                <div className="text-[11px] font-sans tabular-nums text-slate-500 truncate leading-tight">
                   {documentNumber || 'No Document Number'}
                 </div>
               </div>
-              <span className="text-2xs font-semibold px-1.5 py-0.5 rounded bg-white border border-slate-200 text-slate-500 hidden sm:inline-block shadow-3xs">
+              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-slate-100 border border-slate-200 text-slate-500 hidden sm:inline-block">
                 Ctrl+K
               </span>
             </button>
 
             {/* Quick Metrics & Compliance Badge */}
             {reportType === 'SLA' ? (
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200/80 bg-slate-50/80 shrink-0 shadow-3xs">
+              <div className="flex items-center gap-2.5 h-10 px-3 rounded-lg border border-slate-200 bg-white shrink-0 shadow-3xs">
                 <Badge
-                  variant="outline"
-                  className={`text-xs font-bold px-2 py-0.5 inline-flex items-center gap-1.5 border shadow-3xs ${
-                    slaCalc.availabilityPercent >= targetSla
-                      ? 'border-emerald-300 text-emerald-800 bg-emerald-50'
-                      : 'border-rose-300 text-rose-800 bg-rose-50'
-                  }`}
+                  variant={slaCalc.availabilityPercent >= targetSla ? 'success' : 'destructive'}
+                  className="text-xs font-semibold px-2 py-0.5"
                 >
-                  <span className="tabular-nums">SLA: {slaCalc.availabilityPercent}%</span>
+                  <span className="tabular-nums font-bold">SLA: {slaCalc.availabilityPercent}%</span>
+                  <span className="text-slate-300">|</span>
                   {slaCalc.availabilityPercent >= targetSla ? (
-                    <span className="inline-flex items-center gap-1 text-emerald-700">
-                      <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span className="inline-flex items-center gap-1 font-medium">
+                      <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
                       <span>Target Met</span>
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1 text-rose-700">
-                      <AlertTriangle className="w-3.5 h-3.5" />
+                    <span className="inline-flex items-center gap-1 font-medium">
+                      <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
                       <span>SLA Breached</span>
                     </span>
                   )}
                 </Badge>
-                <div className="text-2xs text-slate-500 hidden md:flex items-center gap-1">
-                  <span>Downtime:</span>
+                <div className="text-xs text-slate-500 hidden md:flex items-center gap-1.5 border-l border-slate-200 pl-2.5">
+                  <span className="text-[11px] uppercase tracking-wider font-medium text-slate-400">Downtime:</span>
                   <span className="font-semibold text-slate-700 tabular-nums">
                     {slaCalc.downtimeDurationStr || '0m'}
                   </span>
                 </div>
               </div>
             ) : (
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200/80 bg-slate-50/80 shrink-0 text-xs shadow-3xs">
-                <Badge variant="outline" className="text-xs font-medium border-slate-200 text-slate-700 bg-white">
+              <div className="flex items-center gap-2 h-10 px-3 rounded-lg border border-slate-200 bg-white shrink-0 text-xs shadow-3xs">
+                <Badge variant="outline" className="text-xs font-medium border-slate-200 text-slate-700 bg-slate-50">
                   Avg: DL <span className="font-semibold tabular-nums ml-0.5">{dlAvg}</span> {dlUnit} / UL <span className="font-semibold tabular-nums ml-0.5">{ulAvg}</span> {ulUnit}
                 </Badge>
-                <Badge variant="outline" className="text-xs font-medium border-slate-200 text-slate-700 bg-white hidden md:inline-flex">
+                <Badge variant="outline" className="text-xs font-medium border-slate-200 text-slate-700 bg-slate-50 hidden md:inline-flex">
                   Max: DL <span className="font-semibold tabular-nums ml-0.5">{dlMax}</span> {dlUnit} / UL <span className="font-semibold tabular-nums ml-0.5">{ulMax}</span> {ulUnit}
                 </Badge>
               </div>

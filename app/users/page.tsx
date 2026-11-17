@@ -72,20 +72,7 @@ interface UserData {
   createdAt: string;
 }
 
-interface StaffData {
-  id: string;
-  name: string;
-  email: string;
-  phone: string | null;
-  department: string;
-  roleTitle: string | null;
-  isActive: boolean;
-  createdAt: string;
-}
-
 export default function UsersManagementPage() {
-  const [activeSection, setActiveSection] = useState<'users' | 'staff'>('users');
-
   // ================= USERS STATE =================
   const [users, setUsers] = useState<UserData[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
@@ -111,25 +98,6 @@ export default function UsersManagementPage() {
   const [actionLoading, setActionLoading] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
-  // ================= STAFF PIC STATE =================
-  const [staffList, setStaffList] = useState<StaffData[]>([]);
-  const [loadingStaff, setLoadingStaff] = useState(false);
-  const [staffSearch, setStaffSearch] = useState('');
-  const [staffDeptFilter, setStaffDeptFilter] = useState<'ALL' | Department>('ALL');
-
-  const [isCreateStaffModalOpen, setIsCreateStaffModalOpen] = useState(false);
-  const [editingStaff, setEditingStaff] = useState<StaffData | null>(null);
-  const [deletingStaff, setDeletingStaff] = useState<StaffData | null>(null);
-
-  const [staffFormData, setStaffFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    department: 'Account Executive' as Department,
-    roleTitle: 'Account Manager',
-    isActive: true,
-  });
-
   // Fetch Users
   const fetchUsers = async () => {
     setLoadingUsers(true);
@@ -148,25 +116,8 @@ export default function UsersManagementPage() {
     }
   };
 
-  // Fetch Staff
-  const fetchStaff = async () => {
-    setLoadingStaff(true);
-    try {
-      const res = await fetch('/api/staff?active=false');
-      const data = await res.json();
-      if (res.ok && data.staff) {
-        setStaffList(data.staff);
-      }
-    } catch {
-      // ignore
-    } finally {
-      setLoadingStaff(false);
-    }
-  };
-
   useEffect(() => {
     fetchUsers();
-    fetchStaff();
   }, []);
 
   // Filtered Users
@@ -186,32 +137,10 @@ export default function UsersManagementPage() {
     });
   }, [users, search, roleFilter, deptFilter]);
 
-  // Filtered Staff
-  const filteredStaff = useMemo(() => {
-    return staffList.filter((s) => {
-      const q = staffSearch.trim().toLowerCase();
-      const matchesSearch =
-        !q ||
-        s.name.toLowerCase().includes(q) ||
-        s.email.toLowerCase().includes(q) ||
-        (s.phone && s.phone.includes(q)) ||
-        (s.roleTitle && s.roleTitle.toLowerCase().includes(q)) ||
-        s.department.toLowerCase().includes(q);
-
-      const matchesDept = staffDeptFilter === 'ALL' || s.department === staffDeptFilter;
-      return matchesSearch && matchesDept;
-    });
-  }, [staffList, staffSearch, staffDeptFilter]);
-
   // Role counters
   const adminCount = users.filter((u) => u.role === 'ADMIN').length;
   const supervisorCount = users.filter((u) => u.role === 'SUPERVISOR').length;
   const staffRoleCount = users.filter((u) => u.role === 'STAFF').length;
-
-  // Staff counters
-  const salesStaffCount = staffList.filter((s) => s.department === 'Account Executive').length;
-  const ceStaffCount = staffList.filter((s) => s.department === 'Customer Experience').length;
-  const finStaffCount = staffList.filter((s) => s.department === 'Finance').length;
 
   // Handlers for Users
   const handleCreateUser = async (e: React.FormEvent) => {
@@ -321,78 +250,6 @@ export default function UsersManagementPage() {
     }
   };
 
-  // Handlers for Staff PIC
-  const handleCreateStaff = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setActionLoading(true);
-    try {
-      const res = await fetch('/api/staff', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(staffFormData),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to add staff member.');
-
-      toast.success(data.message || 'Staff member added successfully.');
-      setIsCreateStaffModalOpen(false);
-      setStaffFormData({
-        name: '',
-        email: '',
-        phone: '',
-        department: 'Account Executive',
-        roleTitle: 'Account Manager',
-        isActive: true,
-      });
-      fetchStaff();
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      toast.error(msg);
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  const handleUpdateStaff = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingStaff) return;
-    setActionLoading(true);
-    try {
-      const res = await fetch('/api/staff', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(editingStaff),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to update staff member.');
-
-      toast.success(data.message || 'Staff data updated successfully.');
-      setEditingStaff(null);
-      fetchStaff();
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      toast.error(msg);
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  const handleConfirmDeleteStaff = async () => {
-    if (!deletingStaff) return;
-    try {
-      const res = await fetch(`/api/staff?id=${deletingStaff.id}`, { method: 'DELETE' });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to delete staff member.');
-
-      toast.success('Staff member deleted successfully.');
-      setDeletingStaff(null);
-      fetchStaff();
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      toast.error(msg);
-    }
-  };
-
   const getRoleBadge = (role: string) => {
     switch (role) {
       case 'ADMIN':
@@ -437,55 +294,33 @@ export default function UsersManagementPage() {
           </Link>
         }
         actions={
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={() => setIsCreateModalOpen(true)}
-          >
-            <UserPlus className="w-3.5 h-3.5 mr-1.5" />
-            <span>Add User Account</span>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Link href="/staff">
+              <Button variant="secondary" size="sm">
+                <Briefcase className="w-3.5 h-3.5 mr-1.5" />
+                <span>Staff Directory</span>
+              </Button>
+            </Link>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => setIsCreateModalOpen(true)}
+            >
+              <UserPlus className="w-3.5 h-3.5 mr-1.5" />
+              <span>Add User Account</span>
+            </Button>
+          </div>
         }
       />
 
-      {/* Main Section Switcher Tabs */}
-      <div className="flex border-b border-slate-200 gap-6 text-sm font-semibold">
-        <button
-          type="button"
-          onClick={() => setActiveSection('users')}
-          className={`pb-3 flex items-center gap-2 border-b-2 transition-colors ${
-            activeSection === 'users'
-              ? 'border-orange-500 text-orange-600'
-              : 'border-transparent text-slate-500 hover:text-slate-800'
-          }`}
-        >
-          <Users className="w-4 h-4" />
-          <span>System User Accounts ({users.length})</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveSection('staff')}
-          className={`pb-3 flex items-center gap-2 border-b-2 transition-colors ${
-            activeSection === 'staff'
-              ? 'border-orange-500 text-orange-600'
-              : 'border-transparent text-slate-500 hover:text-slate-800'
-          }`}
-        >
-          <Briefcase className="w-4 h-4" />
-          <span>Staff Directory ({staffList.length})</span>
-        </button>
-      </div>
-
-      {/* ================= SECTION 1: USERS ================= */}
-      {activeSection === 'users' && (
-        <div className="space-y-6">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-            <StatCard label="Total Accounts" value={users.length} icon={Users} subtext="Registered users" />
-            <StatCard label="Staff" value={staffRoleCount} icon={Sliders} subtext="Generator & creator" />
-            <StatCard label="Supervisor" value={supervisorCount} icon={Shield} subtext="Verification & approvals" />
-            <StatCard label="Administrator" value={adminCount} icon={Shield} subtext="Full system access" />
-          </div>
+      {/* Main Content */}
+      <div className="space-y-6">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+          <StatCard label="Total Accounts" value={users.length} icon={Users} subtext="Registered users" />
+          <StatCard label="Staff" value={staffRoleCount} icon={Sliders} subtext="Generator & creator" />
+          <StatCard label="Supervisor" value={supervisorCount} icon={Shield} subtext="Verification & approvals" />
+          <StatCard label="Administrator" value={adminCount} icon={Shield} subtext="Full system access" />
+        </div>
 
           {/* Feedback Banner */}
           {feedback && (
@@ -658,153 +493,6 @@ export default function UsersManagementPage() {
             </Table>
           </div>
         </div>
-      )}
-
-      {/* ================= SECTION 2: STAFF PIC ================= */}
-      {activeSection === 'staff' && (
-        <div className="space-y-6">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-            <StatCard label="Total Staff" value={staffList.length} icon={UserCheck} subtext="Commercial &amp; internal PICs" />
-            <StatCard label="Account Executive" value={salesStaffCount} icon={Briefcase} subtext="Sales &amp; Business PIC" />
-            <StatCard label="Customer Experience" value={ceStaffCount} icon={Users} subtext="Customer Care PIC" />
-            <StatCard label="Finance" value={finStaffCount} icon={Shield} subtext="Billing &amp; AR PIC" />
-          </div>
-
-          {/* Search & Filter */}
-          <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs flex flex-col md:flex-row items-center justify-between gap-3">
-            <div className="relative w-full md:max-w-md">
-              <Search className="w-4 h-4 text-slate-500 absolute left-3 top-2.5 pointer-events-none" />
-              <Input
-                value={staffSearch}
-                onChange={(e) => setStaffSearch(e.target.value)}
-                placeholder="Search staff name, email, or role..."
-                className="pl-9 pr-9 h-9 text-[13px]"
-              />
-              {staffSearch && (
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  onClick={() => setStaffSearch('')}
-                  className="absolute right-1 top-0.5 h-8 w-8 text-slate-500 hover:text-slate-800"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </Button>
-              )}
-            </div>
-
-            <div className="flex flex-wrap items-center gap-1 self-start md:self-auto">
-              <Button
-                variant={staffDeptFilter === 'ALL' ? 'secondary' : 'ghost'}
-                size="sm"
-                onClick={() => setStaffDeptFilter('ALL')}
-                className={staffDeptFilter === 'ALL' ? 'bg-slate-900 text-white hover:bg-slate-800 h-8 px-2.5 text-xs font-semibold' : 'text-slate-600 h-8 px-2.5 text-xs'}
-              >
-                All Depts ({staffList.length})
-              </Button>
-              <Button
-                variant={staffDeptFilter === 'Account Executive' ? 'secondary' : 'ghost'}
-                size="sm"
-                onClick={() => setStaffDeptFilter('Account Executive')}
-                className={staffDeptFilter === 'Account Executive' ? 'bg-slate-900 text-white hover:bg-slate-800 h-8 px-2.5 text-xs font-semibold' : 'text-slate-600 h-8 px-2.5 text-xs'}
-              >
-                Sales / AE ({salesStaffCount})
-              </Button>
-              <Button
-                variant={staffDeptFilter === 'Customer Experience' ? 'secondary' : 'ghost'}
-                size="sm"
-                onClick={() => setStaffDeptFilter('Customer Experience')}
-                className={staffDeptFilter === 'Customer Experience' ? 'bg-slate-900 text-white hover:bg-slate-800 h-8 px-2.5 text-xs font-semibold' : 'text-slate-600 h-8 px-2.5 text-xs'}
-              >
-                CE / CX ({ceStaffCount})
-              </Button>
-              <Button
-                variant={staffDeptFilter === 'Finance' ? 'secondary' : 'ghost'}
-                size="sm"
-                onClick={() => setStaffDeptFilter('Finance')}
-                className={staffDeptFilter === 'Finance' ? 'bg-slate-900 text-white hover:bg-slate-800 h-8 px-2.5 text-xs font-semibold' : 'text-slate-600 h-8 px-2.5 text-xs'}
-              >
-                Finance ({finStaffCount})
-              </Button>
-            </div>
-          </div>
-
-          {/* Table Staff */}
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[180px]">Full Name</TableHead>
-                  <TableHead className="w-[140px]">Department</TableHead>
-                  <TableHead className="w-[150px]">Role / Title</TableHead>
-                  <TableHead>Official Email</TableHead>
-                  <TableHead className="w-[130px]">Phone / WA</TableHead>
-                  <TableHead className="w-[80px]">Status</TableHead>
-                  <TableHead className="text-right w-[90px]">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {loadingStaff ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="h-40 text-center">
-                      <Spinner size="md" className="mx-auto text-orange-600 mb-2" />
-                      <p className="text-xs text-slate-500">Loading staff directory...</p>
-                    </TableCell>
-                  </TableRow>
-                ) : filteredStaff.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="h-48 text-center">
-                      <EmptyState
-                        icon={UserCheck}
-                        title="No staff members registered"
-                        description="Add Sales and CE staff members to auto-populate report request forms."
-                      />
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredStaff.map((s) => (
-                    <TableRow key={s.id} className="hover:bg-slate-50/70">
-                      <TableCell className="font-semibold text-slate-900">{s.name}</TableCell>
-                      <TableCell>{getDeptBadge(s.department)}</TableCell>
-                      <TableCell className="text-xs font-medium text-slate-700">{s.roleTitle || '-'}</TableCell>
-                      <TableCell className="text-xs text-slate-600 font-sans">{s.email}</TableCell>
-                      <TableCell className="text-xs text-slate-600">{s.phone || '-'}</TableCell>
-                      <TableCell>
-                        {s.isActive ? (
-                          <Badge variant="success">Active</Badge>
-                        ) : (
-                          <Badge variant="neutral">Inactive</Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end space-x-1">
-                          <Button
-                            variant="ghost"
-                            size="icon-sm"
-                            onClick={() => setEditingStaff(s)}
-                            title="Edit Staff Data"
-                            className="text-slate-500 hover:text-slate-900"
-                          >
-                            <Edit2 className="w-3.5 h-3.5" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon-sm"
-                            onClick={() => setDeletingStaff(s)}
-                            title="Delete Staff"
-                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </div>
-      )}
 
       {/* ================= MODAL: CREATE USER ================= */}
       <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
@@ -983,136 +671,6 @@ export default function UsersManagementPage() {
         </DialogContent>
       </Dialog>
 
-      {/* ================= MODAL: CREATE STAFF ================= */}
-      <Dialog open={isCreateStaffModalOpen} onOpenChange={setIsCreateStaffModalOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Add Staff Member</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleCreateStaff} className="space-y-4 py-2">
-            <FormField label="Full Name" required>
-              <Input
-                placeholder="e.g. Dimas Prasetya"
-                value={staffFormData.name}
-                onChange={(e) => setStaffFormData({ ...staffFormData, name: e.target.value })}
-                required
-              />
-            </FormField>
-            <FormField label="Official Email" required>
-              <Input
-                type="email"
-                placeholder="e.g. dimas@nexa.net.id"
-                value={staffFormData.email}
-                onChange={(e) => setStaffFormData({ ...staffFormData, email: e.target.value })}
-                required
-              />
-            </FormField>
-            <div className="grid grid-cols-2 gap-3">
-              <FormField label="Department" required>
-                <Select
-                  value={staffFormData.department}
-                  onValueChange={(val) => setStaffFormData({ ...staffFormData, department: val as Department })}
-                >
-                  <SelectTrigger selectSize="sm"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {DEPARTMENTS.map((dept) => (
-                      <SelectItem key={dept} value={dept}>{dept}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </FormField>
-              <FormField label="Job Title / Role">
-                <Input
-                  placeholder="e.g. Account Manager"
-                  value={staffFormData.roleTitle}
-                  onChange={(e) => setStaffFormData({ ...staffFormData, roleTitle: e.target.value })}
-                />
-              </FormField>
-            </div>
-            <FormField label="Phone / WhatsApp (Optional)">
-              <Input
-                placeholder="e.g. 081234567890"
-                value={staffFormData.phone}
-                onChange={(e) => setStaffFormData({ ...staffFormData, phone: e.target.value })}
-              />
-            </FormField>
-            <DialogFooter className="pt-3 border-t border-slate-100">
-              <Button variant="secondary" onClick={() => setIsCreateStaffModalOpen(false)}>Cancel</Button>
-              <Button variant="primary" type="submit" loading={actionLoading}>Add Staff</Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* ================= MODAL: EDIT STAFF ================= */}
-      <Dialog open={Boolean(editingStaff)} onOpenChange={(open) => !open && setEditingStaff(null)}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Edit Staff Member</DialogTitle>
-          </DialogHeader>
-          {editingStaff && (
-            <form onSubmit={handleUpdateStaff} className="space-y-4 py-2">
-              <FormField label="Full Name" required>
-                <Input
-                  value={editingStaff.name}
-                  onChange={(e) => setEditingStaff({ ...editingStaff, name: e.target.value })}
-                  required
-                />
-              </FormField>
-              <FormField label="Official Email" required>
-                <Input
-                  type="email"
-                  value={editingStaff.email}
-                  onChange={(e) => setEditingStaff({ ...editingStaff, email: e.target.value })}
-                  required
-                />
-              </FormField>
-              <div className="grid grid-cols-2 gap-3">
-                <FormField label="Department" required>
-                  <Select
-                    value={editingStaff.department}
-                    onValueChange={(val) => setEditingStaff({ ...editingStaff, department: val })}
-                  >
-                    <SelectTrigger selectSize="sm"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {DEPARTMENTS.map((dept) => (
-                        <SelectItem key={dept} value={dept}>{dept}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </FormField>
-                <FormField label="Job Title / Role">
-                  <Input
-                    value={editingStaff.roleTitle || ''}
-                    onChange={(e) => setEditingStaff({ ...editingStaff, roleTitle: e.target.value })}
-                  />
-                </FormField>
-              </div>
-              <FormField label="Phone / WhatsApp">
-                <Input
-                  value={editingStaff.phone || ''}
-                  onChange={(e) => setEditingStaff({ ...editingStaff, phone: e.target.value })}
-                />
-              </FormField>
-              <div className="flex items-center space-x-2 pt-1">
-                <Checkbox
-                  id="editStaffIsActive"
-                  checked={editingStaff.isActive}
-                  onCheckedChange={(c) => setEditingStaff({ ...editingStaff, isActive: !!c })}
-                />
-                <label htmlFor="editStaffIsActive" className="text-xs text-slate-800 cursor-pointer">
-                  Active Staff
-                </label>
-              </div>
-              <DialogFooter className="pt-3 border-t border-slate-100">
-                <Button variant="secondary" onClick={() => setEditingStaff(null)}>Cancel</Button>
-                <Button variant="primary" type="submit" loading={actionLoading}>Save Changes</Button>
-              </DialogFooter>
-            </form>
-          )}
-        </DialogContent>
-      </Dialog>
-
       {/* Confirm Deletion Dialogs */}
       <ConfirmDialog
         open={Boolean(deletingUser)}
@@ -1122,16 +680,6 @@ export default function UsersManagementPage() {
         confirmLabel="Delete User"
         variant="destructive"
         onConfirm={handleConfirmDeleteUser}
-      />
-
-      <ConfirmDialog
-        open={Boolean(deletingStaff)}
-        onOpenChange={(open) => !open && setDeletingStaff(null)}
-        title="Delete Staff Member"
-        description={`Permanently delete staff member "${deletingStaff?.name}" (${deletingStaff?.department})? This action cannot be undone.`}
-        confirmLabel="Delete Staff"
-        variant="destructive"
-        onConfirm={handleConfirmDeleteStaff}
       />
     </div>
   );

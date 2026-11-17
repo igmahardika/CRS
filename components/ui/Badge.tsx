@@ -33,14 +33,14 @@ export const Badge = React.forwardRef<HTMLDivElement, BadgeProps>(
         ref={ref}
         suppressHydrationWarning
         className={cn(
-          'inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-sans font-semibold border leading-tight tracking-tight select-none',
+          'inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-sans font-semibold border leading-tight tracking-tight select-none whitespace-nowrap',
           variantClasses[variant],
           className
         )}
         {...props}
       >
         {dot && <span className={cn('w-1.5 h-1.5 rounded-full shrink-0', dotColorClasses[variant])} />}
-        <span>{children}</span>
+        {children}
       </div>
     );
   }

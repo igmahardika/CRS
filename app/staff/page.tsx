@@ -14,6 +14,9 @@ import {
   Briefcase,
   Shield,
   Building,
+  Headphones,
+  CircleDollarSign,
+  Radio,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -37,6 +40,7 @@ import {
   SelectItem,
   Checkbox,
   SegmentedControl,
+  StatCard,
   Table,
   TableHeader,
   TableBody,
@@ -250,70 +254,46 @@ export default function StaffDirectoryPage() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3.5">
-        <button
-          type="button"
+        <StatCard
+          label="All Staff"
+          value={counts.all}
+          icon={Users}
+          subtext="Total directory members"
+          active={selectedDept === 'ALL'}
           onClick={() => setSelectedDept('ALL')}
-          className={`p-3.5 rounded-xl border text-left transition cursor-pointer ${
-            selectedDept === 'ALL'
-              ? 'bg-orange-50/50 border-orange-400 ring-1 ring-orange-400/20 shadow-2xs'
-              : 'bg-white border-slate-200/90 hover:border-slate-300 hover:bg-slate-50/50 shadow-2xs'
-          }`}
-        >
-          <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">All Staff</div>
-          <div className="text-2xl font-sans font-bold tabular-nums text-slate-900 mt-1">{counts.all}</div>
-        </button>
-
-        <button
-          type="button"
+        />
+        <StatCard
+          label="Customer Exp."
+          value={counts.ce}
+          icon={Headphones}
+          subtext="Customer Care & CX PICs"
+          active={selectedDept === 'Customer Experience'}
           onClick={() => setSelectedDept('Customer Experience')}
-          className={`p-3.5 rounded-xl border text-left transition cursor-pointer ${
-            selectedDept === 'Customer Experience'
-              ? 'bg-orange-50/50 border-orange-400 ring-1 ring-orange-400/20 shadow-2xs'
-              : 'bg-white border-slate-200/90 hover:border-slate-300 hover:bg-slate-50/50 shadow-2xs'
-          }`}
-        >
-          <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Customer Exp.</div>
-          <div className="text-2xl font-sans font-bold tabular-nums text-slate-900 mt-1">{counts.ce}</div>
-        </button>
-
-        <button
-          type="button"
+        />
+        <StatCard
+          label="Account Exec."
+          value={counts.ae}
+          icon={Briefcase}
+          subtext="Sales & Commercial PICs"
+          active={selectedDept === 'Account Executive'}
           onClick={() => setSelectedDept('Account Executive')}
-          className={`p-3.5 rounded-xl border text-left transition cursor-pointer ${
-            selectedDept === 'Account Executive'
-              ? 'bg-orange-50/50 border-orange-400 ring-1 ring-orange-400/20 shadow-2xs'
-              : 'bg-white border-slate-200/90 hover:border-slate-300 hover:bg-slate-50/50 shadow-2xs'
-          }`}
-        >
-          <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Account Exec.</div>
-          <div className="text-2xl font-sans font-bold tabular-nums text-slate-900 mt-1">{counts.ae}</div>
-        </button>
-
-        <button
-          type="button"
+        />
+        <StatCard
+          label="Finance"
+          value={counts.finance}
+          icon={CircleDollarSign}
+          subtext="Billing & Finance PICs"
+          active={selectedDept === 'Finance'}
           onClick={() => setSelectedDept('Finance')}
-          className={`p-3.5 rounded-xl border text-left transition cursor-pointer ${
-            selectedDept === 'Finance'
-              ? 'bg-orange-50/50 border-orange-400 ring-1 ring-orange-400/20 shadow-2xs'
-              : 'bg-white border-slate-200/90 hover:border-slate-300 hover:bg-slate-50/50 shadow-2xs'
-          }`}
-        >
-          <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Finance</div>
-          <div className="text-2xl font-sans font-bold tabular-nums text-slate-900 mt-1">{counts.finance}</div>
-        </button>
-
-        <button
-          type="button"
+        />
+        <StatCard
+          label="Network Ops"
+          value={counts.noc}
+          icon={Radio}
+          subtext="NOC & Engineering PICs"
+          active={selectedDept === 'Network Operation'}
           onClick={() => setSelectedDept('Network Operation')}
-          className={`p-3.5 rounded-xl border text-left transition cursor-pointer ${
-            selectedDept === 'Network Operation'
-              ? 'bg-orange-50/50 border-orange-400 ring-1 ring-orange-400/20 shadow-2xs'
-              : 'bg-white border-slate-200/90 hover:border-slate-300 hover:bg-slate-50/50 shadow-2xs'
-          }`}
-        >
-          <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Network Ops</div>
-          <div className="text-2xl font-sans font-bold tabular-nums text-slate-900 mt-1">{counts.noc}</div>
-        </button>
+        />
       </div>
 
       {/* Filter & Search Bar */}
