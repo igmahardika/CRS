@@ -11,7 +11,13 @@ export interface UserSession {
 
 export const AUTH_COOKIE_NAME = 'crs_auth_token';
 export const LEGACY_AUTH_COOKIE_NAME = 'genre_auth_token';
-export const AUTH_SECRET = process.env.AUTH_SECRET || 'nexa-crs-reporting-secure-key-2026-auth-prod';
+export const AUTH_SECRET =
+  process.env.AUTH_SECRET ||
+  (process.env.NODE_ENV === 'production'
+    ? (() => {
+        throw new Error('FATAL: AUTH_SECRET environment variable is mandatory in production mode.');
+      })()
+    : 'dev-crs-reporting-insecure-key-local-only');
 
 /**
  * Creates a signed JWT-like token (HMAC-SHA256)
