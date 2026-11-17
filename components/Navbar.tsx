@@ -201,20 +201,12 @@ export default function Navbar() {
         <div className="flex justify-between h-14 items-center">
           {/* Left: Brand Logo */}
           <div className="flex items-center space-x-6">
-            <Link href={homeHref} className="flex items-center space-x-3 shrink-0 group">
+            <Link href={homeHref} className="flex items-center shrink-0 group py-1">
               <img
                 src="/assets/nexa-logo.png"
-                alt="Nexa Logo"
+                alt="Nexa"
                 className="h-8 w-auto object-contain transition-transform group-hover:scale-105"
               />
-              <div className="hidden sm:flex flex-col border-l border-slate-200 pl-3">
-                <span className="font-heading text-xs font-bold text-slate-900 tracking-tight leading-tight">
-                  Customer Reporting System
-                </span>
-                <span className="text-[10px] text-slate-500 font-medium leading-tight">
-                  PT Internet Mulia Untuk Negeri
-                </span>
-              </div>
             </Link>
 
             {/* Desktop Navigation Groups (Hierarchical Menu with Dropdowns) */}

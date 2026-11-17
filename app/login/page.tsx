@@ -64,9 +64,6 @@ function LoginForm() {
           <h1 className="font-heading text-lg sm:text-xl font-bold text-slate-900 tracking-tight">
             Customer Reporting System
           </h1>
-          <p className="text-xs text-slate-500 font-sans font-normal mt-1 leading-normal">
-            PT Internet Mulia Untuk Negeri &bull; 2026
-          </p>
         </div>
 
         {/* Error Feedback */}
