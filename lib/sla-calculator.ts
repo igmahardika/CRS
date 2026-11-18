@@ -7,6 +7,10 @@ export interface TicketItem {
   description: string;
   action: string;
   status: string;
+  summary?: string;   // Alias/fallback for backwards compatibility
+  start?: string;     // Alias/fallback for backwards compatibility
+  stop?: string;      // Alias/fallback for backwards compatibility
+  duration?: string | number; // Alias/fallback for backwards compatibility
 }
 
 export interface CaseItem {
@@ -18,6 +22,10 @@ export interface CaseItem {
   description: string;
   action: string;
   downtimeMinutes: number;
+  summary?: string;   // Alias/fallback for backwards compatibility
+  start?: string;     // Alias/fallback for backwards compatibility
+  stop?: string;      // Alias/fallback for backwards compatibility
+  duration?: string | number; // Alias/fallback for backwards compatibility
 }
 
 export interface SlaCalculationResult {
@@ -119,12 +127,12 @@ export function calculateMinutesBetween(startStr?: string, endStr?: string): num
 /**
  * Formats start and optional end date/time for Option B (compact 2-line period display).
  */
-export function formatPeriodDisplay(item: { date?: string; startDate?: string; endDate?: string }): {
+export function formatPeriodDisplay(item: { date?: string; startDate?: string; endDate?: string; start?: string; stop?: string }): {
   start: string;
   end?: string;
 } {
-  const startRaw = item.startDate ? item.startDate.replace('T', ' ') : (item.date || '-');
-  const endRaw = item.endDate ? item.endDate.replace('T', ' ') : undefined;
+  const startRaw = (item.startDate || item.start) ? (item.startDate || item.start)!.replace('T', ' ') : (item.date || '-');
+  const endRaw = (item.endDate || item.stop) ? (item.endDate || item.stop)!.replace('T', ' ') : undefined;
   return {
     start: startRaw,
     end: endRaw && endRaw !== startRaw ? endRaw : undefined,

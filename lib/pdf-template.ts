@@ -54,25 +54,46 @@ export function generateReportHtml(rawData: ReportData): string {
     serviceName: escapeHtml(rawData.serviceName),
     documentNumber: escapeHtml(rawData.documentNumber),
     reportPeriod: escapeHtml(rawData.reportPeriod),
-    tickets: (rawData.tickets || []).map((t) => ({
-      ...t,
-      noTicket: escapeHtml(t.noTicket),
-      date: escapeHtml(t.date),
-      startDate: t.startDate ? escapeHtml(t.startDate) : undefined,
-      endDate: t.endDate ? escapeHtml(t.endDate) : undefined,
-      description: escapeHtml(t.description),
-      action: escapeHtml(t.action),
-      status: escapeHtml(t.status),
-    })),
-    cases: (rawData.cases || []).map((c) => ({
-      ...c,
-      noCase: escapeHtml(c.noCase),
-      date: escapeHtml(c.date),
-      startDate: c.startDate ? escapeHtml(c.startDate) : undefined,
-      endDate: c.endDate ? escapeHtml(c.endDate) : undefined,
-      description: escapeHtml(c.description),
-      action: escapeHtml(c.action),
-    })),
+    tickets: (rawData.tickets || []).map((t) => {
+      const desc = escapeHtml(t.description || t.summary || '');
+      const sDate = t.startDate ? escapeHtml(t.startDate) : (t.start ? escapeHtml(t.start) : undefined);
+      const eDate = t.endDate ? escapeHtml(t.endDate) : (t.stop ? escapeHtml(t.stop) : undefined);
+      return {
+        ...t,
+        noTicket: escapeHtml(t.noTicket || ''),
+        date: escapeHtml(t.date || ''),
+        startDate: sDate,
+        endDate: eDate,
+        description: desc,
+        action: escapeHtml(t.action || ''),
+        status: escapeHtml(t.status || ''),
+        // Backwards-compatible aliases:
+        summary: desc,
+        start: sDate,
+        stop: eDate,
+        duration: t.duration !== undefined ? escapeHtml(String(t.duration)) : undefined,
+      };
+    }),
+    cases: (rawData.cases || []).map((c) => {
+      const desc = escapeHtml(c.description || c.summary || '');
+      const sDate = c.startDate ? escapeHtml(c.startDate) : (c.start ? escapeHtml(c.start) : undefined);
+      const eDate = c.endDate ? escapeHtml(c.endDate) : (c.stop ? escapeHtml(c.stop) : undefined);
+      return {
+        ...c,
+        noCase: escapeHtml(c.noCase || ''),
+        date: escapeHtml(c.date || ''),
+        startDate: sDate,
+        endDate: eDate,
+        description: desc,
+        action: escapeHtml(c.action || ''),
+        downtimeMinutes: c.downtimeMinutes || 0,
+        // Backwards-compatible aliases:
+        summary: desc,
+        start: sDate,
+        stop: eDate,
+        duration: c.duration !== undefined ? escapeHtml(String(c.duration)) : `${c.downtimeMinutes || 0} Mins`,
+      };
+    }),
   };
   const isSla = data.reportType === 'SLA';
   const engineName = data.graphType === 'PRTG' ? 'PRTG Network Monitor' : 'Multi Router Traffic Grapher (MRTG)';
