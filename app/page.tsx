@@ -1313,6 +1313,7 @@ function GeneratorPageContent() {
                         <button
                           key={idx}
                           type="button"
+                          suppressHydrationWarning
                           onClick={() => {
                             setMonth(p.month);
                             setYear(p.year);
@@ -1815,6 +1816,7 @@ function GeneratorPageContent() {
                 )}
                 <button
                   type="button"
+                  suppressHydrationWarning
                   onClick={() => {
                     setCustomerName('');
                     setCustomerId('');
@@ -1865,6 +1867,7 @@ function GeneratorPageContent() {
             {/* Customer & Document Pill */}
             <button
               type="button"
+              suppressHydrationWarning
               onClick={() => setIsCustomerModalOpen(true)}
               className="group flex items-center gap-2.5 h-10 px-3 rounded-lg border border-slate-200 bg-white hover:border-orange-400 hover:bg-orange-50/20 transition text-left shrink-0 cursor-pointer shadow-3xs"
               title="Click to search or switch customer (Ctrl+Shift+K)"

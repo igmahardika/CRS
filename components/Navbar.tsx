@@ -225,6 +225,7 @@ export default function Navbar() {
                     <DropdownMenuTrigger asChild>
                       <button
                         type="button"
+                        suppressHydrationWarning
                         className={`px-3 py-1.5 rounded-lg text-[13px] transition-colors flex items-center gap-1.5 outline-none cursor-pointer ${isReportsActive
                           ? 'bg-orange-50 text-orange-700 font-semibold'
                           : 'text-slate-700 hover:text-slate-950 hover:bg-slate-100 font-medium'
@@ -297,6 +298,7 @@ export default function Navbar() {
                       <DropdownMenuTrigger asChild>
                         <button
                           type="button"
+                          suppressHydrationWarning
                           className={`px-3 py-1.5 rounded-lg text-[13px] transition-colors flex items-center gap-1.5 outline-none cursor-pointer ${isQueueActive
                             ? 'bg-orange-50 text-orange-700 font-semibold'
                             : 'text-slate-700 hover:text-slate-950 hover:bg-slate-100 font-medium'
@@ -351,6 +353,7 @@ export default function Navbar() {
                     <DropdownMenuTrigger asChild>
                       <button
                         type="button"
+                        suppressHydrationWarning
                         className={`px-3 py-1.5 rounded-lg text-[13px] transition-colors flex items-center gap-1.5 outline-none cursor-pointer ${isMasterActive
                           ? 'bg-orange-50 text-orange-700 font-semibold'
                           : 'text-slate-700 hover:text-slate-950 hover:bg-slate-100 font-medium'
@@ -408,6 +411,7 @@ export default function Navbar() {
                     <DropdownMenuTrigger asChild>
                       <button
                         type="button"
+                        suppressHydrationWarning
                         className={`px-3 py-1.5 rounded-lg text-[13px] transition-colors flex items-center gap-1.5 outline-none cursor-pointer ${isSystemActive
                           ? 'bg-orange-50 text-orange-700 font-semibold'
                           : 'text-slate-700 hover:text-slate-950 hover:bg-slate-100 font-medium'

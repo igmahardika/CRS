@@ -60,6 +60,7 @@ export function InfoTooltip({
         <TooltipTrigger asChild>
           <button
             type="button"
+            suppressHydrationWarning
             className={cn(
               'inline-flex items-center justify-center rounded text-slate-400 hover:text-slate-600 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-slate-400 cursor-help',
               className
