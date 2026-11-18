@@ -656,8 +656,8 @@ export function generateReportHtml(rawData: ReportData): string {
               <td>-</td>
             </tr>
           ` : tickets.map(t => {
-            const period = formatPeriodDisplay(t);
-            return `
+    const period = formatPeriodDisplay(t);
+    return `
             <tr>
               <td style="white-space: nowrap;">${t.noTicket}</td>
               <td style="white-space: nowrap; font-size: 7.5pt; line-height: 1.25;">
@@ -668,7 +668,8 @@ export function generateReportHtml(rawData: ReportData): string {
               <td style="text-align: left; padding-left: 8px;">${t.action}</td>
               <td>${t.status}</td>
             </tr>
-          `;}).join('')}
+          `;
+  }).join('')}
         </tbody>
       </table>
 
@@ -698,8 +699,8 @@ export function generateReportHtml(rawData: ReportData): string {
               <td>-</td>
             </tr>
           ` : cases.map(c => {
-            const period = formatPeriodDisplay(c);
-            return `
+    const period = formatPeriodDisplay(c);
+    return `
             <tr>
               <td>${c.noCase}</td>
               <td style="white-space: nowrap; font-size: 7.5pt; line-height: 1.25;">
@@ -710,7 +711,8 @@ export function generateReportHtml(rawData: ReportData): string {
               <td style="text-align: left; padding-left: 8px;">${c.action}</td>
               <td>${c.downtimeMinutes} Mins</td>
             </tr>
-          `;}).join('')}
+          `;
+  }).join('')}
         </tbody>
       </table>
 
@@ -754,12 +756,12 @@ export function generateReportHtml(rawData: ReportData): string {
             </div>
             <div>
               ${data.targetSla > 0 ? (
-                slaCalc.onlinePercent >= data.targetSla ? `
+        slaCalc.onlinePercent >= data.targetSla ? `
                   <span class="sla-status-text" style="color: #047857;">SLA Met (+${(slaCalc.onlinePercent - data.targetSla).toFixed(2)}%)</span>
                 ` : `
                   <span class="sla-status-text" style="color: #dc2626;">SLA Breached (-${(data.targetSla - slaCalc.onlinePercent).toFixed(2)}%)</span>
                 `
-              ) : `
+      ) : `
                 <span class="sla-status-text" style="color: #64748b;">-</span>
               `}
             </div>
@@ -871,8 +873,8 @@ export function generateReportHtml(rawData: ReportData): string {
               <td>-</td>
             </tr>
           ` : tickets.map(t => {
-            const period = formatPeriodDisplay(t);
-            return `
+        const period = formatPeriodDisplay(t);
+        return `
             <tr>
               <td style="white-space: nowrap;">${t.noTicket}</td>
               <td style="white-space: nowrap; font-size: 7.5pt; line-height: 1.25;">
@@ -883,7 +885,8 @@ export function generateReportHtml(rawData: ReportData): string {
               <td style="text-align: left; padding-left: 8px;">${t.action}</td>
               <td>${t.status}</td>
             </tr>
-          `;}).join('')}
+          `;
+      }).join('')}
         </tbody>
       </table>
 
@@ -926,8 +929,8 @@ export function generateReportHtml(rawData: ReportData): string {
               <td>-</td>
             </tr>
           ` : cases.map(c => {
-            const period = formatPeriodDisplay(c);
-            return `
+        const period = formatPeriodDisplay(c);
+        return `
             <tr>
               <td>${c.noCase}</td>
               <td style="white-space: nowrap; font-size: 7.5pt; line-height: 1.25;">
@@ -938,7 +941,8 @@ export function generateReportHtml(rawData: ReportData): string {
               <td style="text-align: left; padding-left: 8px;">${c.action}</td>
               <td>${c.downtimeMinutes} Mins</td>
             </tr>
-          `;}).join('')}
+          `;
+      }).join('')}
         </tbody>
       </table>
 
@@ -982,12 +986,12 @@ export function generateReportHtml(rawData: ReportData): string {
             </div>
             <div>
               ${data.targetSla > 0 ? (
-                slaCalc.onlinePercent >= data.targetSla ? `
+      slaCalc.onlinePercent >= data.targetSla ? `
                   <span class="sla-status-text" style="color: #047857;">SLA Met (+${(slaCalc.onlinePercent - data.targetSla).toFixed(2)}%)</span>
                 ` : `
                   <span class="sla-status-text" style="color: #dc2626;">SLA Breached (-${(data.targetSla - slaCalc.onlinePercent).toFixed(2)}%)</span>
                 `
-              ) : `
+    ) : `
                 <span class="sla-status-text" style="color: #64748b;">-</span>
               `}
             </div>
